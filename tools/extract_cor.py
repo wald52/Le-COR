@@ -168,6 +168,48 @@ def extract_fecondite(path):
     return {"observed": obs, "central": central}
 
 
+def extract_productivite_obs(path):
+    """Croissance annuelle observée de la productivité (Fig 1.9 / 1.10)."""
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = None
+    for s in wb.worksheets:
+        a1 = str(s.cell(1, 1).value or "").lower()
+        if "productivit" in a1 and "croissance" in a1:
+            ws = s
+            break
+    if ws is None:
+        wb.close()
+        return None
+    rows = list(ws.iter_rows(values_only=True))
+    ycols = {}
+    for r in rows[:6]:
+        ic = {i: c for i, c in enumerate(r) if isinstance(c, int) and 1980 <= c <= 2100}
+        if ic:
+            ycols = ic
+            break
+    annual = {}
+    for r in rows:
+        lbl = str(r[1]).lower() if len(r) > 1 and r[1] else ""
+        if lbl.startswith("croissance annuelle observ"):
+            annual = {ycols[i]: r[i] * 100 for i in ycols
+                      if i < len(r) and isinstance(r[i], (int, float))}
+            break
+    wb.close()
+    return annual
+
+
+def moving_average(series, window=5):
+    """Moyenne mobile centrée d'un dict {année: valeur}."""
+    ys = sorted(series)
+    out = []
+    half = window // 2
+    for y in ys:
+        vals = [series[k] for k in range(y - half, y + half + 1) if k in series]
+        if len(vals) >= 3:
+            out.append({"x": y, "y": round(sum(vals) / len(vals), 3)})
+    return out
+
+
 def extract_niveau_vie(path):
     """Niveau de vie relatif des retraités : observé + scénario de référence."""
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
@@ -341,6 +383,30 @@ def build():
         }
         print(f"✓ fécondité : obs→{obs_pts[-1]['x']}={obs_pts[-1]['y']}  hypothèses={len(hyps)}")
 
+    # ---- Productivité réelle (moyenne mobile) vs hypothèses
+    prod_block = None
+    annual = extract_productivite_obs(first_file("2025-06", "juin 2025 - partie 1") or "")
+    if annual:
+        ma = [p for p in moving_average(annual, 5) if p["x"] >= 2000]
+        xs = [p["x"] for p in ma]
+        x0, x1 = min(xs), max(xs)
+        prod_block = {
+            "title": "Productivité : ce que le COR suppose vs ce qui se passe vraiment",
+            "subtitle": "Croissance de la productivité du travail (%/an, moyenne mobile 5 ans pour l'observé)",
+            "yLabel": "% / an", "yMin": -0.5, "yMax": 3, "xMin": 2000, "xMax": 2030,
+            "realise": {"label": "Productivité réellement observée (moy. mobile)",
+                        "color": "#1f2d3d", "kind": "solid", "points": ma},
+            "hypotheses": [
+                {"label": "Hypothèse 1,3 % (rapports jusqu'à 2022)", "color": "#d6452a",
+                 "kind": "dash", "endNote": "1,3 %",
+                 "points": [{"x": x0, "y": 1.3}, {"x": 2030, "y": 1.3}]},
+                {"label": "Hypothèse 0,7 % (référence 2025)", "color": "#c2185b",
+                 "kind": "dash", "endNote": "0,7 %",
+                 "points": [{"x": x0, "y": 0.7}, {"x": 2030, "y": 0.7}]},
+            ],
+        }
+        print(f"✓ productivité obs : {x0}-{x1}, {len(ma)} pts")
+
     out = {
         "depensesPib": {
             "title": "La part des retraites dans le PIB selon les rapports successifs du COR",
@@ -362,6 +428,7 @@ def build():
         "ressourcesVsDepenses": ciseaux_block,
         "niveauVie": niveau_block,
         "fecondite": fecondite_block,
+        "productiviteReel": prod_block,
     }
 
     dest = os.path.join(os.path.dirname(__file__), "..", "data", "cor-series.generated.js")

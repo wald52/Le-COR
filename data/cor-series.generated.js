@@ -4416,5 +4416,155 @@ window.COR_SERIES = {
         ]
       }
     ]
+  },
+  "productiviteReel": {
+    "title": "Productivité : ce que le COR suppose vs ce qui se passe vraiment",
+    "subtitle": "Croissance de la productivité du travail (%/an, moyenne mobile 5 ans pour l'observé)",
+    "yLabel": "% / an",
+    "yMin": -0.5,
+    "yMax": 3,
+    "xMin": 2000,
+    "xMax": 2030,
+    "realise": {
+      "label": "Productivité réellement observée (moy. mobile)",
+      "color": "#1f2d3d",
+      "kind": "solid",
+      "points": [
+        {
+          "x": 2000,
+          "y": 2.163
+        },
+        {
+          "x": 2001,
+          "y": 1.824
+        },
+        {
+          "x": 2002,
+          "y": 1.839
+        },
+        {
+          "x": 2003,
+          "y": 1.473
+        },
+        {
+          "x": 2004,
+          "y": 1.664
+        },
+        {
+          "x": 2005,
+          "y": 1.051
+        },
+        {
+          "x": 2006,
+          "y": 0.867
+        },
+        {
+          "x": 2007,
+          "y": 0.455
+        },
+        {
+          "x": 2008,
+          "y": 0.497
+        },
+        {
+          "x": 2009,
+          "y": 0.242
+        },
+        {
+          "x": 2010,
+          "y": 0.381
+        },
+        {
+          "x": 2011,
+          "y": 0.77
+        },
+        {
+          "x": 2012,
+          "y": 1.165
+        },
+        {
+          "x": 2013,
+          "y": 1.044
+        },
+        {
+          "x": 2014,
+          "y": 0.72
+        },
+        {
+          "x": 2015,
+          "y": 0.997
+        },
+        {
+          "x": 2016,
+          "y": 0.69
+        },
+        {
+          "x": 2017,
+          "y": 0.563
+        },
+        {
+          "x": 2018,
+          "y": 0.518
+        },
+        {
+          "x": 2019,
+          "y": 0.233
+        },
+        {
+          "x": 2020,
+          "y": -0.387
+        },
+        {
+          "x": 2021,
+          "y": -0.299
+        },
+        {
+          "x": 2022,
+          "y": -0.345
+        },
+        {
+          "x": 2023,
+          "y": -0.514
+        },
+        {
+          "x": 2024,
+          "y": -0.127
+        }
+      ]
+    },
+    "hypotheses": [
+      {
+        "label": "Hypothèse 1,3 % (rapports jusqu'à 2022)",
+        "color": "#d6452a",
+        "kind": "dash",
+        "endNote": "1,3 %",
+        "points": [
+          {
+            "x": 2000,
+            "y": 1.3
+          },
+          {
+            "x": 2030,
+            "y": 1.3
+          }
+        ]
+      },
+      {
+        "label": "Hypothèse 0,7 % (référence 2025)",
+        "color": "#c2185b",
+        "kind": "dash",
+        "endNote": "0,7 %",
+        "points": [
+          {
+            "x": 2000,
+            "y": 0.7
+          },
+          {
+            "x": 2030,
+            "y": 0.7
+          }
+        ]
+      }
+    ]
   }
 };

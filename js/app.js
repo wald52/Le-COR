@@ -174,7 +174,7 @@
    * 4. Productivité : hypothèse vs réalité.
    * -------------------------------------------------------------------- */
   function renderProductiviteReel() {
-    const d = D.productiviteReel;
+    const d = (window.COR_SERIES && window.COR_SERIES.productiviteReel) || D.productiviteReel;
     const series = [
       { ...d.realise, kind: "solid", markers: true },
       ...d.hypotheses.map(h => ({ label: h.label, color: h.color, kind: "dash", points: h.points, endNote: h.endNote }))
