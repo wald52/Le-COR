@@ -3,7 +3,7 @@ name: Déploiement GitHub Pages
 # Met le site en ligne automatiquement à chaque mise à jour de la branche.
 on:
   push:
-    branches: ["claude/cor-data-analysis-site-gg5o4s"]
+    branches: ["main", "claude/cor-data-analysis-site-gg5o4s"]
   workflow_dispatch:
 
 # Permissions minimales nécessaires au déploiement Pages.
