@@ -261,10 +261,27 @@ def _rows(filepat, sheet):
 
 
 def _ymap(rows):
+    """Premier bloc contigu d'années croissantes (gère les blocs répétés côte à côte)."""
     for r in rows[:6]:
-        ic = {i: c for i, c in enumerate(r) if isinstance(c, int) and 1950 <= c <= 2100}
+        ic = [(i, c) for i, c in enumerate(r) if isinstance(c, int) and 1950 <= c <= 2100]
         if len(ic) >= 3:
-            return ic
+            out, last = {}, None
+            for i, c in ic:
+                if last is not None and c < last:
+                    break
+                out[i] = c
+                last = c
+            return out
+    return {}
+
+
+def _row_label(rows, key, scale=1.0):
+    """Première ligne dont col1 contient `key`, mappée aux années (1er bloc)."""
+    ym = _ymap(rows)
+    for r in rows:
+        if len(r) > 1 and r[1] and key.lower() in str(r[1]).lower():
+            return {ym[i]: round(r[i] * scale, 3) for i in ym
+                    if i < len(r) and isinstance(r[i], (int, float))}
     return {}
 
 
@@ -313,10 +330,10 @@ def _ratio(a, b, scale=1.0):
     return {y: round(a[y] / b[y] * scale, 3) for y in a if y in b and b[y]}
 
 
-def _series(obs, proj, color, obs_from=2000):
-    """Construit [observé solide, projeté pointillé] filtré sur >= obs_from."""
-    o = [{"x": y, "y": obs[y]} for y in sorted(obs) if y >= obs_from]
-    p = [{"x": y, "y": proj[y]} for y in sorted(proj) if y >= obs_from]
+def _series(obs, proj, color, obs_from=2000, to=2070):
+    """Construit [observé solide, projeté pointillé] filtré sur [obs_from, to]."""
+    o = [{"x": y, "y": obs[y]} for y in sorted(obs) if obs_from <= y <= to]
+    p = [{"x": y, "y": proj[y]} for y in sorted(proj) if obs_from <= y <= to]
     out = []
     if o:
         out.append({"label": "Observé", "color": "#1f2d3d", "kind": "solid", "points": o})
@@ -380,6 +397,51 @@ def build_explorer():
             "Le cœur du système par répartition : chaque retraité est financé par les "
             "cotisations des actifs. Ce ratio baisse de ~1,8 vers ~1,4.",
             "COR, rapport 2025 (données complémentaires).")
+    fec = _rows("partie 1", "Fig 1.1")
+    if fec:
+        o = _row_label(fec, "Observé (définitif)")
+        o.update(_row_label(fec, "Données provisoires"))
+        p = _row_label(fec, "central")
+        add("fecondite", "Indice de fécondité", "enfants / femme", "",
+            _series(o, p, DEMO),
+            "Nombre d'enfants par femme. L'hypothèse (1,80) est déjà au-dessus de la "
+            "réalité observée (~1,62 en 2024).",
+            "COR / INSEE, rapport 2025 (fig. 1.1).")
+    ev = _rows("partie 1", "Fig 1.3")
+    if ev:
+        o = _row_label(ev, "Observé (définitif)")
+        p = _row_label(ev, "scénario central")
+        add("esp_vie", "Espérance de vie à 65 ans (femmes)", "ans", " ans",
+            _series(o, p, DEMO),
+            "Nombre d'années encore à vivre à 65 ans (femmes). Elle continue de progresser, "
+            "ce qui allonge la durée de retraite.",
+            "COR / INSEE, rapport 2025 (fig. 1.3).")
+
+    # --- Emploi & économie
+    r = _rows("partie 1", "Fig 1.11")
+    if r:
+        o, p = _obs_proj(r, 100)
+        add("emploi", "Taux d'emploi des 15-64 ans", "%", " %", _series(o, p, ECO),
+            "Part des 15-64 ans qui ont un emploi. Plus il est élevé, plus il y a de "
+            "cotisants.",
+            "COR, rapport 2025 (fig. 1.11).")
+    pr = _rows("partie 1", "Fig 1.9")
+    if pr:
+        annual = {}
+        for r2 in pr:
+            if len(r2) > 1 and str(r2[1]).lower().startswith("croissance annuelle observ"):
+                ym = _ymap(pr)
+                annual = {ym[i]: r2[i] * 100 for i in ym if i < len(r2) and isinstance(r2[i], (int, float))}
+                break
+        ma = {p["x"]: p["y"] for p in moving_average(annual, 5)}
+        ref = _row_label(pr, "Scénario de référence", 100)
+        s = _series(ma, ref, ECO)
+        if s:
+            s[0]["label"] = "Observé (moy. mobile 5 ans)"
+            add("productivite", "Productivité du travail", "%/an", " %", s,
+                "Croissance de la productivité : moteur des salaires donc des cotisations. "
+                "L'hypothèse de référence (0,7 %) a été fortement abaissée.",
+                "COR, rapport 2025 (fig. 1.9).")
 
     # --- Pensions & retraités
     r = _rows("synthèse", "Âge conjoncturel")
@@ -422,7 +484,8 @@ def build_explorer():
                 desc, "COR, rapport 2025 (synthèse, scénario de référence).")
 
     themes = [
-        {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "migration", "chomage"]},
+        {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
+        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde"]},
     ]
