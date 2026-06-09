@@ -245,6 +245,52 @@
   }
 
   /* ----------------------------------------------------------------------
+   * Comparaison internationale : barres horizontales empilées (pub/privé).
+   * -------------------------------------------------------------------- */
+  function renderInternational() {
+    const d = window.COR_SERIES && window.COR_SERIES.international;
+    if (!d) return;
+    const host = document.getElementById("chart-international");
+    host.innerHTML = "";
+    const NS = "http://www.w3.org/2000/svg";
+    const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const cs = d.countries;
+    const W = 760, rowH = 30, top = 16, bottom = 38, left = 104, right = 58;
+    const H = top + bottom + cs.length * rowH;
+    const maxV = Math.ceil(Math.max(...cs.map(c => c.total)) + 1);
+    const sx = v => left + (v / maxV) * (W - left - right);
+    const svg = mk("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart-svg", role: "img",
+      "aria-label": "Dépenses de retraite par pays en % du PIB" });
+
+    for (let v = 0; v <= maxV; v += 5) {
+      svg.appendChild(mk("line", { x1: sx(v), y1: top, x2: sx(v), y2: top + cs.length * rowH, class: "chart-grid" }));
+      const t = mk("text", { x: sx(v), y: top + cs.length * rowH + 20, class: "chart-axis-label", "text-anchor": "middle" });
+      t.textContent = v + " %"; svg.appendChild(t);
+    }
+    cs.forEach((c, i) => {
+      const y = top + i * rowH + rowH / 2;
+      const isFR = c.name === "France";
+      const lbl = mk("text", { x: left - 10, y: y + 4, "text-anchor": "end",
+        class: "chart-axis-label", fill: isFR ? "#c2185b" : "#1c2530",
+        "font-weight": isFR ? 800 : 500 });
+      lbl.textContent = c.name; svg.appendChild(lbl);
+      const h = 16;
+      svg.appendChild(mk("rect", { x: left, y: y - h / 2, width: sx(c.pub) - left, height: h,
+        fill: isFR ? "#1f4e79" : "#5b7fa6", rx: 2 }));
+      svg.appendChild(mk("rect", { x: sx(c.pub), y: y - h / 2, width: sx(c.total) - sx(c.pub), height: h,
+        fill: isFR ? "#7fb0e0" : "#c2d4e8", rx: 2 }));
+      const val = mk("text", { x: sx(c.total) + 6, y: y + 4, class: "chart-endnote",
+        fill: isFR ? "#c2185b" : "#5b6671", "text-anchor": "start" });
+      val.textContent = String(c.total).replace(".", ",") + " %"; svg.appendChild(val);
+    });
+    host.appendChild(svg);
+    const leg = document.createElement("p");
+    leg.className = "chart-inline-legend";
+    leg.innerHTML = `<span class="legend-swatch" style="--c:#1f4e79"></span> Dépenses publiques &nbsp;·&nbsp; <span class="legend-swatch" style="--c:#7fb0e0"></span> Dépenses privées &nbsp;·&nbsp; <strong style="color:#c2185b">France</strong> en surbrillance`;
+    host.appendChild(leg);
+  }
+
+  /* ----------------------------------------------------------------------
    * 5. Tableau des hypothèses.
    * -------------------------------------------------------------------- */
   function renderTable() {
@@ -315,6 +361,7 @@
   function init() {
     renderAllCharts();
     renderExplorer();
+    renderInternational();
     renderTable();
     renderSources();
     setupNav();

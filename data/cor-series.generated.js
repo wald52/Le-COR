@@ -11397,5 +11397,76 @@ window.COR_SERIES = {
         "yMax": 14.69
       }
     }
+  },
+  "international": {
+    "year": 2021,
+    "countries": [
+      {
+        "name": "Italie",
+        "pub": 16.2,
+        "priv": 0.8,
+        "total": 17.0
+      },
+      {
+        "name": "France",
+        "pub": 14.0,
+        "priv": 0.3,
+        "total": 14.3
+      },
+      {
+        "name": "États-Unis",
+        "pub": 7.2,
+        "priv": 6.4,
+        "total": 13.6
+      },
+      {
+        "name": "Espagne",
+        "pub": 12.7,
+        "priv": 0.3,
+        "total": 13.0
+      },
+      {
+        "name": "Belgique",
+        "pub": 11.7,
+        "priv": 1.1,
+        "total": 12.9
+      },
+      {
+        "name": "Allemagne",
+        "pub": 11.6,
+        "priv": 0.7,
+        "total": 12.3
+      },
+      {
+        "name": "Japon",
+        "pub": 9.6,
+        "priv": 2.7,
+        "total": 12.3
+      },
+      {
+        "name": "Suède",
+        "pub": 10.3,
+        "priv": 2.0,
+        "total": 12.3
+      },
+      {
+        "name": "Royaume-Uni",
+        "pub": 7.8,
+        "priv": 3.1,
+        "total": 10.8
+      },
+      {
+        "name": "Pays-Bas",
+        "pub": 7.5,
+        "priv": 3.1,
+        "total": 10.6
+      },
+      {
+        "name": "Canada",
+        "pub": 6.1,
+        "priv": 4.0,
+        "total": 10.1
+      }
+    ]
   }
 };

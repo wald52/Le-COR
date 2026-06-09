@@ -555,6 +555,35 @@ def build_explorer():
     return {"themes": themes, "indicators": ind}
 
 
+def extract_international(path):
+    """Part des dépenses de retraite (publiques/privées) dans le PIB par pays, 2021."""
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    if "Part des dépenses OCDE" not in wb.sheetnames:
+        wb.close()
+        return None
+    rows = list(wb["Part des dépenses OCDE"].iter_rows(values_only=True))
+    names = rows[3]      # ligne des pays
+    years = rows[4]      # 2000 / 2021 par pays
+    pub = rows[5]
+    priv = rows[6]
+    countries = []
+    for i, nm in enumerate(names):
+        if isinstance(nm, str) and nm.strip() and not nm.lower().startswith(("lecture", "champ", "source")):
+            # colonne 2021 = juste après ce pays (où years==2021)
+            col = next((j for j in range(i, min(i + 5, len(years)))
+                        if isinstance(years[j], int) and years[j] == 2021), None)
+            if col is None:
+                continue
+            p = pub[col] if col < len(pub) and isinstance(pub[col], (int, float)) else 0
+            v = priv[col] if col < len(priv) and isinstance(priv[col], (int, float)) else 0
+            countries.append({"name": nm.strip(),
+                              "pub": round(p * 100, 1), "priv": round(v * 100, 1),
+                              "total": round((p + v) * 100, 1)})
+    wb.close()
+    countries.sort(key=lambda c: c["total"], reverse=True)
+    return {"year": 2021, "countries": countries}
+
+
 def build():
     extracted = {}
     realised = None  # série observée la plus récente (rapport 2025, base 2020)
@@ -749,6 +778,7 @@ def build():
         "fecondite": fecondite_block,
         "productiviteReel": prod_block,
         "explorer": build_explorer(),
+        "international": extract_international(first_file(R25, "synthèse") or ""),
     }
 
     dest = os.path.join(os.path.dirname(__file__), "..", "data", "cor-series.generated.js")
