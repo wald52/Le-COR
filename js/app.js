@@ -13,7 +13,9 @@
    *    successives superposées.
    * -------------------------------------------------------------------- */
   function renderDepensesPib() {
-    const d = D.depensesPib;
+    // Données officielles générées depuis les Excel du COR si disponibles,
+    // sinon valeurs d'amorçage de data.js.
+    const d = (window.COR_SERIES && window.COR_SERIES.depensesPib) || D.depensesPib;
     const series = [
       { ...d.realise, kind: "solid", markers: false },
       ...d.projections.map(p => ({
