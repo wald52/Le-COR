@@ -30,6 +30,52 @@
     });
   }
 
+  /* Helper : graphique « réalisé + projections superposées ». */
+  function renderRealiseProjections(elId, block) {
+    if (!block) return;
+    const series = [
+      { ...block.realise, kind: "solid", markers: false },
+      ...block.projections.map(p => ({
+        label: p.label, color: p.color, kind: "dash", points: p.points, endNote: p.endNote
+      }))
+    ];
+    lineChart(document.getElementById(elId), {
+      series,
+      x: { min: block.xMin, max: block.xMax },
+      y: { min: block.yMin, max: block.yMax, suffix: " %" },
+      ariaLabel: block.subtitle
+    });
+  }
+
+  function renderSolde() {
+    renderRealiseProjections("chart-solde", window.COR_SERIES && window.COR_SERIES.solde);
+  }
+
+  function renderCiseaux() {
+    const b = window.COR_SERIES && window.COR_SERIES.ressourcesVsDepenses;
+    if (!b) return;
+    lineChart(document.getElementById("chart-ciseaux"), {
+      series: b.series.map(s => ({ ...s, endNote: s.label })),
+      x: { min: b.xMin, max: b.xMax },
+      y: { min: b.yMin, max: b.yMax, suffix: " %" },
+      ariaLabel: b.subtitle
+    });
+  }
+
+  function renderNiveauVie() {
+    const b = window.COR_SERIES && window.COR_SERIES.niveauVie;
+    if (!b) return;
+    lineChart(document.getElementById("chart-niveau"), {
+      series: [
+        { ...b.realise, kind: "solid", markers: false },
+        { ...b.projection, kind: "dash", endNote: "87,5 %" }
+      ],
+      x: { min: b.xMin, max: b.xMax },
+      y: { min: b.yMin, max: b.yMax, suffix: " %" },
+      ariaLabel: b.subtitle
+    });
+  }
+
   /* ----------------------------------------------------------------------
    * 2. Productivité : éventail des scénarios par rapport (range + central).
    *    Graphique « dumbbell » maison : une barre verticale min→max et un
@@ -201,6 +247,9 @@
   let resizeTimer;
   function renderAllCharts() {
     renderDepensesPib();
+    renderSolde();
+    renderCiseaux();
+    renderNiveauVie();
     renderProductivite();
     renderFecondite();
     renderProductiviteReel();

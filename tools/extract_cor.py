@@ -100,6 +100,70 @@ def first_file(folder_prefix, name_substr):
     return None
 
 
+# --------------------------------------------------------------------------
+# Solde / Ressources (synthèses 2023-2025) — scénario de référence
+# --------------------------------------------------------------------------
+SOLDE_VINTAGES = [
+    ("2023", "2023-06", "synthèse", "Solde_dép_ress", "1,0"),
+    ("2024", "2024-06", "synthèse", "Solde dépenses ressources", "1,0"),
+    ("2025", "2025-06", "synthèse", "Solde dépenses ressources", "0,7"),
+]
+SOLDE_COLORS = {"2023": "#e8731c", "2024": "#d6452a", "2025": "#c2185b"}
+
+
+def extract_sdr(path, sheet):
+    """Renvoie {ligne: {année: % PIB}} pour Dépenses / Ressources / Solde."""
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    if sheet not in wb.sheetnames:
+        wb.close()
+        return None
+    ws = wb[sheet]
+    rows = list(ws.iter_rows(values_only=True))
+    ycols = {}
+    for r in rows[:6]:
+        ints = {i: c for i, c in enumerate(r)
+                if isinstance(c, int) and 1990 <= c <= 2100}
+        if ints:
+            ycols = ints
+            break
+    out = {}
+    for r in rows:
+        lbl = r[1] if len(r) > 1 else None
+        if lbl in ("Dépenses", "Ressources", "Solde"):
+            out[lbl] = {ycols[i]: round(r[i] * 100, 3)
+                        for i in ycols if i < len(r) and isinstance(r[i], (int, float))}
+    wb.close()
+    return out
+
+
+def extract_niveau_vie(path):
+    """Niveau de vie relatif des retraités : observé + scénario de référence."""
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    if "Niveau de vie relatif" not in wb.sheetnames:
+        wb.close()
+        return None
+    ws = wb["Niveau de vie relatif"]
+    rows = list(ws.iter_rows(values_only=True))
+    ycols = {}
+    for r in rows[:6]:
+        ints = {i: c for i, c in enumerate(r)
+                if isinstance(c, int) and 1960 <= c <= 2100}
+        if ints:
+            ycols = ints
+            break
+    obs, ref = {}, {}
+    for r in rows:
+        c2 = r[2] if len(r) > 2 else None
+        vals = {ycols[i]: round(r[i] * 100, 1)
+                for i in ycols if i < len(r) and isinstance(r[i], (int, float))}
+        if c2 == "Observations":
+            obs = vals
+        elif c2 == "Scénario de référence":
+            ref = vals
+    wb.close()
+    return {"observed": obs, "ref": ref}
+
+
 def build():
     extracted = {}
     realised = None  # série observée la plus récente (rapport 2025, base 2020)
@@ -139,6 +203,82 @@ def build():
             "points": pts,
         })
 
+    # ---- Solde du système (réf.), millésimes 2023-2025 + Dépenses/Ressources 2025
+    solde_proj = []
+    sdr_2025 = None
+    solde_realise = None
+    for vy, dpat, fpat, sheet, prodlbl in SOLDE_VINTAGES:
+        path = first_file(dpat, fpat)
+        if not path:
+            print("✗ solde fichier introuvable :", vy)
+            continue
+        sdr = extract_sdr(path, sheet)
+        if not sdr or "Solde" not in sdr:
+            print("✗ solde bloc introuvable :", vy)
+            continue
+        if vy == "2025":
+            sdr_2025 = sdr
+        solde = sdr["Solde"]
+        year = int(vy)
+        # projection = à partir de l'année du rapport ; réalisé = avant.
+        pts = [{"x": y, "y": solde[y]} for y in sorted(solde) if y >= year]
+        last = max(p["x"] for p in pts)
+        solde_proj.append({
+            "label": f"Rapport {vy} (réf. {prodlbl} %)",
+            "year": year, "color": SOLDE_COLORS[vy], "endNote": vy,
+            "source": f"COR, rapport annuel {vy} — solde du système de retraite, scénario de référence.",
+            "points": pts,
+        })
+        if vy == "2025":
+            solde_realise = [{"x": y, "y": solde[y]} for y in sorted(solde) if y <= year]
+        print(f"✓ solde {vy} : 2070={solde.get(2070)}  pts proj={len(pts)}")
+
+    solde_block = None
+    if solde_proj:
+        solde_block = {
+            "title": "Le solde du système de retraite plonge dans les projections récentes",
+            "subtitle": "Solde (ressources − dépenses) en % du PIB — scénario de référence de chaque rapport",
+            "yLabel": "% du PIB", "yMin": -2, "yMax": 1, "xMin": 2000, "xMax": 2070,
+            "realise": {"label": "Solde réalisé (observé)", "color": "#1f2d3d",
+                        "kind": "solid", "points": solde_realise or []},
+            "projections": solde_proj,
+        }
+
+    # ---- Dépenses vs Ressources 2025 (effet « ciseaux »)
+    ciseaux_block = None
+    if sdr_2025:
+        dep = sdr_2025.get("Dépenses", {})
+        res = sdr_2025.get("Ressources", {})
+        ys = sorted(set(dep) | set(res))
+        ciseaux_block = {
+            "title": "Pourquoi un déficit ? Les dépenses montent, les ressources baissent",
+            "subtitle": "Système de retraite en % du PIB — scénario de référence du rapport 2025",
+            "yLabel": "% du PIB", "yMin": 12, "yMax": 15, "xMin": 2000, "xMax": 2070,
+            "series": [
+                {"label": "Dépenses", "color": "#c2185b", "kind": "solid",
+                 "points": [{"x": y, "y": dep[y]} for y in ys if y in dep]},
+                {"label": "Ressources", "color": "#2f6fb0", "kind": "solid",
+                 "points": [{"x": y, "y": res[y]} for y in ys if y in res]},
+            ],
+        }
+
+    # ---- Niveau de vie relatif des retraités (rapport 2025)
+    niveau_block = None
+    nv_path = first_file("2025-06", "synthèse")
+    nv = extract_niveau_vie(nv_path) if nv_path else None
+    if nv and nv["observed"]:
+        obs_pts = [{"x": y, "y": nv["observed"][y]} for y in sorted(nv["observed"])]
+        ref_pts = [{"x": y, "y": nv["ref"][y]} for y in sorted(nv["ref"])]
+        niveau_block = {
+            "title": "Le niveau de vie des retraités décrocherait peu à peu",
+            "subtitle": "Niveau de vie moyen des retraités rapporté à celui de l'ensemble de la population (100 % = parité)",
+            "yLabel": "%", "yMin": 70, "yMax": 110,
+            "xMin": 1995, "xMax": 2070,
+            "realise": {"label": "Observé", "color": "#1f2d3d", "kind": "solid", "points": obs_pts},
+            "projection": {"label": "Projeté (réf. 2025)", "color": "#c2185b", "kind": "dash", "points": ref_pts},
+        }
+        print(f"✓ niveau de vie : obs {len(obs_pts)} pts, proj {len(ref_pts)} pts")
+
     out = {
         "depensesPib": {
             "title": "La part des retraites dans le PIB selon les rapports successifs du COR",
@@ -155,7 +295,10 @@ def build():
                 "points": realise_points,
             },
             "projections": projections,
-        }
+        },
+        "solde": solde_block,
+        "ressourcesVsDepenses": ciseaux_block,
+        "niveauVie": niveau_block,
     }
 
     dest = os.path.join(os.path.dirname(__file__), "..", "data", "cor-series.generated.js")

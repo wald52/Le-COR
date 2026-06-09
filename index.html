@@ -21,7 +21,9 @@
     <button id="nav-toggle" class="nav-toggle" aria-label="Ouvrir le menu">☰</button>
     <nav id="nav-menu" class="nav-menu" aria-label="Navigation principale">
       <a class="nav-link" href="#depenses">Le graphique clé</a>
+      <a class="nav-link" href="#deficit">Le déficit</a>
       <a class="nav-link" href="#productivite">Le revirement</a>
+      <a class="nav-link" href="#niveau">Niveau de vie</a>
       <a class="nav-link" href="#realite">Réalité</a>
       <a class="nav-link" href="#hypotheses">Hypothèses</a>
       <a class="nav-link" href="#methode">Méthode &amp; sources</a>
@@ -78,10 +80,54 @@
       </div>
     </section>
 
-    <!-- 2. LE REVIREMENT (PRODUCTIVITÉ) -->
-    <section id="productivite" class="band alt">
+    <!-- 2. LE DÉFICIT (SOLDE + CISEAUX) -->
+    <section id="deficit" class="band alt">
       <div class="container">
-        <h2>2 · L'hypothèse qui fait tout basculer&nbsp;: la productivité</h2>
+        <h2>2 · Le déficit&nbsp;: pourquoi, et depuis quand&nbsp;?</h2>
+        <p class="section-intro">
+          Le <strong>solde</strong> du système, c'est la différence entre ce qu'il
+          <strong>encaisse</strong> (ressources) et ce qu'il <strong>verse</strong> (dépenses).
+          Négatif = déficit. Les rapports récents projettent un solde de plus en plus dégradé.
+        </p>
+        <figure class="chart-card">
+          <figcaption class="chart-title">
+            <strong>Le solde du système de retraite plonge dans les projections récentes</strong>
+            <span>Solde en % du PIB — scénario de référence des rapports 2023, 2024 et 2025</span>
+          </figcaption>
+          <div id="chart-solde" class="chart-host"></div>
+          <p class="chart-source">Source&nbsp;: COR, synthèses des rapports 2023–2025 — <strong>données officielles</strong> (scénario de référence).</p>
+        </figure>
+
+        <p class="section-intro" style="margin-top:32px">
+          D'où vient ce déficit&nbsp;? Pas seulement de dépenses qui montent&nbsp;: surtout
+          de <strong>ressources qui baissent</strong> en part de PIB. C'est l'effet « ciseaux ».
+        </p>
+        <figure class="chart-card">
+          <figcaption class="chart-title">
+            <strong>Dépenses vs ressources&nbsp;: l'effet ciseaux</strong>
+            <span>Système de retraite en % du PIB — scénario de référence du rapport 2025</span>
+          </figcaption>
+          <div id="chart-ciseaux" class="chart-host"></div>
+          <p class="chart-source">Source&nbsp;: COR, rapport annuel 2025 — données officielles (scénario de référence).</p>
+        </figure>
+
+        <div class="takeaway">
+          <h3>Ce qu'il faut retenir</h3>
+          <p>
+            Le rapport 2025 projette un solde à <strong>−1,4 % du PIB en 2070</strong>, bien
+            plus dégradé que les rapports 2023 et 2024 (≈−0,8 %). La cause principale n'est
+            pas une explosion des dépenses, mais une <strong>érosion des ressources</strong>
+            (12,8 % du PIB en 2070 contre 13,9 % aujourd'hui), liée notamment aux hypothèses
+            économiques retenues.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. LE REVIREMENT (PRODUCTIVITÉ) -->
+    <section id="productivite" class="band">
+      <div class="container">
+        <h2>3 · L'hypothèse qui fait tout basculer&nbsp;: la productivité</h2>
         <p class="section-intro">
           La <strong>croissance de la productivité</strong> détermine la croissance des salaires,
           donc des cotisations qui financent les retraites. Le COR a longtemps testé
@@ -108,10 +154,41 @@
       </div>
     </section>
 
-    <!-- 3. RÉALITÉ -->
+    <!-- 4. NIVEAU DE VIE -->
+    <section id="niveau" class="band alt">
+      <div class="container">
+        <h2>4 · Les retraités vont-ils décrocher&nbsp;?</h2>
+        <p class="section-intro">
+          Un chiffre clé et peu connu&nbsp;: le <strong>niveau de vie moyen des retraités</strong>
+          comparé à celui de l'ensemble de la population. À <strong>100 %</strong>, les retraités
+          vivent aussi bien que la moyenne. Aujourd'hui on est proche de la parité&nbsp;;
+          le COR projette un <strong>décrochage</strong>.
+        </p>
+        <figure class="chart-card">
+          <figcaption class="chart-title">
+            <strong>Le niveau de vie des retraités décrocherait peu à peu</strong>
+            <span>Niveau de vie des retraités / ensemble de la population (100 % = parité)</span>
+          </figcaption>
+          <div id="chart-niveau" class="chart-host"></div>
+          <p class="chart-source">Source&nbsp;: COR, rapport annuel 2025 — données officielles (Insee-DGI, scénario de référence).</p>
+        </figure>
+        <div class="takeaway">
+          <h3>Ce qu'il faut retenir</h3>
+          <p>
+            Le niveau de vie relatif des retraités est passé de ~70 % en 1970 à la
+            <strong>quasi-parité (~97 %) aujourd'hui</strong>. Mais le rapport 2025 projette
+            une <strong>baisse jusqu'à ~87 % en 2070</strong>&nbsp;: les pensions progresseraient
+            moins vite que les salaires. C'est l'un des effets les moins visibles des
+            hypothèses retenues.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. RÉALITÉ -->
     <section id="realite" class="band">
       <div class="container">
-        <h2>3 · Les prévisions se sont-elles réalisées&nbsp;?</h2>
+        <h2>5 · Les prévisions se sont-elles réalisées&nbsp;?</h2>
         <p class="section-intro">
           Comparons les hypothèses du COR à ce qui s'est <strong>vraiment</strong> passé. Deux
           exemples parlants&nbsp;: la fécondité et la productivité.
@@ -154,7 +231,7 @@
     <!-- 4. TABLEAU HYPOTHÈSES -->
     <section id="hypotheses" class="band alt">
       <div class="container">
-        <h2>4 · Le tableau de bord des hypothèses</h2>
+        <h2>6 · Le tableau de bord des hypothèses</h2>
         <p class="section-intro">
           Les principales hypothèses du <strong>scénario de référence</strong>, rapport après rapport.
         </p>
@@ -166,7 +243,7 @@
     <!-- 5. MÉTHODE & SOURCES -->
     <section id="methode" class="band">
       <div class="container">
-        <h2>5 · Méthode &amp; sources</h2>
+        <h2>7 · Méthode &amp; sources</h2>
         <div class="method">
           <h3>Comment lire ces graphiques&nbsp;?</h3>
           <ul>
