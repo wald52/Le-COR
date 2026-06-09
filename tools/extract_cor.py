@@ -136,6 +136,38 @@ def extract_sdr(path, sheet):
     return out
 
 
+def extract_fecondite(path):
+    """Indice de fécondité : observé (définitif + provisoire) et scénario central."""
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = None
+    for s in wb.worksheets:
+        a1 = str(s.cell(1, 1).value or "").lower()
+        if "fécondit" in a1 and ("observé" in a1 or "projet" in a1):
+            ws = s
+            break
+    if ws is None:
+        wb.close()
+        return None
+    rows = list(ws.iter_rows(values_only=True))
+    ycols = {}
+    for r in rows[:6]:
+        ic = {i: c for i, c in enumerate(r) if isinstance(c, int) and 1990 <= c <= 2100}
+        if ic:
+            ycols = ic
+            break
+    central, obs = {}, {}
+    for r in rows:
+        lbl = str(r[1]).lower() if len(r) > 1 and r[1] else ""
+        vals = {ycols[i]: round(r[i], 3) for i in ycols
+                if i < len(r) and isinstance(r[i], (int, float))}
+        if "central" in lbl and not central:
+            central = vals
+        if lbl.startswith("observé") or "données provisoires" in lbl:
+            obs.update(vals)
+    wb.close()
+    return {"observed": obs, "central": central}
+
+
 def extract_niveau_vie(path):
     """Niveau de vie relatif des retraités : observé + scénario de référence."""
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
@@ -279,6 +311,36 @@ def build():
         }
         print(f"✓ niveau de vie : obs {len(obs_pts)} pts, proj {len(ref_pts)} pts")
 
+    # ---- Fécondité : observé (réel) + hypothèse centrale de deux époques
+    fecondite_block = None
+    f_recent = extract_fecondite(first_file("2025-06", "juin 2025 - partie 1") or "")
+    f_old = extract_fecondite(first_file("2019-06", "Partie 1") or "")
+    if f_recent and f_recent["observed"]:
+        obs = f_recent["observed"]
+        obs_pts = [{"x": y, "y": obs[y]} for y in sorted(obs)]
+
+        def central_line(fec, ymin):
+            c = fec["central"]
+            return [{"x": y, "y": c[y]} for y in sorted(c) if y >= ymin]
+        hyps = []
+        if f_old and f_old["central"]:
+            hyps.append({"label": "Hypothèse centrale 2016-2021 (1,95)",
+                         "color": "#2ca089", "kind": "dash", "endNote": "1,95",
+                         "points": central_line(f_old, 2017)})
+        if f_recent["central"]:
+            hyps.append({"label": "Hypothèse centrale 2022-2025 (1,80)",
+                         "color": "#e8731c", "kind": "dash", "endNote": "1,80",
+                         "points": central_line(f_recent, 2023)})
+        fecondite_block = {
+            "title": "Fécondité : une hypothèse revue à la baisse, mais que la réalité dépasse",
+            "subtitle": "Indice conjoncturel de fécondité (enfants par femme)",
+            "yLabel": "", "yMin": 1.5, "yMax": 2.05, "xMin": 2000, "xMax": 2050,
+            "realise": {"label": "Fécondité réelle observée", "color": "#1f2d3d",
+                        "kind": "solid", "points": [p for p in obs_pts if p["x"] >= 2000]},
+            "hypotheses": hyps,
+        }
+        print(f"✓ fécondité : obs→{obs_pts[-1]['x']}={obs_pts[-1]['y']}  hypothèses={len(hyps)}")
+
     out = {
         "depensesPib": {
             "title": "La part des retraites dans le PIB selon les rapports successifs du COR",
@@ -299,6 +361,7 @@ def build():
         "solde": solde_block,
         "ressourcesVsDepenses": ciseaux_block,
         "niveauVie": niveau_block,
+        "fecondite": fecondite_block,
     }
 
     dest = os.path.join(os.path.dirname(__file__), "..", "data", "cor-series.generated.js")

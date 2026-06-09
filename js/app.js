@@ -90,7 +90,7 @@
     const M = { top: 30, right: 30, bottom: 50, left: 50 };
     const plotW = W - M.left - M.right;
     const plotH = H - M.top - M.bottom;
-    const yMin = 0.5, yMax = 2.0;
+    const yMin = 0.0, yMax = 2.0;
     const sy = v => M.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
     const n = d.rapports.length;
     const sx = i => M.left + ((i + 0.5) / n) * plotW;
@@ -108,7 +108,7 @@
     };
 
     // Grille Y
-    for (let v = 0.5; v <= 2.0001; v += 0.5) {
+    for (let v = 0.0; v <= 2.0001; v += 0.5) {
       const y = sy(v);
       svg.appendChild(mk("line", { x1: M.left, y1: y, x2: M.left + plotW, y2: y, class: "chart-grid" }));
       const t = mk("text", { x: M.left - 8, y: y + 4, class: "chart-axis-label", "text-anchor": "end" });
@@ -157,7 +157,7 @@
    * 3. Fécondité : hypothèse vs réalité.
    * -------------------------------------------------------------------- */
   function renderFecondite() {
-    const d = D.fecondite;
+    const d = (window.COR_SERIES && window.COR_SERIES.fecondite) || D.fecondite;
     const series = [
       { ...d.realise, kind: "solid", markers: true },
       ...d.hypotheses.map(h => ({ label: h.label, color: h.color, kind: "dash", points: h.points, endNote: h.endNote }))
