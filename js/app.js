@@ -135,7 +135,7 @@
       });
       // Point central (scénario de référence)
       svg.appendChild(mk("circle", { cx: x, cy: sy(r.central), r: 6, fill: color }));
-      const ct = mk("text", { x: x + 12, y: sy(r.central) + 4, class: "chart-endnote", fill: color });
+      const ct = mk("text", { x: x + 12, y: sy(r.central) - 8, class: "chart-endnote", fill: color });
       ct.textContent = r.central.toFixed(1).replace(".", ",");
       svg.appendChild(ct);
       // Étiquette année

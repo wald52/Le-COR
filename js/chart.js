@@ -76,6 +76,14 @@
       "aria-label": cfg.ariaLabel || "Graphique en courbes"
     });
 
+    // Zone de découpe : les courbes ne débordent jamais du cadre de tracé.
+    const clipId = "plotclip-" + Math.random().toString(36).slice(2, 8);
+    const defs = el("defs");
+    const clip = el("clipPath", { id: clipId });
+    clip.appendChild(el("rect", { x: M.left, y: M.top, width: plotW, height: plotH }));
+    defs.appendChild(clip);
+    svg.appendChild(defs);
+
     // --- Grille + axe Y ---
     const yTicks = niceTicks(yMin, yMax, 5);
     yTicks.forEach(t => {
@@ -120,6 +128,7 @@
         "stroke-linecap": "round"
       });
       if (s.kind === "dash") path.setAttribute("stroke-dasharray", "7 5");
+      path.setAttribute("clip-path", `url(#${clipId})`);
       g.appendChild(path);
 
       // Points de marquage (optionnels) — utile pour le dernier point.

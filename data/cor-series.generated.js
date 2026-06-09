@@ -3532,35 +3532,15 @@ window.COR_SERIES = {
     "title": "Le niveau de vie des retraités décrocherait peu à peu",
     "subtitle": "Niveau de vie moyen des retraités rapporté à celui de l'ensemble de la population (100 % = parité)",
     "yLabel": "%",
-    "yMin": 70,
+    "yMin": 80,
     "yMax": 110,
-    "xMin": 1995,
+    "xMin": 1996,
     "xMax": 2070,
     "realise": {
       "label": "Observé",
       "color": "#1f2d3d",
       "kind": "solid",
       "points": [
-        {
-          "x": 1970,
-          "y": 70.5
-        },
-        {
-          "x": 1975,
-          "y": 76.1
-        },
-        {
-          "x": 1979,
-          "y": 80.0
-        },
-        {
-          "x": 1984,
-          "y": 85.1
-        },
-        {
-          "x": 1990,
-          "y": 89.1
-        },
         {
           "x": 1996,
           "y": 101.7

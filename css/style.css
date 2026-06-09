@@ -94,7 +94,7 @@ a { color: var(--bleu-clair); }
 .chart-title strong { color: var(--bleu); font-size: 1.05rem; }
 .chart-title span { color: var(--gris); font-size: 0.88rem; }
 .chart-host { width: 100%; position: relative; }
-.chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-svg { width: 100%; height: auto; display: block; overflow: hidden; }
 .chart-source { font-size: 0.78rem; color: var(--gris); margin: 10px 0 0; font-style: italic; }
 
 .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }

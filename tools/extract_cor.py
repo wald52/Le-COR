@@ -341,13 +341,15 @@ def build():
     nv_path = first_file("2025-06", "synthèse")
     nv = extract_niveau_vie(nv_path) if nv_path else None
     if nv and nv["observed"]:
-        obs_pts = [{"x": y, "y": nv["observed"][y]} for y in sorted(nv["observed"])]
+        # On démarre à 1996 (données annuelles continues) pour éviter les longues
+        # interpolations des points épars d'avant.
+        obs_pts = [{"x": y, "y": nv["observed"][y]} for y in sorted(nv["observed"]) if y >= 1996]
         ref_pts = [{"x": y, "y": nv["ref"][y]} for y in sorted(nv["ref"])]
         niveau_block = {
             "title": "Le niveau de vie des retraités décrocherait peu à peu",
             "subtitle": "Niveau de vie moyen des retraités rapporté à celui de l'ensemble de la population (100 % = parité)",
-            "yLabel": "%", "yMin": 70, "yMax": 110,
-            "xMin": 1995, "xMax": 2070,
+            "yLabel": "%", "yMin": 80, "yMax": 110,
+            "xMin": 1996, "xMax": 2070,
             "realise": {"label": "Observé", "color": "#1f2d3d", "kind": "solid", "points": obs_pts},
             "projection": {"label": "Projeté (réf. 2025)", "color": "#c2185b", "kind": "dash", "points": ref_pts},
         }
