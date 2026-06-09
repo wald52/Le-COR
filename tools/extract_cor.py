@@ -483,11 +483,69 @@ def build_explorer():
             add(iid, label, "% du PIB", " %", _series(o, p, FIN),
                 desc, "COR, rapport 2025 (synthèse, scénario de référence).")
 
+    # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
+    def dep_fan(rows):
+        """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}."""
+        ym = _ymap(rows)
+        res, started = {}, False
+        for r in rows:
+            c1 = r[1] if len(r) > 1 else None
+            c2 = r[2] if len(r) > 2 else None
+            if c1 == "Dépenses, en % du PIB":
+                started = True
+            if started and c1 and "Solde" in str(c1):
+                break
+            if started and isinstance(c2, str):
+                k = c2.strip()
+                if k == "Sc. Ref" or k.startswith("Var"):
+                    res[k] = {ym[i]: round(r[i] * 100, 3) for i in ym
+                              if i < len(r) and isinstance(r[i], (int, float))}
+        return res
+
+    FANS = [
+        ("sens_fec", "Si la fécondité changeait…", "Fig 2.16",
+         [("haute", "Fécondité 2,0", "#2ca089"), ("basse", "Fécondité 1,6", "#d6452a")]),
+        ("sens_ev", "Si on vivait plus ou moins longtemps…", "Fig 2.17",
+         [("basse (EV haute)", "Espérance de vie haute", "#d6452a"),
+          ("haute (EV basse)", "Espérance de vie basse", "#2ca089")]),
+        ("sens_mig", "Si les migrations changeaient…", "Fig 2.18",
+         [("haut", "Migrations hautes", "#2ca089"), ("bas", "Migrations basses", "#d6452a")]),
+        ("sens_cho", "Si le chômage changeait…", "Fig 2.19",
+         [("C5", "Chômage 5 %", "#2ca089"), ("C10", "Chômage 10 %", "#d6452a")]),
+    ]
+    for iid, label, sheet, variants in FANS:
+        rows = _rows("partie 2", sheet)
+        if not rows:
+            continue
+        fan = dep_fan(rows)
+        ref = fan.get("Sc. Ref", {})
+        if not ref:
+            continue
+        series = [{"label": "Scénario de référence", "color": "#1f4e79", "kind": "solid",
+                   "points": [{"x": y, "y": ref[y]} for y in sorted(ref) if 2015 <= y <= 2070]}]
+        spread = []
+        for needle, vlabel, vcolor in variants:
+            key = next((k for k in fan if needle.lower() in k.lower()), None)
+            if not key:
+                continue
+            v = fan[key]
+            series.append({"label": vlabel, "color": vcolor, "kind": "dash",
+                           "points": [{"x": y, "y": v[y]} for y in sorted(v) if 2015 <= y <= 2070]})
+            if 2070 in v:
+                spread.append(v[2070])
+        rng = (f" En 2070, les dépenses iraient de {min(spread):.1f} % à {max(spread):.1f} % du PIB "
+               f"selon l'hypothèse (référence : {ref.get(2070, 0):.1f} %).") if len(spread) == 2 else ""
+        b = _bounds(series)
+        ind[iid] = {"label": label, "unit": "% du PIB", "suffix": " %",
+                    "desc": "Dépenses de retraite en % du PIB selon l'hypothèse retenue." + rng,
+                    "source": f"COR, rapport 2025 ({sheet}).", "series": series, **b}
+
     themes = [
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
         {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde"]},
+        {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho"]},
     ]
     # on ne garde que les indicateurs réellement extraits
     for t in themes:
