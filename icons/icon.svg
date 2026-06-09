@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Le COR sous l'œil des citoyens">
+  <rect width="512" height="512" rx="96" fill="#1f4e79"/>
+  <!-- courbes superposées stylisées -->
+  <g fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="80,360 180,330 280,300 380,250 432,150" stroke="#ffffff"/>
+    <polyline points="80,360 180,345 280,335 380,330 432,320" stroke="#7fd1a8" stroke-dasharray="6 26"/>
+    <polyline points="80,360 180,340 280,300 380,210 432,360" stroke="#ff9e4d" stroke-dasharray="6 26"/>
+  </g>
+  <circle cx="432" cy="150" r="16" fill="#ffffff"/>
+  <text x="256" y="448" font-family="Segoe UI, Arial, sans-serif" font-size="92" font-weight="800" fill="#ffffff" text-anchor="middle">COR</text>
+</svg>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Le COR sous l'œil des citoyens — l'évolution des hypothèses sur les retraites</title>
+  <meta name="description" content="Un outil citoyen pour visualiser comment les hypothèses du Conseil d'orientation des retraites (COR) évoluent dans le temps, et si ses prévisions se sont réalisées." />
+  <meta name="theme-color" content="#1f4e79" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="#top" class="brand">
+      <span class="brand-mark">COR</span>
+      <span class="brand-text">sous l'œil des citoyens</span>
+    </a>
+    <button id="nav-toggle" class="nav-toggle" aria-label="Ouvrir le menu">☰</button>
+    <nav id="nav-menu" class="nav-menu" aria-label="Navigation principale">
+      <a class="nav-link" href="#depenses">Le graphique clé</a>
+      <a class="nav-link" href="#productivite">Le revirement</a>
+      <a class="nav-link" href="#realite">Réalité</a>
+      <a class="nav-link" href="#hypotheses">Hypothèses</a>
+      <a class="nav-link" href="#methode">Méthode &amp; sources</a>
+    </nav>
+  </header>
+
+  <main id="top">
+
+    <!-- HERO -->
+    <section class="hero" id="intro">
+      <div class="hero-inner">
+        <p class="kicker">Outil citoyen · données publiques</p>
+        <h1>Le COR change-t-il d'avis sur nos retraites&nbsp;?</h1>
+        <p class="lede">
+          Chaque année, le <strong>Conseil d'orientation des retraites</strong> publie des
+          projections jusqu'en 2070. Mais ces projections reposent sur des
+          <strong>hypothèses</strong> — fécondité, productivité, chômage… — qui changent
+          d'un rapport à l'autre. Ce site superpose ces projections pour voir,
+          simplement, <em>comment l'avis du COR évolue</em> et <em>si ses prévisions se réalisent</em>.
+        </p>
+        <a class="cta" href="#depenses">Voir le graphique clé ↓</a>
+      </div>
+    </section>
+
+    <!-- 1. GRAPHIQUE PHARE -->
+    <section id="depenses" class="band">
+      <div class="container">
+        <h2>1 · La même question, des réponses différentes chaque année</h2>
+        <p class="section-intro">
+          Voici la part des dépenses de retraite dans le PIB. La courbe pleine est
+          ce qui s'est <strong>réellement passé</strong>. Chaque courbe en pointillés est une
+          <strong>projection</strong> faite par le COR une année donnée. Passez la souris (ou le
+          doigt) sur le graphique pour lire les valeurs.
+        </p>
+        <figure class="chart-card">
+          <figcaption class="chart-title">
+            <strong>La part des retraites dans le PIB selon les rapports successifs du COR</strong>
+            <span>Dépenses de retraite, en % du PIB — scénario de référence de chaque rapport</span>
+          </figcaption>
+          <div id="chart-pib" class="chart-host"></div>
+          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2019–2025. Extrémités sourcées, points intermédiaires interpolés (voir Méthode).</p>
+        </figure>
+        <div class="takeaway">
+          <h3>Ce qu'il faut retenir</h3>
+          <p>
+            Jusqu'en 2022, le COR projetait des dépenses <strong>stables, voire décroissantes</strong>
+            (le système se « finançait » avec le temps). Depuis 2025, la même institution
+            projette des dépenses <strong>en hausse</strong>. Ce n'est pas la réalité qui a changé&nbsp;:
+            c'est surtout une <strong>hypothèse</strong> — la productivité — qui a été abaissée.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. LE REVIREMENT (PRODUCTIVITÉ) -->
+    <section id="productivite" class="band alt">
+      <div class="container">
+        <h2>2 · L'hypothèse qui fait tout basculer&nbsp;: la productivité</h2>
+        <p class="section-intro">
+          La <strong>croissance de la productivité</strong> détermine la croissance des salaires,
+          donc des cotisations qui financent les retraites. Le COR a longtemps testé
+          des scénarios de 1,0&nbsp;% à 1,8&nbsp;%. À partir de 2022, il a <strong>décalé tout
+          l'éventail vers le bas</strong>, puis retenu 0,7&nbsp;% comme référence en 2025.
+        </p>
+        <figure class="chart-card">
+          <figcaption class="chart-title">
+            <strong>Le COR a discrètement abaissé son hypothèse de productivité</strong>
+            <span>Croissance annuelle de la productivité du travail à long terme (en&nbsp;%)</span>
+          </figcaption>
+          <div id="chart-prod" class="chart-host"></div>
+          <p class="chart-source">Source&nbsp;: COR, hypothèses économiques de long terme, rapports 2019–2025.</p>
+        </figure>
+        <div class="takeaway">
+          <h3>Pourquoi c'est important</h3>
+          <p>
+            Une hypothèse de productivité plus basse, c'est moins de croissance supposée,
+            donc moins de recettes futures et un système qui paraît <strong>plus déficitaire</strong>.
+            Changer ce seul chiffre suffit à transformer un système « à l'équilibre »
+            en système « en déficit durable ».
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. RÉALITÉ -->
+    <section id="realite" class="band">
+      <div class="container">
+        <h2>3 · Les prévisions se sont-elles réalisées&nbsp;?</h2>
+        <p class="section-intro">
+          Comparons les hypothèses du COR à ce qui s'est <strong>vraiment</strong> passé. Deux
+          exemples parlants&nbsp;: la fécondité et la productivité.
+        </p>
+
+        <div class="chart-grid-2">
+          <figure class="chart-card">
+            <figcaption class="chart-title">
+              <strong>Fécondité&nbsp;: l'hypothèse rattrapée par la réalité</strong>
+              <span>Nombre d'enfants par femme</span>
+            </figcaption>
+            <div id="chart-fecondite" class="chart-host"></div>
+            <p class="chart-source">Hypothèses&nbsp;: INSEE (reprises par le COR). Réalisé&nbsp;: INSEE, état civil.</p>
+          </figure>
+
+          <figure class="chart-card">
+            <figcaption class="chart-title">
+              <strong>Productivité&nbsp;: supposée vs observée</strong>
+              <span>Croissance de la productivité du travail (%/an)</span>
+            </figcaption>
+            <div id="chart-prod-reel" class="chart-host"></div>
+            <p class="chart-source">Réalisé&nbsp;: INSEE/OCDE. Hypothèse&nbsp;: scénario central du COR.</p>
+          </figure>
+        </div>
+
+        <div class="takeaway">
+          <h3>Le constat</h3>
+          <p>
+            Dans les deux cas, la <strong>réalité est passée sous l'hypothèse</strong>&nbsp;: la fécondité
+            a chuté plus vite que prévu (≈1,62 en 2024 contre 1,80–1,95 supposé) et la
+            productivité réelle (≈0,6&nbsp;%/an) est bien en dessous des 1,3&nbsp;% longtemps retenus.
+            C'est précisément pour cela que le COR <strong>révise ses hypothèses</strong> — souvent
+            avec retard. En février 2026, le COR a lui-même reconnu que ses hypothèses
+            démographiques « ne correspondent plus à la réalité ».
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. TABLEAU HYPOTHÈSES -->
+    <section id="hypotheses" class="band alt">
+      <div class="container">
+        <h2>4 · Le tableau de bord des hypothèses</h2>
+        <p class="section-intro">
+          Les principales hypothèses du <strong>scénario de référence</strong>, rapport après rapport.
+        </p>
+        <div id="hyp-table" class="table-wrap"></div>
+        <p class="chart-source">Source&nbsp;: COR, rapports annuels 2019–2025.</p>
+      </div>
+    </section>
+
+    <!-- 5. MÉTHODE & SOURCES -->
+    <section id="methode" class="band">
+      <div class="container">
+        <h2>5 · Méthode &amp; sources</h2>
+        <div class="method">
+          <h3>Comment lire ces graphiques&nbsp;?</h3>
+          <ul>
+            <li><strong>Courbe pleine</strong> = données <em>réalisées</em> (ce qui s'est passé).</li>
+            <li><strong>Courbe en pointillés</strong> = <em>projection</em> faite par le COR à une date donnée.</li>
+            <li>Superposer ces courbes permet de voir si le COR <em>change d'avis</em>.</li>
+          </ul>
+          <h3>Honnêteté sur les données</h3>
+          <p>
+            Ce site est une <strong>première version pédagogique</strong>. Les valeurs clés (points de
+            départ et points 2070, hypothèses de référence) sont reprises des
+            <strong>synthèses officielles du COR</strong>. Les points intermédiaires des courbes longues
+            sont <strong>interpolés</strong> pour la lisibilité&nbsp;: pour une analyse fine, il faut brancher
+            les <strong>fichiers Excel</strong> du COR (séries année par année). La structure du site est
+            prévue pour cela&nbsp;: un seul fichier de données à mettre à jour.
+          </p>
+          <p>
+            Le COR <strong>ne produit pas</strong> la plupart de ces données&nbsp;: il reprend l'INSEE
+            (démographie), la Banque de France, la Dares, etc. Ce site cherche à rendre
+            visible cette chaîne d'hypothèses, pas à juger le COR.
+          </p>
+          <h3>Sources</h3>
+          <ul id="sources-list" class="sources"></ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p><strong>Le COR sous l'œil des citoyens</strong> — outil citoyen indépendant, à but pédagogique.</p>
+      <p class="small">
+        Données publiques du Conseil d'orientation des retraites et de l'INSEE.
+        Site fonctionnant hors-ligne (application web installable / PWA).
+        Ce site n'est pas affilié au COR.
+      </p>
+    </div>
+  </footer>
+
+  <script src="./data/data.js"></script>
+  <script src="./js/chart.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
