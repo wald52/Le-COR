@@ -25,7 +25,7 @@
       <a class="nav-link" href="#productivite">Le revirement</a>
       <a class="nav-link" href="#niveau">Niveau de vie</a>
       <a class="nav-link" href="#realite">Réalité</a>
-      <a class="nav-link" href="#hypotheses">Hypothèses</a>
+      <a class="nav-link" href="#explorer">Explorer</a>
       <a class="nav-link" href="#methode">Méthode &amp; sources</a>
     </nav>
   </header>
@@ -240,10 +240,32 @@
       </div>
     </section>
 
-    <!-- 5. MÉTHODE & SOURCES -->
+    <!-- 7. EXPLORATEUR D'INDICATEURS -->
+    <section id="explorer" class="band">
+      <div class="container">
+        <h2>7 · Explorez tous les indicateurs</h2>
+        <p class="section-intro">
+          Plutôt qu'une longue liste de graphiques, choisissez un <strong>thème</strong> puis un
+          <strong>indicateur</strong>&nbsp;: le graphique se met à jour. Tous viennent des fichiers
+          officiels du COR (rapport 2025, scénario de référence).
+        </p>
+        <div id="explorer-themes" class="exp-tabs" role="tablist" aria-label="Thèmes"></div>
+        <div id="explorer-indicators" class="exp-chips" role="tablist" aria-label="Indicateurs"></div>
+        <figure class="chart-card">
+          <figcaption class="chart-title">
+            <strong id="exp-label">—</strong>
+            <span id="exp-desc"></span>
+          </figcaption>
+          <div id="chart-explorer" class="chart-host"></div>
+          <p class="chart-source" id="exp-source"></p>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 8. MÉTHODE & SOURCES -->
     <section id="methode" class="band">
       <div class="container">
-        <h2>7 · Méthode &amp; sources</h2>
+        <h2>8 · Méthode &amp; sources</h2>
         <div class="method">
           <h3>Comment lire ces graphiques&nbsp;?</h3>
           <ul>
@@ -253,12 +275,12 @@
           </ul>
           <h3>Honnêteté sur les données</h3>
           <p>
-            Ce site est une <strong>première version pédagogique</strong>. Les valeurs clés (points de
-            départ et points 2070, hypothèses de référence) sont reprises des
-            <strong>synthèses officielles du COR</strong>. Les points intermédiaires des courbes longues
-            sont <strong>interpolés</strong> pour la lisibilité&nbsp;: pour une analyse fine, il faut brancher
-            les <strong>fichiers Excel</strong> du COR (séries année par année). La structure du site est
-            prévue pour cela&nbsp;: un seul fichier de données à mettre à jour.
+            Toutes les courbes sont construites à partir des <strong>fichiers Excel officiels du
+            COR</strong> (rapports annuels 2014→2025), série par série, année par année — pas
+            d'estimation « à la louche ». L'extraction est faite par un script
+            <strong>reproductible et public</strong> (<code>tools/extract_cor.py</code>)&nbsp;: à chaque nouveau
+            rapport, il suffit de le relancer pour mettre le site à jour. Les fichiers sources
+            sont d'ailleurs archivés dans le dépôt.
           </p>
           <p>
             Le COR <strong>ne produit pas</strong> la plupart de ces données&nbsp;: il reprend l'INSEE

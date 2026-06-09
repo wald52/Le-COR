@@ -188,6 +188,63 @@
   }
 
   /* ----------------------------------------------------------------------
+   * Explorateur d'indicateurs : un thème + un indicateur = un graphique.
+   * -------------------------------------------------------------------- */
+  function renderExplorer() {
+    const exp = window.COR_SERIES && window.COR_SERIES.explorer;
+    if (!exp || !exp.themes.length) return;
+    const themesEl = document.getElementById("explorer-themes");
+    const chipsEl = document.getElementById("explorer-indicators");
+    let currentTheme = exp.themes[0];
+
+    function drawIndicator(iid) {
+      const ind = exp.indicators[iid];
+      if (!ind) return;
+      document.getElementById("exp-label").textContent = ind.label;
+      document.getElementById("exp-desc").textContent = ind.desc || "";
+      document.getElementById("exp-source").textContent = "Source : " + (ind.source || "COR.");
+      chipsEl.querySelectorAll(".exp-chip").forEach(c =>
+        c.classList.toggle("active", c.dataset.id === iid));
+      lineChart(document.getElementById("chart-explorer"), {
+        series: ind.series,
+        x: { min: ind.xMin, max: ind.xMax },
+        y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
+        ariaLabel: ind.label
+      });
+    }
+
+    function buildChips(theme) {
+      chipsEl.innerHTML = "";
+      theme.indicators.forEach(iid => {
+        const ind = exp.indicators[iid];
+        const btn = document.createElement("button");
+        btn.className = "exp-chip";
+        btn.type = "button";
+        btn.dataset.id = iid;
+        btn.textContent = ind.label;
+        btn.addEventListener("click", () => drawIndicator(iid));
+        chipsEl.appendChild(btn);
+      });
+      drawIndicator(theme.indicators[0]);
+    }
+
+    exp.themes.forEach((theme, idx) => {
+      const tab = document.createElement("button");
+      tab.className = "exp-tab" + (idx === 0 ? " active" : "");
+      tab.type = "button";
+      tab.textContent = theme.name;
+      tab.addEventListener("click", () => {
+        currentTheme = theme;
+        themesEl.querySelectorAll(".exp-tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        buildChips(theme);
+      });
+      themesEl.appendChild(tab);
+    });
+    buildChips(currentTheme);
+  }
+
+  /* ----------------------------------------------------------------------
    * 5. Tableau des hypothèses.
    * -------------------------------------------------------------------- */
   function renderTable() {
@@ -257,6 +314,7 @@
 
   function init() {
     renderAllCharts();
+    renderExplorer();
     renderTable();
     renderSources();
     setupNav();

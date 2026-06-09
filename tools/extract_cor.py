@@ -238,6 +238,202 @@ def extract_niveau_vie(path):
     return {"observed": obs, "ref": ref}
 
 
+# ==========================================================================
+# EXPLORATEUR D'INDICATEURS — catalogue de séries « observé + projeté »
+# (un seul graphique sur le site, indicateur sélectionnable). Permet d'avoir
+# « tous les indicateurs » sans empiler les graphiques.
+# ==========================================================================
+R25 = "2025-06"  # on s'appuie sur le rapport le plus récent
+
+
+def _rows(filepat, sheet):
+    path = first_file(R25, filepat)
+    if not path:
+        return None
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    cand = [s for s in wb.sheetnames if s.strip() == sheet.strip()]
+    if not cand:
+        wb.close()
+        return None
+    rows = list(wb[cand[0]].iter_rows(values_only=True))
+    wb.close()
+    return rows
+
+
+def _ymap(rows):
+    for r in rows[:6]:
+        ic = {i: c for i, c in enumerate(r) if isinstance(c, int) and 1950 <= c <= 2100}
+        if len(ic) >= 3:
+            return ic
+    return {}
+
+
+_PROJ_KEYS = ("central", "référence", "reference", "tous scénarios", "sc. ref", "projection")
+
+
+def _obs_proj(rows, scale=1.0):
+    """Extrait (observé, projeté) d'une figure 'observé puis projeté'."""
+    ym = _ymap(rows)
+
+    def match(r, keys):
+        for j in (1, 2):
+            v = str(r[j]).lower().strip() if len(r) > j and r[j] is not None else ""
+            if any(k in v for k in keys):
+                return True
+        return False
+
+    obs = proj = None
+    for r in rows:
+        if obs is None and match(r, ("observé", "obs", "observations")):
+            obs = {ym[i]: round(r[i] * scale, 3) for i in ym
+                   if i < len(r) and isinstance(r[i], (int, float))}
+        if proj is None and match(r, _PROJ_KEYS):
+            proj = {ym[i]: round(r[i] * scale, 3) for i in ym
+                    if i < len(r) and isinstance(r[i], (int, float))}
+    return obs or {}, proj or {}
+
+
+def _block_sub(rows, label_key, sub):
+    """Sous-ligne col2==sub du 1er bloc dont col1 contient label_key."""
+    ym = _ymap(rows)
+    start = None
+    for i, r in enumerate(rows):
+        if len(r) > 1 and r[1] and label_key.lower() in str(r[1]).lower():
+            start = i
+            break
+    if start is None:
+        return {}
+    for r in rows[start:start + 7]:
+        if len(r) > 2 and str(r[2]).strip() == sub:
+            return {ym[i]: r[i] for i in ym if i < len(r) and isinstance(r[i], (int, float))}
+    return {}
+
+
+def _ratio(a, b, scale=1.0):
+    return {y: round(a[y] / b[y] * scale, 3) for y in a if y in b and b[y]}
+
+
+def _series(obs, proj, color, obs_from=2000):
+    """Construit [observé solide, projeté pointillé] filtré sur >= obs_from."""
+    o = [{"x": y, "y": obs[y]} for y in sorted(obs) if y >= obs_from]
+    p = [{"x": y, "y": proj[y]} for y in sorted(proj) if y >= obs_from]
+    out = []
+    if o:
+        out.append({"label": "Observé", "color": "#1f2d3d", "kind": "solid", "points": o})
+    if p:
+        out.append({"label": "Projeté (réf. 2025)", "color": color, "kind": "dash", "points": p})
+    return out
+
+
+def _bounds(series, xpad=0, ypad=0.06):
+    xs = [pt["x"] for s in series for pt in s["points"]]
+    ys = [pt["y"] for s in series for pt in s["points"]]
+    yr = (max(ys) - min(ys)) or 1
+    return {"xMin": min(xs), "xMax": max(xs),
+            "yMin": round(min(ys) - yr * ypad, 2), "yMax": round(max(ys) + yr * ypad, 2)}
+
+
+def build_explorer():
+    ind = {}
+
+    def add(iid, label, unit, suffix, series, desc, source, obs_from=2000):
+        series = [s for s in series if s["points"]]
+        if not series:
+            print("✗ explorateur:", iid, "(vide)")
+            return None
+        b = _bounds(series)
+        ind[iid] = {"label": label, "unit": unit, "suffix": suffix,
+                    "desc": desc, "source": source, "series": series, **b}
+        return iid
+
+    DEMO, PENS, FIN, ECO = "#2f6fb0", "#c2185b", "#e8731c", "#6aa84f"
+
+    # --- Démographie
+    r = _rows("partie 1", "Fig 1.2")
+    if r:
+        o, p = _obs_proj(r, 0.001)
+        add("migration", "Solde migratoire", "milliers de personnes / an", " k",
+            _series(o, p, DEMO, 1995),
+            "Le solde migratoire (entrées − sorties). L'hypothèse du COR est de +70 000/an — "
+            "or le solde réel récent est bien plus élevé.",
+            "COR / INSEE, rapport 2025 (fig. 1.2).", 1995)
+    r = _rows("partie 1", "Fig 1.10")
+    if r:
+        o, p = _obs_proj(r, 100)
+        add("chomage", "Taux de chômage", "%", " %", _series(o, p, DEMO),
+            "Le taux de chômage de long terme retenu est de 7,0 %.",
+            "COR, rapport 2025 (fig. 1.10).")
+    r = _rows("partie 1", "Fig 1.5")
+    if r:
+        o, p = _obs_proj(r, 1)
+        add("ratio_demo", "Rapport démographique (20-64 ans / 65 ans et +)", "ratio", "",
+            _series(o, p, DEMO),
+            "Combien de personnes en âge de travailler pour une personne de 65 ans et plus. "
+            "Il s'effondre avec le vieillissement.",
+            "COR / INSEE, rapport 2025 (fig. 1.5).")
+    cr = _rows("complémentaires", "Cotisants_Retraités")
+    if cr:
+        co, cp = _block_sub(cr, "cotisants", "Obs"), _block_sub(cr, "cotisants", "Sc. Ref")
+        ro, rp = _block_sub(cr, "retraités", "Obs"), _block_sub(cr, "retraités", "Sc. Ref")
+        add("cot_ret", "Nombre de cotisants par retraité", "ratio", "",
+            _series(_ratio(co, ro), _ratio(cp, rp), DEMO),
+            "Le cœur du système par répartition : chaque retraité est financé par les "
+            "cotisations des actifs. Ce ratio baisse de ~1,8 vers ~1,4.",
+            "COR, rapport 2025 (données complémentaires).")
+
+    # --- Pensions & retraités
+    r = _rows("synthèse", "Âge conjoncturel")
+    if r:
+        o, p = _obs_proj(r, 1)
+        add("age_depart", "Âge de départ à la retraite", "ans", " ans", _series(o, p, PENS),
+            "L'âge « conjoncturel » de départ : il monte sous l'effet des réformes.",
+            "COR / DREES, rapport 2025 (âge conjoncturel).")
+    p26 = _rows("partie 2", "Fig 2.6")
+    if p26:
+        pen = _ratio(_block_sub(p26, "Pension moyenne", "Obs"), _block_sub(p26, "Rémunération nett", "Obs"), 100)
+        penp = _ratio(_block_sub(p26, "Pension moyenne", "Sc. Ref"), _block_sub(p26, "Rémunération nett", "Sc. Ref"), 100)
+        add("pension_rel", "Pension moyenne rapportée au salaire net", "%", " %",
+            _series(pen, penp, PENS),
+            "La pension nette moyenne en % du salaire net moyen. Elle décroche : "
+            "~65 % aujourd'hui, ~57 % en 2070.",
+            "COR, rapport 2025 (fig. 2.6).")
+    nv = _rows("synthèse", "Niveau de vie relatif")
+    if nv:
+        o, p = _obs_proj(nv, 100)
+        add("niveau_vie", "Niveau de vie des retraités / population", "%", " %",
+            _series(o, p, PENS, 1996),
+            "Niveau de vie moyen des retraités rapporté à l'ensemble de la population "
+            "(100 % = parité).",
+            "COR / INSEE-DGI, rapport 2025.", 1996)
+
+    # --- Finances
+    for iid, sheet, label, desc in [
+        ("depenses", "Dépenses en %", "Dépenses de retraite (% du PIB)",
+         "Ce que le système verse, en part de la richesse nationale."),
+        ("ressources", "Ressources en %", "Ressources du système (% du PIB)",
+         "Ce que le système encaisse (cotisations, impôts affectés…)."),
+        ("solde", "Solde en %", "Solde du système (% du PIB)",
+         "Ressources − dépenses. Négatif = déficit."),
+    ]:
+        r = _rows("synthèse", sheet)
+        if r:
+            o, p = _obs_proj(r, 100)
+            add(iid, label, "% du PIB", " %", _series(o, p, FIN),
+                desc, "COR, rapport 2025 (synthèse, scénario de référence).")
+
+    themes = [
+        {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "migration", "chomage"]},
+        {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie"]},
+        {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde"]},
+    ]
+    # on ne garde que les indicateurs réellement extraits
+    for t in themes:
+        t["indicators"] = [i for i in t["indicators"] if i in ind]
+    themes = [t for t in themes if t["indicators"]]
+    print(f"✓ explorateur : {len(ind)} indicateurs")
+    return {"themes": themes, "indicators": ind}
+
+
 def build():
     extracted = {}
     realised = None  # série observée la plus récente (rapport 2025, base 2020)
@@ -431,6 +627,7 @@ def build():
         "niveauVie": niveau_block,
         "fecondite": fecondite_block,
         "productiviteReel": prod_block,
+        "explorer": build_explorer(),
     }
 
     dest = os.path.join(os.path.dirname(__file__), "..", "data", "cor-series.generated.js")

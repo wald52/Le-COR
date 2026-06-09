@@ -139,6 +139,25 @@ a { color: var(--bleu-clair); }
 .takeaway h3 { margin: 0 0 6px; font-size: 1.05rem; }
 .takeaway p { margin: 0; }
 
+/* ---------- Explorateur d'indicateurs ---------- */
+.exp-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.exp-tab {
+  font: inherit; font-weight: 700; font-size: 0.92rem; cursor: pointer;
+  padding: 9px 16px; border-radius: 999px; border: 1px solid var(--gris-clair);
+  background: #fff; color: var(--gris);
+}
+.exp-tab:hover { border-color: var(--bleu-clair); color: var(--bleu); }
+.exp-tab.active { background: var(--bleu); border-color: var(--bleu); color: #fff; }
+
+.exp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.exp-chip {
+  font: inherit; font-size: 0.86rem; cursor: pointer;
+  padding: 7px 13px; border-radius: 8px; border: 1px solid var(--gris-clair);
+  background: var(--fond-alt); color: var(--encre); text-align: left;
+}
+.exp-chip:hover { border-color: var(--bleu-clair); background: var(--bleu-pale); }
+.exp-chip.active { background: var(--bleu-pale); border-color: var(--bleu-clair); color: var(--bleu); font-weight: 700; }
+
 /* ---------- Tableau ---------- */
 .table-wrap { overflow-x: auto; border-radius: var(--rayon); box-shadow: var(--ombre); }
 table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.95rem; }
