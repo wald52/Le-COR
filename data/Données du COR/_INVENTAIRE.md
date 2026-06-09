@@ -20,17 +20,18 @@ Pour chaque rapport annuel récent, deux fichiers contiennent l'essentiel :
 Les autres fichiers (`Annexes`, `Compléments`, `Résultats`, `Partie 1/2/3`,
 `Panorama`, sensibilité par régime) complètent ces données.
 
-## Contenu actuellement présent
+## Contenu présent — collection COMPLÈTE (parties 1 à 8 sur 8)
 
-Parties **1 à 5 sur 8** (rapports de **2001 à 2021**) :
-39 fichiers Excel, 84 PDF.
+Rapports de **2001 à 2025** : 30 sous-dossiers, **76 fichiers Excel**,
+99 PDF, 3 PPTX.
 
-## Encore à téléverser
+Millésimes annuels exploitables pour la comparaison dans le temps :
+**2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025.**
 
-Parties **6, 7 et 8** — elles contiennent normalement les rapports
-**2022, 2023, 2024 et 2025**, indispensables pour comparer les millésimes
-récents (c'est là que les hypothèses de productivité et de fécondité ont le
-plus changé).
+Le rapport **2025** fournit même des Excel d'hypothèses dédiés :
+« Hypothèses de salaires, prix et PIB », « Hypothèses d'emploi et de chômage »,
+« Hypothèses ventilées par sexe et âge », « Hypothèses de paramètres
+règlementaires ».
 
 > Source : Conseil d'orientation des retraites — https://www.cor-retraites.fr/
 > Documents publics. Ce dépôt n'est pas affilié au COR.
