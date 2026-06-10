@@ -20,6 +20,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html { scroll-behavior: smooth; scroll-padding-top: 72px; }
 
@@ -209,6 +210,78 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .site-footer strong { color: #fff; }
 .small { font-size: 0.82rem; opacity: 0.8; }
 
+/* ---------- Finitions (hero, partage, glossaire, PWA) ---------- */
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 22px; }
+.cta-ghost { background: rgba(255,255,255,0.12); color: #fff; box-shadow: none; border: 1px solid rgba(255,255,255,0.5); }
+.cta-ghost:hover { background: rgba(255,255,255,0.22); }
+
+.key-figures {
+  list-style: none; padding: 0; margin: 30px 0 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+}
+.key-figures li {
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 12px; padding: 14px 16px;
+}
+.key-figures strong { display: block; font-size: 1.7rem; line-height: 1.1; color: #fff; }
+.key-figures span { display: block; margin-top: 6px; font-size: 0.82rem; opacity: 0.9; }
+
+.glossary { margin: 6px 0 0; }
+.glossary details {
+  border: 1px solid var(--gris-clair); border-radius: 10px; margin-bottom: 8px; background: #fff;
+}
+.glossary summary { cursor: pointer; padding: 10px 14px; font-weight: 700; color: var(--bleu); }
+.glossary details[open] summary { border-bottom: 1px solid var(--gris-clair); }
+.glossary details p { margin: 10px 14px 12px; color: var(--encre); }
+.method-note { font-size: 0.92rem; color: var(--gris); }
+
+/* Bouton télécharger un graphique */
+.chart-card { position: relative; }
+.chart-dl {
+  position: absolute; top: 14px; right: 14px; z-index: 2;
+  font: inherit; font-size: 0.78rem; cursor: pointer; color: var(--gris);
+  background: #fff; border: 1px solid var(--gris-clair); border-radius: 8px; padding: 5px 10px;
+}
+.chart-dl:hover { border-color: var(--bleu-clair); color: var(--bleu); }
+
+/* Tableau de données alternatif (accessibilité) */
+.data-toggle {
+  margin-top: 12px; font-size: 0.82rem; color: var(--bleu); background: none;
+  border: 0; cursor: pointer; text-decoration: underline; padding: 0;
+}
+.data-table-wrap { margin-top: 10px; overflow-x: auto; }
+.data-table-wrap table { font-size: 0.8rem; }
+.data-table-wrap th, .data-table-wrap td { padding: 5px 8px; }
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Bouton « haut de page » */
+.to-top {
+  position: fixed; right: 18px; bottom: 18px; z-index: 60;
+  width: 44px; height: 44px; border-radius: 50%; background: var(--bleu); color: #fff;
+  display: none; align-items: center; justify-content: center; text-decoration: none;
+  font-size: 1.3rem; box-shadow: var(--ombre);
+}
+.to-top.show { display: flex; }
+
+/* Toast (mise à jour / partage) */
+.toast {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 70;
+  background: var(--encre); color: #fff; border-radius: 12px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 14px; box-shadow: var(--ombre); max-width: 92vw;
+}
+.toast button {
+  font: inherit; font-weight: 700; background: #fff; color: var(--encre);
+  border: 0; border-radius: 8px; padding: 7px 12px; cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 760px) {
   .nav-toggle { display: block; }
@@ -221,4 +294,6 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   .nav-link { padding: 10px; }
   .chart-grid-2 { grid-template-columns: 1fr; }
   .brand-text { display: none; }
+  .key-figures { grid-template-columns: 1fr 1fr; }
+  .key-figures strong { font-size: 1.4rem; }
 }

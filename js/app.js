@@ -211,6 +211,27 @@
         y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
         ariaLabel: ind.label
       });
+      buildDataTable(ind);
+    }
+
+    // Tableau de données alternatif (lecteurs d'écran + transparence).
+    function buildDataTable(ind) {
+      const card = document.getElementById("chart-explorer").closest(".chart-card");
+      const old = card.querySelector(".data-details");
+      if (old) old.remove();
+      const years = [...new Set(ind.series.flatMap(s => s.points.map(p => p.x)))]
+        .sort((a, b) => a - b).filter(y => y % 5 === 0 || y === ind.xMax || y === ind.xMin);
+      const at = (s, y) => { const p = s.points.find(p => p.x === y); return p ? String(Math.round(p.y * 10) / 10).replace(".", ",") + (ind.suffix || "") : "—"; };
+      let html = `<details class="data-details"><summary class="data-toggle">Voir les données (tableau)</summary><div class="data-table-wrap"><table><caption class="visually-hidden">${ind.label}</caption><thead><tr><th scope="col">Année</th>`;
+      ind.series.forEach(s => html += `<th scope="col">${s.label}</th>`);
+      html += "</tr></thead><tbody>";
+      years.forEach(y => {
+        html += `<tr><th scope="row">${y}</th>`;
+        ind.series.forEach(s => html += `<td>${at(s, y)}</td>`);
+        html += "</tr>";
+      });
+      html += "</tbody></table></div></details>";
+      card.insertAdjacentHTML("beforeend", html);
     }
 
     function buildChips(theme) {
@@ -409,6 +430,106 @@
     renderProductiviteReel();
   }
 
+  /* ----------------------------------------------------------------------
+   * Finitions : toast, partage, installation PWA, haut de page, export PNG.
+   * -------------------------------------------------------------------- */
+  function toast(msg, actionLabel, fn) {
+    const t = document.getElementById("toast");
+    document.getElementById("toast-msg").textContent = msg;
+    const a = document.getElementById("toast-action");
+    if (actionLabel) {
+      a.hidden = false; a.textContent = actionLabel;
+      a.onclick = () => { if (fn) fn(); t.hidden = true; };
+    } else {
+      a.hidden = true;
+      setTimeout(() => { t.hidden = true; }, 2600);
+    }
+    t.hidden = false;
+  }
+
+  function setupShareInstall() {
+    const share = document.getElementById("btn-share");
+    if (share) {
+      share.hidden = false;
+      const data = { title: document.title, text: "Le COR change-t-il d'avis sur nos retraites ?", url: location.href };
+      if (navigator.share) {
+        share.addEventListener("click", () => navigator.share(data).catch(() => {}));
+      } else {
+        share.textContent = "Copier le lien";
+        share.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(location.href); toast("Lien copié dans le presse-papier ✓"); }
+          catch (e) { toast("Copie impossible — copiez l'URL manuellement."); }
+        });
+      }
+    }
+    let deferred = null;
+    const install = document.getElementById("btn-install");
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault(); deferred = e; if (install) install.hidden = false;
+    });
+    if (install) install.addEventListener("click", async () => {
+      if (!deferred) return;
+      deferred.prompt(); await deferred.userChoice; deferred = null; install.hidden = true;
+    });
+    window.addEventListener("appinstalled", () => { if (install) install.hidden = true; });
+  }
+
+  function setupToTop() {
+    const tt = document.getElementById("to-top");
+    if (!tt) return;
+    window.addEventListener("scroll", () => {
+      tt.classList.toggle("show", window.scrollY > 600);
+    }, { passive: true });
+  }
+
+  // Style minimal embarqué pour que le PNG exporté garde grille, axes et libellés.
+  const EXPORT_CSS =
+    "text{font-family:'Segoe UI',Arial,sans-serif}" +
+    ".chart-grid{stroke:#e7ecf2}.chart-axis{stroke:#b9c4d0}.chart-tick{stroke:#b9c4d0}" +
+    ".chart-axis-label{fill:#5b6671;font-size:12px}.chart-endnote{font-size:12px;font-weight:700}" +
+    ".chart-ref-line{stroke:#d62728;stroke-dasharray:4 4}.chart-focus-line{display:none}";
+
+  function downloadSvgPng(svg, filename) {
+    const clone = svg.cloneNode(true);
+    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    style.textContent = EXPORT_CSS;
+    clone.insertBefore(style, clone.firstChild);
+    const vb = svg.viewBox.baseVal;
+    const w = (vb && vb.width) || svg.clientWidth || 760;
+    const h = (vb && vb.height) || svg.clientHeight || 440;
+    const xml = new XMLSerializer().serializeToString(clone);
+    const src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
+    const img = new Image();
+    img.onload = () => {
+      const s = 2, c = document.createElement("canvas");
+      c.width = w * s; c.height = h * s;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(b); a.download = filename;
+        a.click(); URL.revokeObjectURL(a.href);
+      });
+    };
+    img.src = src;
+  }
+
+  function setupChartDownloads() {
+    document.querySelectorAll(".chart-card").forEach((card, i) => {
+      if (!card.querySelector("svg")) return;
+      const btn = document.createElement("button");
+      btn.className = "chart-dl"; btn.type = "button";
+      btn.textContent = "⤓ PNG";
+      btn.title = "Télécharger ce graphique en image";
+      btn.addEventListener("click", () => {
+        const svg = card.querySelector("svg");
+        if (svg) downloadSvgPng(svg, "cor-graphique-" + (i + 1) + ".png");
+      });
+      card.appendChild(btn);
+    });
+  }
+
   function init() {
     renderAllCharts();
     renderExplorer();
@@ -417,15 +538,28 @@
     renderTable();
     renderSources();
     setupNav();
+    setupShareInstall();
+    setupToTop();
+    setupChartDownloads();
     window.addEventListener("resize", () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(renderAllCharts, 200);
     });
 
-    // Enregistrement du service worker (PWA).
+    // Enregistrement du service worker (PWA) + notification de mise à jour.
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
+        navigator.serviceWorker.register("./sw.js").then(reg => {
+          reg.addEventListener("updatefound", () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener("statechange", () => {
+              if (nw.state === "installed" && navigator.serviceWorker.controller) {
+                toast("Une nouvelle version est disponible.", "Actualiser", () => location.reload());
+              }
+            });
+          });
+        }).catch(() => {});
       });
     }
   }

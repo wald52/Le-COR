@@ -6,6 +6,23 @@
   <title>Le COR sous l'œil des citoyens — l'évolution des hypothèses sur les retraites</title>
   <meta name="description" content="Un outil citoyen pour visualiser comment les hypothèses du Conseil d'orientation des retraites (COR) évoluent dans le temps, et si ses prévisions se sont réalisées." />
   <meta name="theme-color" content="#1f4e79" />
+  <link rel="canonical" href="https://wald52.github.io/Le-COR/" />
+
+  <!-- Aperçu social (Open Graph / Twitter) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:site_name" content="Le COR sous l'œil des citoyens" />
+  <meta property="og:title" content="Le COR change-t-il d'avis sur nos retraites ?" />
+  <meta property="og:description" content="Outil citoyen : l'évolution des hypothèses du Conseil d'orientation des retraites (2001–2025), en données officielles. Graphiques, explorateur et simulateur." />
+  <meta property="og:url" content="https://wald52.github.io/Le-COR/" />
+  <meta property="og:image" content="https://wald52.github.io/Le-COR/icons/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Le COR change-t-il d'avis sur nos retraites ?" />
+  <meta name="twitter:description" content="L'évolution des hypothèses du COR (2001–2025) en données officielles : graphiques, explorateur, simulateur." />
+  <meta name="twitter:image" content="https://wald52.github.io/Le-COR/icons/og-image.png" />
+
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
@@ -37,7 +54,7 @@
     <!-- HERO -->
     <section class="hero" id="intro">
       <div class="hero-inner">
-        <p class="kicker">Outil citoyen · données publiques</p>
+        <p class="kicker">Outil citoyen · données publiques · à jour&nbsp;: rapport de juin 2025</p>
         <h1>Le COR change-t-il d'avis sur nos retraites&nbsp;?</h1>
         <p class="lede">
           Chaque année, le <strong>Conseil d'orientation des retraites</strong> publie des
@@ -46,7 +63,17 @@
           d'un rapport à l'autre. Ce site superpose ces projections pour voir,
           simplement, <em>comment l'avis du COR évolue</em> et <em>si ses prévisions se réalisent</em>.
         </p>
-        <a class="cta" href="#depenses">Voir le graphique clé ↓</a>
+        <div class="hero-actions">
+          <a class="cta" href="#depenses">Voir le graphique clé ↓</a>
+          <button id="btn-share" class="cta cta-ghost" type="button" hidden>Partager</button>
+          <button id="btn-install" class="cta cta-ghost" type="button" hidden>Installer l'app</button>
+        </div>
+        <ul class="key-figures" aria-label="Chiffres-clés">
+          <li><strong>2001→2025</strong><span>rapports du COR analysés, en données officielles</span></li>
+          <li><strong>0,7 %</strong><span>productivité supposée en 2025 (abaissée depuis 1,3 %)</span></li>
+          <li><strong>1,62</strong><span>fécondité réelle 2024 (le COR supposait 1,80)</span></li>
+          <li><strong>−1,4 %</strong><span>du PIB&nbsp;: solde du système projeté en 2070</span></li>
+        </ul>
       </div>
     </section>
 
@@ -364,7 +391,31 @@
             (démographie), la Banque de France, la Dares, etc. Ce site cherche à rendre
             visible cette chaîne d'hypothèses, pas à juger le COR.
           </p>
+          <h3>Petit glossaire</h3>
+          <dl class="glossary">
+            <details><summary>Répartition</summary><p>Système où les cotisations des actifs d'aujourd'hui paient les pensions des retraités d'aujourd'hui (par opposition à la capitalisation, où chacun épargne pour sa propre retraite). La France est très majoritairement en répartition.</p></details>
+            <details><summary>Solde du système</summary><p>Différence entre les <em>ressources</em> (cotisations, impôts affectés…) et les <em>dépenses</em> (pensions versées). Négatif = déficit.</p></details>
+            <details><summary>Scénario de référence</summary><p>Le jeu d'hypothèses « central » que le COR met en avant chaque année (productivité, fécondité, chômage…). C'est lui qui sert de base au diagnostic.</p></details>
+            <details><summary>Productivité du travail</summary><p>La richesse produite par heure travaillée. Sa croissance détermine celle des salaires, donc des cotisations. Le COR a abaissé son hypothèse de 1,3 % à 0,7 %.</p></details>
+            <details><summary>Niveau de vie relatif des retraités</summary><p>Le niveau de vie moyen des retraités rapporté à celui de l'ensemble de la population. 100 % = parité.</p></details>
+            <details><summary>Âge conjoncturel de départ</summary><p>Une mesure de l'âge moyen de départ à la retraite une année donnée, comparable dans le temps.</p></details>
+          </dl>
+
+          <h3>À propos</h3>
+          <p>
+            Ce site est un <strong>projet citoyen indépendant</strong>, à but pédagogique. Il
+            <strong>n'est pas affilié</strong> au COR ni à aucune institution. Son but n'est pas de juger
+            le COR, mais de rendre <strong>visibles et accessibles</strong> les hypothèses sur lesquelles
+            reposent les projections de retraites — pour que chacun puisse se faire son opinion.
+            Le code et les données sont <strong>ouverts</strong> :
+            <a href="https://github.com/wald52/Le-COR" target="_blank" rel="noopener">dépôt GitHub</a>.
+          </p>
+
           <h3>Sources</h3>
+          <p class="method-note">
+            Données issues des fichiers Excel des rapports annuels du COR (2014→2025),
+            archivés dans le <a href="https://github.com/wald52/Le-COR/tree/main/data" target="_blank" rel="noopener">dossier <code>data/</code> du dépôt</a>.
+          </p>
           <ul id="sources-list" class="sources"></ul>
         </div>
       </div>
@@ -382,6 +433,13 @@
       </p>
     </div>
   </footer>
+
+  <a href="#top" class="to-top" id="to-top" aria-label="Revenir en haut">↑</a>
+
+  <div id="toast" class="toast" hidden role="status" aria-live="polite">
+    <span id="toast-msg"></span>
+    <button id="toast-action" type="button"></button>
+  </div>
 
   <script src="./data/data.js"></script>
   <script src="./data/cor-series.generated.js"></script>
