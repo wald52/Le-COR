@@ -27,6 +27,7 @@
       <a class="nav-link" href="#realite">Réalité</a>
       <a class="nav-link" href="#explorer">Explorer</a>
       <a class="nav-link" href="#monde">La France dans le monde</a>
+      <a class="nav-link" href="#simulateur">Simulateur</a>
       <a class="nav-link" href="#methode">Méthode &amp; sources</a>
     </nav>
   </header>
@@ -294,10 +295,54 @@
       </div>
     </section>
 
-    <!-- 9. MÉTHODE & SOURCES -->
+    <!-- 9. SIMULATEUR DES 3 LEVIERS -->
+    <section id="simulateur" class="band">
+      <div class="container">
+        <h2>9 · À vous de jouer&nbsp;: équilibrez le système</h2>
+        <p class="section-intro">
+          Pour combler le déficit projeté en <strong>2070</strong>, il existe trois leviers. Le COR
+          calcule combien il faudrait de <em>chacun, utilisé seul</em>. À vous de choisir
+          <strong>votre dosage</strong>&nbsp;: la jauge vous dit si le système est à l'équilibre.
+        </p>
+        <div class="sim">
+          <div class="sim-lever">
+            <div class="sim-head"><span>⏳ Reculer l'âge de départ</span><strong id="lv-age-out">+0 mois</strong></div>
+            <input type="range" id="lv-age" min="0" max="24" step="1" value="0" aria-label="Recul de l'âge de départ, en mois" />
+            <p class="sim-note" id="lv-age-note"></p>
+          </div>
+          <div class="sim-lever">
+            <div class="sim-head"><span>💶 Augmenter les cotisations</span><strong id="lv-cot-out">+0,0 pt</strong></div>
+            <input type="range" id="lv-cot" min="0" max="40" step="1" value="0" aria-label="Hausse du taux de cotisation, en dixièmes de point" />
+            <p class="sim-note" id="lv-cot-note"></p>
+          </div>
+          <div class="sim-lever">
+            <div class="sim-head"><span>📉 Baisser le niveau des pensions</span><strong id="lv-pen-out">−0,0 %</strong></div>
+            <input type="range" id="lv-pen" min="0" max="24" step="1" value="0" aria-label="Baisse du niveau des pensions, en demi-points de pourcentage" />
+            <p class="sim-note" id="lv-pen-note"></p>
+          </div>
+        </div>
+        <div class="sim-gauge">
+          <div class="gauge-track"><div id="gauge-fill" class="gauge-fill"></div></div>
+          <p id="gauge-msg" class="gauge-msg">Déplacez les curseurs…</p>
+        </div>
+        <p class="chart-source" id="lv-source"></p>
+        <div class="takeaway">
+          <h3>Ce qu'il faut retenir</h3>
+          <p>
+            Il n'y a pas de solution « gratuite »&nbsp;: équilibrer le système suppose forcément
+            <strong>travailler plus longtemps</strong>, <strong>cotiser davantage</strong> ou
+            <strong>toucher des pensions plus faibles</strong> — ou un mélange des trois. Ce simulateur
+            est une <em>illustration</em> (effets supposés additifs)&nbsp;; les ordres de grandeur
+            viennent du COR.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. MÉTHODE & SOURCES -->
     <section id="methode" class="band">
       <div class="container">
-        <h2>9 · Méthode &amp; sources</h2>
+        <h2>10 · Méthode &amp; sources</h2>
         <div class="method">
           <h3>Comment lire ces graphiques&nbsp;?</h3>
           <ul>

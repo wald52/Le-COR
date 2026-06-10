@@ -158,6 +158,36 @@ a { color: var(--bleu-clair); }
 .exp-chip:hover { border-color: var(--bleu-clair); background: var(--bleu-pale); }
 .exp-chip.active { background: var(--bleu-pale); border-color: var(--bleu-clair); color: var(--bleu); font-weight: 700; }
 
+/* ---------- Simulateur des 3 leviers ---------- */
+.sim { display: grid; gap: 18px; margin-bottom: 8px; }
+.sim-lever {
+  background: #fff; border: 1px solid var(--gris-clair); border-radius: var(--rayon);
+  padding: 16px 18px; box-shadow: var(--ombre);
+}
+.sim-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.sim-head span { font-weight: 600; color: var(--encre); }
+.sim-head strong { color: var(--bleu); font-size: 1.15rem; white-space: nowrap; }
+.sim-lever input[type="range"] {
+  width: 100%; height: 8px; border-radius: 999px; appearance: none; -webkit-appearance: none;
+  background: linear-gradient(90deg, var(--bleu-clair), var(--bleu-pale)); cursor: pointer;
+}
+.sim-lever input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--bleu); border: 3px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.25); cursor: pointer;
+}
+.sim-lever input[type="range"]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--bleu); border: 3px solid #fff; cursor: pointer;
+}
+.sim-note { margin: 8px 0 0; font-size: 0.82rem; color: var(--gris); }
+
+.sim-gauge { margin: 22px 0 4px; }
+.gauge-track { height: 26px; background: var(--fond-alt); border: 1px solid var(--gris-clair); border-radius: 999px; overflow: hidden; }
+.gauge-fill { height: 100%; width: 0; border-radius: 999px; transition: width 0.18s ease, background 0.2s ease;
+  background: linear-gradient(90deg, #d6452a, #e8731c); }
+.gauge-fill.ok { background: linear-gradient(90deg, #2ca089, #6aa84f); }
+.gauge-fill.over { background: linear-gradient(90deg, #6aa84f, #2f6fb0); }
+.gauge-msg { margin: 10px 0 0; font-size: 1.05rem; color: var(--encre); text-align: center; }
+
 /* ---------- Tableau ---------- */
 .table-wrap { overflow-x: auto; border-radius: var(--rayon); box-shadow: var(--ombre); }
 table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.95rem; }

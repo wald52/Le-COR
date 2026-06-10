@@ -291,6 +291,57 @@
   }
 
   /* ----------------------------------------------------------------------
+   * Simulateur des 3 leviers : l'utilisateur dose âge / cotisations / pensions.
+   * Modèle (illustratif) : effets additifs, calibrés sur les montants COR pour
+   * équilibrer le système en 2070 via un seul levier.
+   * -------------------------------------------------------------------- */
+  function renderLeviers() {
+    const L = window.COR_SERIES && window.COR_SERIES.leviers;
+    if (!L) return;
+    const id = x => document.getElementById(x);
+    const f1 = v => (Math.round(v * 10) / 10).toString().replace(".", ",");
+    const ageFullMonths = L.age.full_years * 12;
+    const cotFull = L.cotis.full_pts;
+    const penFull = L.pension.full_pct;
+    const elAge = id("lv-age"), elCot = id("lv-cot"), elPen = id("lv-pen");
+    if (!elAge) return;
+
+    function update() {
+      const months = +elAge.value;
+      const cotPts = +elCot.value / 10;
+      const penPct = +elPen.value / 2;
+      id("lv-age-out").textContent = "+" + months + " mois";
+      id("lv-cot-out").textContent = "+" + f1(cotPts) + " pt";
+      id("lv-pen-out").textContent = "−" + f1(penPct) + " %";
+      id("lv-age-note").textContent =
+        "âge effectif de départ : " + f1(L.age.ref) + " → " + f1(L.age.ref + months / 12) + " ans";
+      id("lv-cot-note").textContent =
+        "taux de prélèvement : " + f1(L.cotis.ref) + " % → " + f1(L.cotis.ref + cotPts) + " %";
+      id("lv-pen-note").textContent =
+        "pension / salaire : " + f1(L.pension.ref_pct) + " % → " + f1(L.pension.ref_pct * (1 - penPct / 100)) + " %";
+
+      const closed = (months / ageFullMonths + cotPts / cotFull + penPct / penFull) * 100;
+      const fill = id("gauge-fill"), msg = id("gauge-msg");
+      fill.style.width = Math.min(closed, 100) + "%";
+      if (closed < 95) {
+        fill.className = "gauge-fill";
+        msg.innerHTML = `Déficit comblé à <strong>${Math.round(closed)} %</strong> — il en reste ${Math.round(100 - closed)} %.`;
+      } else if (closed <= 110) {
+        fill.className = "gauge-fill ok";
+        msg.innerHTML = `✓ <strong>Système équilibré en 2070&nbsp;!</strong> (comblé à ${Math.round(closed)} %)`;
+      } else {
+        fill.className = "gauge-fill over";
+        msg.innerHTML = `Vous en faites plus que nécessaire (<strong>${Math.round(closed)} %</strong>) — possible excédent.`;
+      }
+    }
+    [elAge, elCot, elPen].forEach(e => e.addEventListener("input", update));
+    id("lv-source").textContent = "Source : " + L.source +
+      " — calibrage : seul, chaque levier équilibre avec +" + f1(L.age.full_years) +
+      " an d'âge, +" + f1(L.cotis.full_pts) + " pts de cotisation, ou −" + f1(L.pension.full_pct) + " % de pensions.";
+    update();
+  }
+
+  /* ----------------------------------------------------------------------
    * 5. Tableau des hypothèses.
    * -------------------------------------------------------------------- */
   function renderTable() {
@@ -362,6 +413,7 @@
     renderAllCharts();
     renderExplorer();
     renderInternational();
+    renderLeviers();
     renderTable();
     renderSources();
     setupNav();

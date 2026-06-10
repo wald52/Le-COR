@@ -11468,5 +11468,21 @@ window.COR_SERIES = {
         "total": 10.1
       }
     ]
+  },
+  "leviers": {
+    "horizon": 2070,
+    "age": {
+      "ref": 64.58,
+      "full_years": 1.92
+    },
+    "cotis": {
+      "ref": 29.6,
+      "full_pts": 3.24
+    },
+    "pension": {
+      "ref_pct": 45.1,
+      "full_pct": 9.9
+    },
+    "source": "COR, rapport 2025 (fig. 2.21) — niveau de chaque levier pour équilibrer en 2070."
   }
 };

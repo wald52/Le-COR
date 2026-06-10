@@ -584,6 +584,36 @@ def extract_international(path):
     return {"year": 2021, "countries": countries}
 
 
+def extract_leviers(path):
+    """Calibrage des 3 leviers : ajustement (via un seul levier) pour équilibrer en 2070."""
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    if "Fig 2.21" not in wb.sheetnames:
+        wb.close()
+        return None
+    rows = list(wb["Fig 2.21"].iter_rows(values_only=True))
+    ym = {i: c for i, c in enumerate(rows[3]) if isinstance(c, int) and 1990 <= c <= 2100}
+    col = next((i for i, c in ym.items() if c == 2070), None)
+    if col is None:
+        wb.close()
+        return None
+
+    def g(i):
+        return rows[i][col] if col < len(rows[i]) and isinstance(rows[i][col], (int, float)) else None
+
+    pen_ref, pen_eq = g(4), g(5)          # pension relative
+    age_ref, age_eq = g(6), g(7)          # âge effectif moyen
+    tx_ref, tx_eq = g(8), g(9)            # taux de prélèvement
+    wb.close()
+    return {
+        "horizon": 2070,
+        "age": {"ref": round(age_ref, 2), "full_years": round(age_eq - age_ref, 2)},
+        "cotis": {"ref": round(tx_ref * 100, 1), "full_pts": round((tx_eq - tx_ref) * 100, 2)},
+        "pension": {"ref_pct": round(pen_ref * 100, 1),
+                    "full_pct": round((pen_ref - pen_eq) / pen_ref * 100, 1)},
+        "source": "COR, rapport 2025 (fig. 2.21) — niveau de chaque levier pour équilibrer en 2070.",
+    }
+
+
 def build():
     extracted = {}
     realised = None  # série observée la plus récente (rapport 2025, base 2020)
@@ -779,6 +809,7 @@ def build():
         "productiviteReel": prod_block,
         "explorer": build_explorer(),
         "international": extract_international(first_file(R25, "synthèse") or ""),
+        "leviers": extract_leviers(first_file(R25, "partie 2") or ""),
     }
 
     dest = os.path.join(os.path.dirname(__file__), "..", "data", "cor-series.generated.js")
