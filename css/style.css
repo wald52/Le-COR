@@ -312,4 +312,25 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   .brand-text { display: none; }
   .key-figures { grid-template-columns: 1fr 1fr; }
   .key-figures strong { font-size: 1.4rem; }
+
+  /* Sections plus compactes */
+  .band { padding: 40px 0; }
+  .container { padding: 0 16px; }
+  .band h2 { font-size: 1.4rem; }
+  .section-intro { font-size: 1rem; margin-bottom: 18px; }
+  .hero { padding: 48px 16px 52px; }
+
+  /* Graphiques : plus de place, outils en icônes seules */
+  .chart-card { padding: 14px; }
+  .chart-title { padding-right: 70px; }
+  .chart-title strong { font-size: 0.98rem; }
+  .chart-tools { top: 10px; right: 10px; gap: 5px; }
+  .chart-tool .tlabel { display: none; }
+  .chart-tool { padding: 6px 9px; font-size: 0.95rem; }
+  .chart-legend { gap: 5px 10px; }
+  .legend-item { font-size: 0.8rem; }
+
+  /* Modale de zoom : occuper tout l'écran et permettre la rotation paysage */
+  .zoom-inner { width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; }
+  .zoom-body { display: flex; align-items: center; }
 }

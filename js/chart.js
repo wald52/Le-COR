@@ -65,8 +65,20 @@
   function lineChart(container, cfg) {
     container.innerHTML = "";
 
-    const W = 760, H = 440;
-    const M = { top: 24, right: 96, bottom: 48, left: 52 };
+    // Dimensions responsives : on cale le viewBox sur la largeur réelle du
+    // conteneur pour que les textes restent à taille lisible (≈ px) partout,
+    // au lieu d'un SVG fixe réduit (illisible sur mobile).
+    const cw = Math.round(container.getBoundingClientRect().width) || 760;
+    const W = Math.max(300, Math.min(cw, 920));
+    const narrow = W < 480;
+    const hasEnd = cfg.series.some(s => s.endNote || s.endLabel);
+    const M = {
+      top: 16,
+      right: hasEnd ? (narrow ? 46 : 92) : (narrow ? 14 : 24),
+      bottom: narrow ? 34 : 46,
+      left: narrow ? 46 : 52
+    };
+    const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.52, 440));
     const plotW = W - M.left - M.right;
     const plotH = H - M.top - M.bottom;
 
@@ -119,7 +131,7 @@
     });
 
     // --- Axe X ---
-    const xTicks = niceTicks(xMin, xMax, 6).filter(t => t >= xMin && t <= xMax);
+    const xTicks = niceTicks(xMin, xMax, narrow ? 4 : 6).filter(t => t >= xMin && t <= xMax);
     xTicks.forEach(t => {
       const x = sx(t);
       svg.appendChild(el("line", {

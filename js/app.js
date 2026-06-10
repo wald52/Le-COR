@@ -87,8 +87,11 @@
     const container = document.getElementById("chart-prod");
     container.innerHTML = "";
     const NS = "http://www.w3.org/2000/svg";
-    const W = 760, H = 360;
-    const M = { top: 30, right: 30, bottom: 50, left: 50 };
+    const cw = Math.round(container.getBoundingClientRect().width) || 760;
+    const W = Math.max(300, Math.min(cw, 920));
+    const narrow = W < 480;
+    const H = Math.round(narrow ? Math.min(W * 0.9, 340) : 360);
+    const M = { top: 24, right: narrow ? 16 : 30, bottom: narrow ? 40 : 50, left: narrow ? 42 : 50 };
     const plotW = W - M.left - M.right;
     const plotH = H - M.top - M.bottom;
     const yMin = 0.0, yMax = 2.0;
@@ -281,7 +284,11 @@
     const NS = "http://www.w3.org/2000/svg";
     const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
     const cs = d.countries;
-    const W = 760, rowH = 30, top = 16, bottom = 38, left = 104, right = 58;
+    const cw = Math.round(host.getBoundingClientRect().width) || 760;
+    const W = Math.max(300, Math.min(cw, 920));
+    const narrow = W < 480;
+    const rowH = narrow ? 34 : 30, top = 16, bottom = 38;
+    const left = narrow ? 90 : 104, right = narrow ? 40 : 58;
     const H = top + bottom + cs.length * rowH;
     const maxV = Math.ceil(Math.max(...cs.map(c => c.total)) + 1);
     const sx = v => left + (v / maxV) * (W - left - right);
@@ -532,11 +539,13 @@
       bar.className = "chart-tools";
       const zoom = document.createElement("button");
       zoom.className = "chart-tool"; zoom.type = "button";
-      zoom.innerHTML = "⤢ Agrandir"; zoom.title = "Agrandir ce graphique";
+      zoom.innerHTML = '<span aria-hidden="true">⤢</span><span class="tlabel"> Agrandir</span>';
+      zoom.title = "Agrandir ce graphique"; zoom.setAttribute("aria-label", "Agrandir ce graphique");
       zoom.addEventListener("click", () => openZoom(card));
       const dl = document.createElement("button");
       dl.className = "chart-tool"; dl.type = "button";
-      dl.innerHTML = "⤓ PNG"; dl.title = "Télécharger ce graphique en image";
+      dl.innerHTML = '<span aria-hidden="true">⤓</span><span class="tlabel"> PNG</span>';
+      dl.title = "Télécharger ce graphique en image"; dl.setAttribute("aria-label", "Télécharger en PNG");
       dl.addEventListener("click", () => {
         const svg = card.querySelector("svg");
         if (svg) downloadSvgPng(svg, "cor-" + slug(cardTitle(card)) + ".png");
