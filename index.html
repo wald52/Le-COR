@@ -65,6 +65,7 @@
         </p>
         <div class="hero-actions">
           <a class="cta" href="#depenses">Voir le graphique clé ↓</a>
+          <button id="btn-anim" class="cta cta-ghost" type="button" hidden>⏸ Animation</button>
           <button id="btn-share" class="cta cta-ghost" type="button" hidden>Partager</button>
           <button id="btn-install" class="cta cta-ghost" type="button" hidden>Installer l'app</button>
         </div>
@@ -435,6 +436,19 @@
   </footer>
 
   <a href="#top" class="to-top" id="to-top" aria-label="Revenir en haut">↑</a>
+
+  <div id="zoom-modal" class="zoom-modal" hidden role="dialog" aria-modal="true" aria-labelledby="zoom-title">
+    <div class="zoom-inner">
+      <div class="zoom-bar">
+        <strong id="zoom-title"></strong>
+        <span class="zoom-actions">
+          <button id="zoom-dl" class="chart-tool" type="button">⤓ Télécharger PNG</button>
+          <button id="zoom-close" class="chart-tool" type="button" aria-label="Fermer">✕ Fermer</button>
+        </span>
+      </div>
+      <div id="zoom-body" class="zoom-body"></div>
+    </div>
+  </div>
 
   <div id="toast" class="toast" hidden role="status" aria-live="polite">
     <span id="toast-msg"></span>

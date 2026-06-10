@@ -10,6 +10,19 @@
 (function () {
   "use strict";
 
+  // État de l'animation de tracé (révélation des courbes).
+  let ANIMATE = true;
+  const running = new Set();
+  const reducedMotion = () =>
+    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function setAnimate(on) {
+    ANIMATE = on;
+    if (!on) {
+      Array.from(running).forEach(f => { if (f.cancel) f.cancel(); f(); });
+      running.clear();
+    }
+  }
+
   const NS = "http://www.w3.org/2000/svg";
   const el = (name, attrs = {}) => {
     const node = document.createElementNS(NS, name);
@@ -77,12 +90,21 @@
     });
 
     // Zone de découpe : les courbes ne débordent jamais du cadre de tracé.
-    const clipId = "plotclip-" + Math.random().toString(36).slice(2, 8);
+    const rnd = Math.random().toString(36).slice(2, 8);
+    const clipId = "plotclip-" + rnd;
     const defs = el("defs");
     const clip = el("clipPath", { id: clipId });
     clip.appendChild(el("rect", { x: M.left, y: M.top, width: plotW, height: plotH }));
     defs.appendChild(clip);
+    // Découpe « révélation » pour animer le tracé de gauche à droite.
+    const revealId = "reveal-" + rnd;
+    const revealClip = el("clipPath", { id: revealId });
+    const revealW = W - M.left;             // couvre aussi les étiquettes de fin
+    const revealRect = el("rect", { x: M.left, y: 0, width: revealW, height: H, class: "reveal-rect" });
+    revealClip.appendChild(revealRect);
+    defs.appendChild(revealClip);
     svg.appendChild(defs);
+    const seriesLayer = el("g", { "clip-path": `url(#${revealId})` });
 
     // --- Grille + axe Y ---
     const yTicks = niceTicks(yMin, yMax, 5);
@@ -151,9 +173,26 @@
         g.appendChild(txt);
       }
 
-      svg.appendChild(g);
+      seriesLayer.appendChild(g);
       seriesNodes.push({ cfg: s, node: g, scaled });
     });
+    svg.appendChild(seriesLayer);
+
+    // --- Animation « tracé » (révélation gauche → droite) ---
+    if (ANIMATE && !reducedMotion()) {
+      revealRect.setAttribute("width", 0);
+      const dur = 1100, t0 = performance.now();
+      let raf;
+      const finish = () => { revealRect.setAttribute("width", revealW); running.delete(finish); };
+      const step = now => {
+        const k = Math.max(0, Math.min(1, (now - t0) / dur));
+        revealRect.setAttribute("width", revealW * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) raf = requestAnimationFrame(step); else running.delete(finish);
+      };
+      finish.cancel = () => cancelAnimationFrame(raf);
+      running.add(finish);
+      raf = requestAnimationFrame(step);
+    }
 
     // --- Infobulle au survol ---
     const focusLine = el("line", { class: "chart-focus-line", y1: M.top, y2: M.top + plotH, x1: -10, x2: -10, opacity: 0 });
@@ -245,5 +284,5 @@
     return svg;
   }
 
-  window.CORChart = { lineChart };
+  window.CORChart = { lineChart, setAnimate, isAnimating: () => ANIMATE };
 })();

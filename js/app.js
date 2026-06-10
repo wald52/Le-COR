@@ -7,6 +7,7 @@
 
   const D = window.COR_DATA;
   const { lineChart } = window.CORChart;
+  let explorerRedraw = null;   // permet de rejouer l'animation du graphe de l'explorateur
 
   /* ----------------------------------------------------------------------
    * 1. Graphique phare : dépenses de retraite en % du PIB, projections
@@ -197,9 +198,13 @@
     const chipsEl = document.getElementById("explorer-indicators");
     let currentTheme = exp.themes[0];
 
+    let currentId = null;
+    explorerRedraw = () => { if (currentId) drawIndicator(currentId); };
+
     function drawIndicator(iid) {
       const ind = exp.indicators[iid];
       if (!ind) return;
+      currentId = iid;
       document.getElementById("exp-label").textContent = ind.label;
       document.getElementById("exp-desc").textContent = ind.desc || "";
       document.getElementById("exp-source").textContent = "Source : " + (ind.source || "COR.");
@@ -515,18 +520,79 @@
     img.src = src;
   }
 
-  function setupChartDownloads() {
+  function cardTitle(card) {
+    const t = card.querySelector(".chart-title strong");
+    return t ? t.textContent.trim() : "Graphique COR";
+  }
+
+  function setupChartTools() {
     document.querySelectorAll(".chart-card").forEach((card, i) => {
-      if (!card.querySelector("svg")) return;
-      const btn = document.createElement("button");
-      btn.className = "chart-dl"; btn.type = "button";
-      btn.textContent = "⤓ PNG";
-      btn.title = "Télécharger ce graphique en image";
-      btn.addEventListener("click", () => {
+      if (!card.querySelector("svg") || card.querySelector(".chart-tools")) return;
+      const bar = document.createElement("div");
+      bar.className = "chart-tools";
+      const zoom = document.createElement("button");
+      zoom.className = "chart-tool"; zoom.type = "button";
+      zoom.innerHTML = "⤢ Agrandir"; zoom.title = "Agrandir ce graphique";
+      zoom.addEventListener("click", () => openZoom(card));
+      const dl = document.createElement("button");
+      dl.className = "chart-tool"; dl.type = "button";
+      dl.innerHTML = "⤓ PNG"; dl.title = "Télécharger ce graphique en image";
+      dl.addEventListener("click", () => {
         const svg = card.querySelector("svg");
-        if (svg) downloadSvgPng(svg, "cor-graphique-" + (i + 1) + ".png");
+        if (svg) downloadSvgPng(svg, "cor-" + slug(cardTitle(card)) + ".png");
       });
-      card.appendChild(btn);
+      bar.appendChild(zoom); bar.appendChild(dl);
+      card.appendChild(bar);
+    });
+  }
+
+  function slug(s) {
+    return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "graphique";
+  }
+
+  function openZoom(card) {
+    const svg = card.querySelector("svg");
+    if (!svg) return;
+    const modal = document.getElementById("zoom-modal");
+    const body = document.getElementById("zoom-body");
+    document.getElementById("zoom-title").textContent = cardTitle(card);
+    const clone = svg.cloneNode(true);
+    clone.querySelectorAll(".reveal-rect").forEach(r => r.setAttribute("width", 99999));
+    clone.removeAttribute("height"); clone.style.width = "100%"; clone.style.height = "auto";
+    body.innerHTML = "";
+    body.appendChild(clone);
+    document.getElementById("zoom-dl").onclick = () =>
+      downloadSvgPng(clone, "cor-" + slug(cardTitle(card)) + ".png");
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+
+  function setupZoom() {
+    const modal = document.getElementById("zoom-modal");
+    if (!modal) return;
+    const close = () => { modal.hidden = true; document.body.style.overflow = ""; };
+    document.getElementById("zoom-close").addEventListener("click", close);
+    modal.addEventListener("click", e => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && !modal.hidden) close(); });
+  }
+
+  function setupAnim() {
+    const btn = document.getElementById("btn-anim");
+    if (!btn) return;
+    const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { btn.hidden = true; return; }
+    btn.hidden = false;
+    const label = on => { btn.textContent = on ? "⏸ Animation" : "▶ Rejouer"; };
+    label(window.CORChart.isAnimating());
+    btn.addEventListener("click", () => {
+      if (window.CORChart.isAnimating()) {
+        window.CORChart.setAnimate(false); label(false);
+      } else {
+        window.CORChart.setAnimate(true); label(true);
+        renderAllCharts();
+        if (explorerRedraw) explorerRedraw();
+      }
     });
   }
 
@@ -540,7 +606,9 @@
     setupNav();
     setupShareInstall();
     setupToTop();
-    setupChartDownloads();
+    setupChartTools();
+    setupZoom();
+    setupAnim();
     window.addEventListener("resize", () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(renderAllCharts, 200);

@@ -235,14 +235,30 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .glossary details p { margin: 10px 14px 12px; color: var(--encre); }
 .method-note { font-size: 0.92rem; color: var(--gris); }
 
-/* Bouton télécharger un graphique */
+/* Outils par graphique (agrandir / télécharger) */
 .chart-card { position: relative; }
-.chart-dl {
-  position: absolute; top: 14px; right: 14px; z-index: 2;
+.chart-tools { position: absolute; top: 12px; right: 12px; z-index: 2; display: flex; gap: 6px; }
+.chart-tool {
   font: inherit; font-size: 0.78rem; cursor: pointer; color: var(--gris);
   background: #fff; border: 1px solid var(--gris-clair); border-radius: 8px; padding: 5px 10px;
 }
-.chart-dl:hover { border-color: var(--bleu-clair); color: var(--bleu); }
+.chart-tool:hover { border-color: var(--bleu-clair); color: var(--bleu); }
+
+/* Modale de zoom / agrandissement */
+.zoom-modal {
+  position: fixed; inset: 0; z-index: 100; background: rgba(20,30,45,0.72);
+  display: flex; align-items: center; justify-content: center; padding: 18px;
+}
+.zoom-inner {
+  background: #fff; border-radius: var(--rayon); width: min(1200px, 96vw);
+  max-height: 94vh; display: flex; flex-direction: column; box-shadow: 0 12px 50px rgba(0,0,0,.4);
+}
+.zoom-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 14px 18px; border-bottom: 1px solid var(--gris-clair); }
+.zoom-bar strong { color: var(--bleu); font-size: 1.05rem; }
+.zoom-actions { display: flex; gap: 8px; }
+.zoom-body { padding: 18px 22px; overflow: auto; }
+.zoom-body svg { width: 100%; height: auto; }
 
 /* Tableau de données alternatif (accessibilité) */
 .data-toggle {
