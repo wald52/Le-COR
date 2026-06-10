@@ -320,13 +320,14 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   .section-intro { font-size: 1rem; margin-bottom: 18px; }
   .hero { padding: 48px 16px 52px; }
 
-  /* Graphiques : plus de place, outils en icônes seules */
+  /* Graphiques : outils déplacés SOUS le graphique (plus de superposition) */
   .chart-card { padding: 14px; }
-  .chart-title { padding-right: 70px; }
   .chart-title strong { font-size: 0.98rem; }
-  .chart-tools { top: 10px; right: 10px; gap: 5px; }
-  .chart-tool .tlabel { display: none; }
-  .chart-tool { padding: 6px 9px; font-size: 0.95rem; }
+  .chart-tools {
+    position: static; justify-content: flex-end; gap: 8px;
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--gris-clair);
+  }
+  .chart-tool { padding: 10px 16px; font-size: 0.9rem; flex: 1; max-width: 160px; }
   .chart-legend { gap: 5px 10px; }
   .legend-item { font-size: 0.8rem; }
 
