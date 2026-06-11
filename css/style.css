@@ -131,6 +131,7 @@ a { color: var(--bleu-clair); }
 }
 .legend-item:hover { background: var(--bleu-pale); }
 .legend-swatch { display: inline-block; flex: none; }
+.legend-group { width: 100%; font-size: 0.78rem; font-style: italic; color: var(--gris); margin-top: 4px; }
 .chart-inline-legend { font-size: 0.82rem; color: var(--gris); margin-top: 12px; }
 .chart-inline-legend .legend-swatch { vertical-align: middle; margin: 0 2px; }
 
@@ -349,6 +350,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   .chart-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; }
   .legend-item { font-size: 0.8rem; white-space: nowrap; }
   .legend-item.is-solid, .legend-item.is-long { grid-column: 1 / -1; white-space: normal; }
+  .legend-group { grid-column: 1 / -1; }
 
   /* Vue agrandie : plein écran (la rotation en paysage agrandit le graphique) */
   .zoom-modal {

@@ -348,9 +348,22 @@
           label.match(/(19|20)\d{2}(\s*→\s*(19|20)\d{2})?/);
         return m ? m[0] : label;
       };
+      // Quand les libellés sont réduits à l'année, une ligne d'en-tête rappelle
+      // que ces courbes sont des projections (et non des données observées).
+      let groupDone = false;
+      const groupHeader = label => {
+        const d = document.createElement("div");
+        d.className = "legend-group";
+        d.textContent = /^Hypothèse/.test(label) ? "Hypothèses des rapports :" : "Projections des rapports :";
+        return d;
+      };
       seriesNodes.forEach((sn, idx) => {
-        const item = document.createElement("button");
         const text = shortFor(sn.cfg.label);
+        if (text !== sn.cfg.label && !groupDone) {
+          legend.appendChild(groupHeader(sn.cfg.label));
+          groupDone = true;
+        }
+        const item = document.createElement("button");
         item.className = "legend-item" +
           (sn.cfg.kind === "solid" ? " is-solid" : "") +
           (text === sn.cfg.label ? " is-long" : "");
