@@ -54,6 +54,20 @@
     return pts.map((p, i) => (i === 0 ? "M" : "L") + p.x + "," + p.y).join(" ");
   }
 
+  // Interpolation linéaire de la valeur Y d'une série à un X donné.
+  function interpolateY(points, x) {
+    if (!points.length) return null;
+    if (x <= points[0].x) return points[0].y;
+    if (x >= points[points.length - 1].x) return points[points.length - 1].y;
+    for (let i = 1; i < points.length; i++) {
+      if (x <= points[i].x) {
+        const t = (x - points[i - 1].x) / (points[i].x - points[i - 1].x);
+        return points[i - 1].y + t * (points[i].y - points[i - 1].y);
+      }
+    }
+    return null;
+  }
+
   /*
    * Pastille de légende en SVG inline (attributs stroke/fill).
    * Important : certains navigateurs (Samsung Internet en « mode sombre »)
@@ -113,19 +127,50 @@
     const cw = Math.round(container.getBoundingClientRect().width) || 760;
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
-    const hasEnd = cfg.series.some(s => s.endNote || s.endLabel);
-    // Marge droite dimensionnée sur la plus longue étiquette de fin de courbe
-    // (≈ 6,8 px par caractère en 12 px) pour qu'aucun mot ne soit coupé.
-    const endLen = Math.max(0, ...cfg.series.map(s => String(s.endNote || s.endLabel || "").length));
+
+    // Calcul anticipé des bornes Y et de la hauteur de tracé (ne dépendent pas
+    // de la marge droite) pour décider si chaque étiquette peut tenir à
+    // l'intérieur du graphique plutôt que dans la marge droite.
+    const allY_pre = cfg.series.flatMap(s => s.points.map(p => p.y));
+    const yMin_pre = cfg.y?.min ?? Math.min(...allY_pre);
+    const yMax_pre = cfg.y?.max ?? Math.max(...allY_pre);
+    const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.52, 440));
+    const plotH_pre = H - 16 - (narrow ? 34 : 46); // top=16, bottom fixe
+    const toSvgY = v => 16 + (1 - (v - yMin_pre) / (yMax_pre - yMin_pre)) * plotH_pre;
+
+    // Espace minimal (px SVG) entre une étiquette intérieure et toute autre
+    // courbe pour que l'étiquette reste lisible sans chevauchement.
+    const CHAR_W = 6.8;
+    const MIN_CLEAR = narrow ? 14 : 16;
+
+    // Pour chaque série : 'inside' si toutes les autres courbes sont à plus de
+    // MIN_CLEAR px au niveau du dernier point, 'outside' sinon, 'none' sans label.
+    const labelMode = cfg.series.map(s => {
+      if (!s.endNote && !s.endLabel) return "none";
+      const lastPt = s.points[s.points.length - 1];
+      if (!lastPt) return "outside";
+      const thisY = toSvgY(lastPt.y);
+      for (const os of cfg.series) {
+        if (os === s) continue;
+        const oy = interpolateY(os.points, lastPt.x);
+        if (oy === null) continue;
+        if (Math.abs(toSvgY(oy) - thisY) < MIN_CLEAR) return "outside";
+      }
+      return "inside";
+    });
+
+    // La marge droite ne doit couvrir que les étiquettes extérieures.
+    const outsideEndLen = Math.max(0, ...cfg.series.map((s, i) =>
+      labelMode[i] === "outside" ? String(s.endNote || s.endLabel || "").length : 0
+    ));
     const M = {
       top: 16,
-      right: hasEnd
-        ? Math.min(Math.max(endLen * 6.8 + 14, narrow ? 40 : 56), narrow ? 96 : 124)
-        : (narrow ? 14 : 24),
+      right: outsideEndLen > 0
+        ? Math.min(Math.max(outsideEndLen * CHAR_W + 14, narrow ? 40 : 56), narrow ? 96 : 124)
+        : (narrow ? 8 : 14),
       bottom: narrow ? 34 : 46,
-      left: narrow ? 46 : 52
+      left: narrow ? 42 : 46
     };
-    const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.52, 440));
     const plotW = W - M.left - M.right;
     const plotH = H - M.top - M.bottom;
 
@@ -219,22 +264,29 @@
       }
 
       // Étiquette de fin de courbe (label + valeur), façon PIIE.
+      // Mode 'inside' : l'étiquette se termine juste avant le point final
+      // (text-anchor=end), ce qui évite d'agrandir la marge droite.
+      // Mode 'outside' : comportement classique, dans la marge droite.
       let endNoteEl = null;
       if (s.endNote || s.endLabel) {
         const last = scaled[scaled.length - 1];
+        const mode = labelMode[idx];
+        const xPos = mode === "inside"
+          ? last.x - 8
+          : Math.min(last.x + 8, W - M.right + 6);
         endNoteEl = el("text", {
-          x: Math.min(last.x + 8, W - M.right + 6),
+          x: xPos,
           y: last.y + 4,
           class: "chart-endnote",
           fill: s.color,
-          "text-anchor": "start"
+          "text-anchor": mode === "inside" ? "end" : "start"
         });
         endNoteEl.textContent = s.endNote || s.endLabel;
         g.appendChild(endNoteEl);
       }
 
       seriesLayer.appendChild(g);
-      seriesNodes.push({ cfg: s, node: g, scaled, endNoteEl });
+      seriesNodes.push({ cfg: s, node: g, scaled, endNoteEl, idx });
     });
     svg.appendChild(seriesLayer);
 
@@ -242,9 +294,20 @@
     // verticalement d'un pas minimal, puis ramenées dans la zone de tracé.
     const placed = seriesNodes
       .filter(sn => sn.endNoteEl)
-      .map(sn => ({ el: sn.endNoteEl, y: +sn.endNoteEl.getAttribute("y") }))
+      .map(sn => {
+        const last = sn.scaled[sn.scaled.length - 1];
+        const y0 = +sn.endNoteEl.getAttribute("y");
+        return {
+          el: sn.endNoteEl,
+          y: y0,
+          origY: y0,
+          cx: last.x,
+          cy: last.y,
+          mode: labelMode[sn.idx]
+        };
+      })
       .sort((a, b) => a.y - b.y);
-    if (placed.length > 1) {
+    if (placed.length > 0) {
       const minGap = narrow ? 11 : 13;
       const topY = M.top + 8, bottomY = M.top + plotH + 4;
       for (let i = 1; i < placed.length; i++) {
@@ -255,6 +318,23 @@
         if (i < placed.length - 1 && placed[i + 1].y - placed[i].y < minGap) placed[i].y = placed[i + 1].y - minGap;
       }
       placed.forEach(p => p.el.setAttribute("y", Math.max(p.y, topY)));
+
+      // Trait de liaison fin quand l'étiquette a été décalée de plus de 12 px
+      // pour que l'œil retrouve facilement la courbe associée.
+      placed.forEach(p => {
+        const finalY = +p.el.getAttribute("y");
+        if (Math.abs(finalY - p.origY) <= 12) return;
+        const color = p.el.getAttribute("fill");
+        const above = finalY < p.cy;
+        const connector = el("line", {
+          x1: p.cx, y1: above ? p.cy - 4 : p.cy + 4,
+          x2: p.cx, y2: above ? finalY + 2 : finalY - 10,
+          stroke: color,
+          "stroke-width": 1,
+          opacity: 0.55
+        });
+        seriesLayer.appendChild(connector);
+      });
     }
 
     // --- Animation « tracé » (révélation gauche → droite) ---
