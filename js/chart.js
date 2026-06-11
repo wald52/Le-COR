@@ -114,9 +114,14 @@
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const hasEnd = cfg.series.some(s => s.endNote || s.endLabel);
+    // Marge droite dimensionnée sur la plus longue étiquette de fin de courbe
+    // (≈ 6,8 px par caractère en 12 px) pour qu'aucun mot ne soit coupé.
+    const endLen = Math.max(0, ...cfg.series.map(s => String(s.endNote || s.endLabel || "").length));
     const M = {
       top: 16,
-      right: hasEnd ? (narrow ? 46 : 92) : (narrow ? 14 : 24),
+      right: hasEnd
+        ? Math.min(Math.max(endLen * 6.8 + 14, narrow ? 40 : 56), narrow ? 96 : 124)
+        : (narrow ? 14 : 24),
       bottom: narrow ? 34 : 46,
       left: narrow ? 46 : 52
     };
@@ -214,23 +219,43 @@
       }
 
       // Étiquette de fin de courbe (label + valeur), façon PIIE.
+      let endNoteEl = null;
       if (s.endNote || s.endLabel) {
         const last = scaled[scaled.length - 1];
-        const txt = el("text", {
-          x: Math.min(last.x + 8, W - 4),
+        endNoteEl = el("text", {
+          x: Math.min(last.x + 8, W - M.right + 6),
           y: last.y + 4,
           class: "chart-endnote",
           fill: s.color,
           "text-anchor": "start"
         });
-        txt.textContent = s.endNote || s.endLabel;
-        g.appendChild(txt);
+        endNoteEl.textContent = s.endNote || s.endLabel;
+        g.appendChild(endNoteEl);
       }
 
       seriesLayer.appendChild(g);
-      seriesNodes.push({ cfg: s, node: g, scaled });
+      seriesNodes.push({ cfg: s, node: g, scaled, endNoteEl });
     });
     svg.appendChild(seriesLayer);
+
+    // Anti-chevauchement : les étiquettes de fin de courbe sont écartées
+    // verticalement d'un pas minimal, puis ramenées dans la zone de tracé.
+    const placed = seriesNodes
+      .filter(sn => sn.endNoteEl)
+      .map(sn => ({ el: sn.endNoteEl, y: +sn.endNoteEl.getAttribute("y") }))
+      .sort((a, b) => a.y - b.y);
+    if (placed.length > 1) {
+      const minGap = narrow ? 11 : 13;
+      const topY = M.top + 8, bottomY = M.top + plotH + 4;
+      for (let i = 1; i < placed.length; i++) {
+        if (placed[i].y - placed[i - 1].y < minGap) placed[i].y = placed[i - 1].y + minGap;
+      }
+      for (let i = placed.length - 1; i >= 0; i--) {
+        if (placed[i].y > bottomY) placed[i].y = bottomY;
+        if (i < placed.length - 1 && placed[i + 1].y - placed[i].y < minGap) placed[i].y = placed[i + 1].y - minGap;
+      }
+      placed.forEach(p => p.el.setAttribute("y", Math.max(p.y, topY)));
+    }
 
     // --- Animation « tracé » (révélation gauche → droite) ---
     if (ANIMATE && !reducedMotion() && cfg.animate !== false) {
@@ -314,11 +339,24 @@
     if (cfg.legend !== false) {
       const legend = document.createElement("div");
       legend.className = "chart-legend";
+      // Sur petit écran, les libellés du type « Rapport 2023 (réf. 1,0 %) »
+      // sont raccourcis à l'année pour tenir sur une seule ligne ; le libellé
+      // complet reste disponible (title, infobulle, tableau de données).
+      const shortFor = label => {
+        if (!narrow) return label;
+        const m = /^(Rapport|Projection|Hypothèse)\b/.test(label) &&
+          label.match(/(19|20)\d{2}(\s*→\s*(19|20)\d{2})?/);
+        return m ? m[0] : label;
+      };
       seriesNodes.forEach((sn, idx) => {
         const item = document.createElement("button");
-        item.className = "legend-item" + (sn.cfg.kind === "solid" ? " is-solid" : "");
+        const text = shortFor(sn.cfg.label);
+        item.className = "legend-item" +
+          (sn.cfg.kind === "solid" ? " is-solid" : "") +
+          (text === sn.cfg.label ? " is-long" : "");
         item.type = "button";
-        item.innerHTML = swatchHTML(sn.cfg.color, sn.cfg.kind) + `<span>${sn.cfg.label}</span>`;
+        item.title = sn.cfg.label;
+        item.innerHTML = swatchHTML(sn.cfg.color, sn.cfg.kind) + `<span>${text}</span>`;
         const dim = on => {
           seriesNodes.forEach(o => {
             o.node.style.opacity = on && o !== sn ? 0.18 : 1;
