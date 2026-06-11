@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mentions légales — Le COR sous l'œil des citoyens</title>
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#1f4e79" />
+  <meta name="color-scheme" content="only light" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <style>
+    .legal-wrap {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 20px 64px;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--bleu-clair);
+      text-decoration: none;
+      font-weight: 600;
+      margin-bottom: 32px;
+    }
+    .back-link:hover { text-decoration: underline; }
+    .legal-section { margin-bottom: 36px; }
+    .legal-section h2 {
+      font-size: 1.2rem;
+      margin: 0 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--gris-clair);
+    }
+    .legal-section p { color: var(--gris); margin-bottom: 10px; max-width: 70ch; }
+    .legal-section ul { color: var(--gris); padding-left: 20px; margin-bottom: 10px; }
+    .legal-section li { margin-bottom: 8px; }
+    .legal-updated {
+      margin-top: 48px;
+      font-size: 0.8rem;
+      color: var(--gris);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="./index.html" class="brand">
+      <span class="brand-text">Ceci est mon</span>
+      <span class="brand-mark">COR</span>
+    </a>
+  </header>
+
+  <main>
+    <div class="legal-wrap">
+
+      <a href="./index.html" class="back-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Retour au site
+      </a>
+
+      <h1>Informations légales</h1>
+
+      <section class="legal-section" id="mentions">
+        <h2>1. Mentions légales</h2>
+        <p><strong>Éditeur du site :</strong><br>
+          Conformément aux dispositions de l'article 6-III-2 de la loi n° 2004-575 du 21 juin 2004 pour la
+          confiance dans l'économie numérique (LCEN), l'éditeur de ce site a choisi de conserver son anonymat.
+          Les informations d'identification personnelle ont été communiquées à l'hébergeur.</p>
+        <p><strong>Hébergeur :</strong><br>
+          GitHub Inc.<br>
+          88 Colin P. Kelly Jr. St, San Francisco, CA 94107, États-Unis<br>
+          <a href="https://pages.github.com" rel="noopener noreferrer">pages.github.com</a>
+        </p>
+      </section>
+
+      <section class="legal-section" id="confidentialite">
+        <h2>2. Politique de confidentialité</h2>
+        <p>Ce site est conçu dans le respect de votre vie privée :</p>
+        <ul>
+          <li><strong>Aucune collecte de données personnelles :</strong> le site ne collecte, ne stocke
+            et ne traite aucune donnée personnelle vous concernant.</li>
+          <li><strong>Pas de cookies de traçage :</strong> aucun cookie publicitaire ou analytique
+            n'est utilisé.</li>
+          <li><strong>Traitement local :</strong> tous les graphiques, calculs et simulations s'exécutent
+            directement dans votre navigateur. Aucune donnée ne quitte votre appareil.</li>
+          <li><strong>PWA (application hors-ligne) :</strong> si vous installez le site en tant
+            qu'application, les fichiers sont mis en cache localement via un Service Worker pour
+            permettre l'utilisation hors connexion. Ces données restent sur votre appareil.</li>
+        </ul>
+      </section>
+
+      <section class="legal-section">
+        <h2>3. Propriété intellectuelle</h2>
+        <p>
+          Les données utilisées proviennent des <strong>rapports officiels du Conseil d'orientation
+          des retraites</strong> (COR), de l'INSEE, de la Dares et de la Banque de France — sources
+          publiques librement reproductibles. Le code source du site est ouvert :
+          <a href="https://github.com/wald52/Le-COR" target="_blank" rel="noopener">dépôt GitHub</a>.
+          Les textes éditoriaux et la mise en forme graphique sont la propriété de l'éditeur ; toute
+          reproduction est soumise à autorisation préalable.
+        </p>
+      </section>
+
+      <section class="legal-section">
+        <h2>4. Responsabilité</h2>
+        <p>
+          Ce site est un <strong>projet citoyen indépendant</strong>, à but strictement pédagogique.
+          Il n'est affilié ni au COR ni à aucune institution publique ou privée. Les graphiques et
+          analyses sont construits à partir de données officielles reproduites fidèlement ; ils visent
+          à les rendre accessibles, non à se substituer aux publications du COR. L'éditeur ne saurait
+          être tenu responsable de toute décision prise sur la base de ces informations.
+        </p>
+      </section>
+
+      <p class="legal-updated">Dernière mise à jour : juin 2026</p>
+
+    </div>
+  </main>
+
+</body>
+</html>

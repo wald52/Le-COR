@@ -221,6 +221,8 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .site-footer { background: var(--encre); color: #cdd6e0; padding: 30px 0; margin-top: 0; }
 .site-footer p { margin: 4px 0; }
 .site-footer strong { color: #fff; }
+.site-footer a { color: #9cc3e5; text-underline-offset: 2px; }
+.site-footer a:hover { color: #fff; }
 .small { font-size: 0.82rem; opacity: 0.8; }
 
 /* ---------- Finitions (hero, partage, glossaire, PWA) ---------- */
