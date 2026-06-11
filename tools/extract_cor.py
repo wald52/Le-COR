@@ -368,6 +368,120 @@ def labeled_row(path, sheet_keys, row_key, scale=1.0):
     return {}
 
 
+def labeled_row_any(path, sheet_keys, row_keys, scale=1.0):
+    """Comme labeled_row, mais essaie plusieurs clés et renvoie (série, libellé).
+
+    Le libellé exact de la ligne retenue permet d'annoter la légende (il porte
+    souvent la valeur de l'hypothèse : « Tous scénarios 7% », « Scénario de
+    référence 0,7% »…).
+    """
+    if not path:
+        return {}, None
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = sheet_by_title(wb, sheet_keys)
+    if ws is None:
+        wb.close()
+        return {}, None
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    ym = _ymap(rows)
+    for key in row_keys:
+        for r in rows:
+            for j in (0, 1):
+                v = r[j] if len(r) > j else None
+                if isinstance(v, str) and key.lower() in _norm(v):
+                    serie = {ym[i]: round(r[i] * scale, 3) for i in ym
+                             if i < len(r) and isinstance(r[i], (int, float))}
+                    if serie:
+                        return serie, v.strip()
+    return {}, None
+
+
+def block_labeled_row(path, sheet_keys, block_key, row_key, scale=1.0):
+    """Ligne `row_key` à l'intérieur du bloc `block_key` d'une feuille.
+
+    Utile quand une feuille empile plusieurs blocs au même format (ex. les
+    rapports démographiques 20-59/60+ puis 20-64/65+).
+    """
+    if not path:
+        return {}
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = sheet_by_title(wb, sheet_keys)
+    if ws is None:
+        wb.close()
+        return {}
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    ym = _ymap(rows)
+    start = None
+    for i, r in enumerate(rows):
+        for j in (0, 1):
+            v = r[j] if len(r) > j else None
+            if isinstance(v, str) and _norm(block_key) in _norm(v):
+                start = i
+                break
+        if start is not None:
+            break
+    if start is None:
+        return {}
+    for r in rows[start:start + 10]:
+        for j in (0, 1):
+            v = r[j] if len(r) > j else None
+            if isinstance(v, str) and row_key.lower() in _norm(v):
+                return {ym[i]: round(r[i] * scale, 3) for i in ym
+                        if i < len(r) and isinstance(r[i], (int, float))}
+    return {}
+
+
+def _hyp_note(label):
+    """Extrait la valeur d'hypothèse d'un libellé (« Tous scénarios 7% » → « 7 % »)."""
+    import re
+    m = re.search(r"([\d]+(?:,\d+)?\s*%)", label or "")
+    return m.group(1).replace("%", " %").replace("  ", " ") if m else None
+
+
+def _block_sub_ref(rows, label_key, ref):
+    """Sous-ligne du bloc `label_key` : col C == `ref` (texte) ou ≈ ref (taux)."""
+    ym = _ymap(rows)
+    start = None
+    for i, r in enumerate(rows):
+        if len(r) > 1 and r[1] and label_key.lower() in str(r[1]).lower():
+            start = i
+            break
+    if start is None:
+        return {}
+    for r in rows[start:start + 8]:
+        c2 = r[2] if len(r) > 2 else None
+        if (isinstance(ref, str) and str(c2).strip() == ref) or \
+                (isinstance(ref, float) and isinstance(c2, (int, float))
+                 and abs(float(c2) - ref) < 1e-4):
+            return {ym[i]: r[i] for i in ym if i < len(r) and isinstance(r[i], (int, float))}
+    return {}
+
+
+def pension_ratio_vintage(path, ref):
+    """Pension moyenne / rémunération moyenne (%), scénario de référence.
+
+    `ref` : « Sc. Ref » (2024+) ou productivité de référence en fraction
+    (2023, où les scénarios sont des lignes 1,6/1,3/1,0/0,7 %).
+    """
+    if not path:
+        return {}
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    for ws in wb.worksheets:
+        rows = list(ws.iter_rows(max_row=14, max_col=3, values_only=True))
+        labels = [str(r[1]).lower() for r in rows if len(r) > 1 and r[1]]
+        if any("pension moyenne" in l for l in labels) \
+                and any("rémunération nett" in l for l in labels):
+            rows = list(ws.iter_rows(values_only=True))
+            wb.close()
+            pen = _block_sub_ref(rows, "pension moyenne", ref)
+            rem = _block_sub_ref(rows, "rémunération nett", ref)
+            return _ratio(pen, rem, 100)
+    wb.close()
+    return {}
+
+
 def extract_fecondite(path):
     """Indice de fécondité : observé (définitif + provisoire) et scénario central."""
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
@@ -571,8 +685,11 @@ def build_explorer(multi=None):
                     "desc": desc, "source": source, "series": series, **b}
         return iid
 
-    def vintage_series(obs, projs, obs_from=2000):
-        """Observé (trait plein) + une projection en pointillé par millésime."""
+    def vintage_series(obs, projs, obs_from=2000, notes=None):
+        """Observé (trait plein) + une projection en pointillé par millésime.
+
+        `notes` : annotation de légende par millésime (ex. l'hypothèse retenue,
+        « Rapport 2023 (4,5 %) »)."""
         out = []
         if obs:
             out.append({"label": "Observé", "color": "#1f2d3d", "kind": "solid",
@@ -582,9 +699,13 @@ def build_explorer(multi=None):
             p = projs[vy]
             pts = [{"x": y, "y": p[y]} for y in sorted(p) if int(vy) <= y <= 2070]
             if pts:
-                out.append({"label": f"Rapport {vy}", "color": COLORS.get(vy, "#888888"),
+                note = (notes or {}).get(vy)
+                label = f"Rapport {vy} ({note})" if note else f"Rapport {vy}"
+                out.append({"label": label, "color": COLORS.get(vy, "#888888"),
                             "kind": "dash", "points": pts})
         return out
+
+    NOTES = multi.get("_notes", {})
 
     DEMO, PENS, FIN, ECO = "#2f6fb0", "#c2185b", "#e8731c", "#6aa84f"
 
@@ -603,28 +724,43 @@ def build_explorer(multi=None):
     r = _rows("partie 1", "Fig 1.11")
     if r:
         o, p = _obs_proj(r, 100)
-        add("chomage", "Taux de chômage", "%", " %", _series(o, p, DEMO),
-            "Le taux de chômage de long terme retenu est de 7,0 %.",
-            "COR, rapport 2026 (fig. 1.11).")
+        series = _series(o, p, DEMO)
+        if multi.get("chomage"):
+            series = vintage_series(o, multi["chomage"], 2000, NOTES.get("chomage"))
+        add("chomage", "Taux de chômage", "%", " %", series,
+            "Le taux de chômage de long terme retenu par chaque rapport — longtemps 7 %, "
+            "abaissé à 4,5 % en 2023 (cible de plein emploi) puis 5 % en 2024, avant de "
+            "revenir à 7 % dès 2025.",
+            "COR, rapports 2019-2026 (taux de chômage observé puis projeté).")
     r = _rows("partie 1", "Fig 1.5")
     if r:
         o, p = _obs_proj(r, 1)
+        series = _series(o, p, DEMO)
+        if multi.get("ratio_demo"):
+            series = vintage_series(o, multi["ratio_demo"])
         add("ratio_demo", "Rapport démographique (20-64 ans / 65 ans et +)", "ratio", "",
-            _series(o, p, DEMO),
+            series,
             "Combien de personnes en âge de travailler pour une personne de 65 ans et plus. "
-            "Il s'effondre avec le vieillissement.",
-            "COR / INSEE, rapport 2026 (fig. 1.5).")
+            "Il s'effondre avec le vieillissement — un peu plus à chaque jeu de projections.",
+            "COR / INSEE, rapports 2019-2026 (projections 2016, 2021 et 2026).")
     # Les effectifs cotisants/retraités ne sont publiés que dans les « données
-    # complémentaires », absentes du rapport 2026 : on garde celles de 2025.
+    # complémentaires », absentes du rapport 2026 : on superpose 2024 et 2025.
     cr = _rows("complémentaires", "Cotisants_Retraités", R25)
     if cr:
-        co, cp = _block_sub(cr, "cotisants", "Obs"), _block_sub(cr, "cotisants", "Sc. Ref")
-        ro, rp = _block_sub(cr, "retraités", "Obs"), _block_sub(cr, "retraités", "Sc. Ref")
+        co = _block_sub(cr, "cotisants", "Obs")
+        ro = _block_sub(cr, "retraités", "Obs")
+        obs_ratio = _ratio(co, ro)
+        if multi.get("cot_ret"):
+            series = vintage_series(obs_ratio, multi["cot_ret"])
+        else:
+            cp = _block_sub(cr, "cotisants", "Sc. Ref")
+            rp = _block_sub(cr, "retraités", "Sc. Ref")
+            series = _series(obs_ratio, _ratio(cp, rp), DEMO)
         add("cot_ret", "Nombre de cotisants par retraité", "ratio", "",
-            _series(_ratio(co, ro), _ratio(cp, rp), DEMO),
+            series,
             "Le cœur du système par répartition : chaque retraité est financé par les "
             "cotisations des actifs. Ce ratio baisse de ~1,8 vers ~1,4.",
-            "COR, rapport 2025 (données complémentaires, non republiées en 2026).")
+            "COR, rapports 2024-2025 (données complémentaires, non republiées en 2026).")
     fec = _rows("partie 1", "Fig 1.1")
     if fec:
         o = _row_label(fec, "Observé")
@@ -655,10 +791,13 @@ def build_explorer(multi=None):
     r = _rows("partie 1", "Fig 1.12")
     if r:
         o, p = _obs_proj(r, 100)
-        add("emploi", "Taux d'emploi des 15-64 ans", "%", " %", _series(o, p, ECO),
+        series = _series(o, p, ECO)
+        if multi.get("emploi"):
+            series = vintage_series(o, multi["emploi"], 2000, NOTES.get("emploi"))
+        add("emploi", "Taux d'emploi des 15-64 ans", "%", " %", series,
             "Part des 15-64 ans qui ont un emploi. Plus il est élevé, plus il y a de "
             "cotisants.",
-            "COR, rapport 2026 (fig. 1.12).")
+            "COR, rapports 2024-2026 (taux d'emploi observé puis projeté).")
     pr = _rows("partie 1", "Fig 1.10")
     if pr:
         annual = {}
@@ -668,14 +807,16 @@ def build_explorer(multi=None):
                 annual = {ym[i]: r2[i] * 100 for i in ym if i < len(r2) and isinstance(r2[i], (int, float))}
                 break
         ma = {p["x"]: p["y"] for p in moving_average(annual, 5)}
-        ref = _row_label(pr, "Scénario de référence", 100)
-        s = _series(ma, ref, ECO)
+        if multi.get("prod_path"):
+            s = vintage_series(ma, multi["prod_path"], 2000, NOTES.get("prod_path"))
+        else:
+            s = _series(ma, _row_label(pr, "Scénario de référence", 100), ECO)
         if s:
             s[0]["label"] = "Observé (moy. mobile 5 ans)"
             add("productivite", "Productivité du travail", "%/an", " %", s,
                 "Croissance de la productivité : moteur des salaires donc des cotisations. "
-                "L'hypothèse de référence (0,7 %) a été fortement abaissée.",
-                "COR, rapport 2026 (fig. 1.10).")
+                "Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025).",
+                "COR, rapports 2019-2026 (productivité observée puis projetée, scénario central).")
 
     # --- Pensions & retraités
     r = _rows("synthèse", "Âge conjoncturel")
@@ -698,9 +839,13 @@ def build_explorer(multi=None):
             y0, y1 = min(penp), max(penp)
             desc = (f"La pension nette moyenne en % du salaire net moyen. Elle décroche : "
                     f"~{penp[y0]:.0f} % aujourd'hui, ~{penp[y1]:.0f} % en {y1}.")
+        series = _series(pen, penp, PENS)
+        if multi.get("pension_rel"):
+            series = vintage_series(pen, multi["pension_rel"])
         add("pension_rel", "Pension moyenne rapportée au salaire net", "%", " %",
-            _series(pen, penp, PENS), desc,
-            "COR, rapport 2026 (fig. 2.4).")
+            series, desc,
+            "COR, rapports 2023-2026 (pension nette moyenne et revenu net moyen, "
+            "scénario de référence de chaque rapport).")
     nv = _rows("synthèse", "Niveau de vie relatif")
     if nv:
         o, p = _obs_proj(nv, 100)
@@ -1122,6 +1267,9 @@ def build():
                 {"label": "Hypothèse 1,3 % (rapports jusqu'à 2022)", "color": "#d6452a",
                  "kind": "dash", "endNote": "1,3 %",
                  "points": [{"x": x0, "y": 1.3}, {"x": 2030, "y": 1.3}]},
+                {"label": "Hypothèse 1,0 % (rapports 2023-2024)", "color": "#e8731c",
+                 "kind": "dash", "endNote": "1,0 %",
+                 "points": [{"x": x0, "y": 1.0}, {"x": 2030, "y": 1.0}]},
                 {"label": "Hypothèse 0,7 % (référence depuis 2025)", "color": "#c2185b",
                  "kind": "dash", "endNote": "0,7 %",
                  "points": [{"x": x0, "y": 0.7}, {"x": 2030, "y": 0.7}]},
@@ -1145,7 +1293,8 @@ def build():
               f"(2070 : {', '.join(f'{vy}={ev_hyps[vy].get(2070)}' for vy in sorted(ev_hyps))})")
 
     mig_hyps = {}
-    for vy, dpat, fpat in [("2025", "2025-06", "juin 2025 - partie 1"),
+    for vy, dpat, fpat in [("2019", "2019-06", "partie 1"),
+                           ("2025", "2025-06", "juin 2025 - partie 1"),
                            ("2026", "2026-06", "partie 1")]:
         s = labeled_row(first_file(dpat, fpat), ("solde migratoire",),
                         "scénario central", 0.001)
@@ -1159,6 +1308,83 @@ def build():
         if f and f["central"]:
             fec_hyps[vy] = {y: v for y, v in f["central"].items() if y >= int(vy)}
 
+    # ---- Chômage et taux d'emploi : le scénario retenu par chaque rapport
+    #      (le libellé porte l'hypothèse : 7 %, 4,5 %… → annotation de légende)
+    P1_FILES = [("2019", "2019-06", "partie 1"), ("2020", "2020-11", "partie 1"),
+                ("2021", "2021-06", "partie 1"), ("2022", "2022-09", "septembre 2022 - partie 1"),
+                ("2023", "2023-06", "partie 1"), ("2024", "2024-06", "partie 1"),
+                ("2025", "2025-06", "juin 2025 - partie 1"), ("2026", "2026-06", "partie 1")]
+    REF_KEYS = ("tous scénarios", "scénario de référence")
+    cho_hyps, cho_notes = {}, {}
+    emp_hyps, emp_notes = {}, {}
+    for vy, dpat, fpat in P1_FILES:
+        path = first_file(dpat, fpat)
+        s, lbl = labeled_row_any(path, ("chômage", "projeté"), REF_KEYS, 100)
+        if s:
+            cho_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
+            cho_notes[vy] = _hyp_note(lbl)
+        s, lbl = labeled_row_any(path, ("taux d'emploi", "projeté"), REF_KEYS, 100)
+        if s:
+            emp_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
+            emp_notes[vy] = _hyp_note(lbl)
+    print(f"✓ chômage : {len(cho_hyps)} millésimes "
+          f"({', '.join(f'{vy}:{cho_notes[vy]}' for vy in sorted(cho_hyps))})")
+    print(f"✓ emploi : {len(emp_hyps)} millésimes")
+
+    # ---- Productivité projetée : scénario central de chaque rapport
+    prod_hyps, prod_notes = {}, {}
+    for vy, dpat, fpat, keys in [
+            ("2019", "2019-06", "partie 1", ("scénario 1,3",)),
+            ("2021", "2021-06", "partie 1", ("scénario 1,3",)),
+            ("2023", "2023-06", "partie 1", ("scénario 1,0",)),
+            ("2025", "2025-06", "juin 2025 - partie 1", ("scénario de référence",)),
+            ("2026", "2026-06", "partie 1", ("scénario de référence",))]:
+        s, lbl = labeled_row_any(first_file(dpat, fpat),
+                                 ("productivité", "observés"), keys, 100)
+        if s:
+            prod_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
+            prod_notes[vy] = _hyp_note(lbl)
+    print(f"✓ productivité projetée : {len(prod_hyps)} millésimes "
+          f"({', '.join(f'{vy}:{prod_notes[vy]}' for vy in sorted(prod_hyps))})")
+
+    # ---- Rapport démographique 20-64 / 65+ : une époque par jeu de
+    #      projections INSEE (2016, 2021, 2026)
+    ratio_hyps = {}
+    for vy, dpat, fpat in [("2019", "2019-06", "partie 1"),
+                           ("2025", "2025-06", "juin 2025 - partie 1"),
+                           ("2026", "2026-06", "partie 1")]:
+        s = block_labeled_row(first_file(dpat, fpat), ("rapport", "démographique"),
+                              "20-64 / 65+", "scénario central")
+        if s:
+            ratio_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
+    print(f"✓ rapport démographique : {len(ratio_hyps)} époques")
+
+    # ---- Pension moyenne / salaire moyen : scénario de référence par rapport
+    pension_projs = {}
+    for vy, dpat, fpat, ref in [
+            ("2023", "2023-06", "partie 2", 0.010),
+            ("2024", "2024-06", "partie 2", "Sc. Ref"),
+            ("2025", "2025-06", "juin 2025 - partie 2", "Sc. Ref"),
+            ("2026", "2026-06", "partie 2", "Sc. Ref")]:
+        s = pension_ratio_vintage(first_file(dpat, fpat), ref)
+        if s:
+            pension_projs[vy] = {y: v for y, v in s.items() if y >= int(vy)}
+    print(f"✓ pension relative : {len(pension_projs)} millésimes "
+          f"(2070 : {', '.join(f'{vy}={pension_projs[vy].get(2070)}' for vy in sorted(pension_projs))})")
+
+    # ---- Cotisants par retraité : données complémentaires 2024 et 2025
+    cotret_projs = {}
+    for vy, dpat in [("2024", "2024-06"), ("2025", "2025-06")]:
+        cr = _rows("complémentaires", "Cotisants_Retraités", dpat)
+        if not cr:
+            continue
+        cp = _block_sub(cr, "cotisants", "Sc. Ref")
+        rp = _block_sub(cr, "retraités", "Sc. Ref")
+        s = _ratio(cp, rp)
+        if s:
+            cotret_projs[vy] = {y: round(v, 3) for y, v in s.items() if y >= int(vy)}
+    print(f"✓ cotisants/retraité : {len(cotret_projs)} millésimes")
+
     # Séries multi-millésimes mises à disposition de l'explorateur : pour
     # chaque indicateur, les projections de tous les rapports qui publient
     # le même jeu de données, à superposer au réalisé.
@@ -1171,6 +1397,13 @@ def build():
         "esp_vie": ev_hyps,
         "migration": mig_hyps,
         "fecondite": fec_hyps,
+        "chomage": cho_hyps,
+        "emploi": emp_hyps,
+        "prod_path": prod_hyps,
+        "ratio_demo": ratio_hyps,
+        "pension_rel": pension_projs,
+        "cot_ret": cotret_projs,
+        "_notes": {"chomage": cho_notes, "emploi": emp_notes, "prod_path": prod_notes},
     }
 
     out = {

@@ -252,6 +252,14 @@ window.COR_DATA = {
         points: [ { x: 2010, y: 1.3 }, { x: 2025, y: 1.3 } ]
       },
       {
+        label: "Hypothèse 1,0 % (rapports 2023-2024)",
+        year: 2023,
+        color: "#ff7f0e",
+        kind: "dash",
+        endNote: "1,0 %",
+        points: [ { x: 2010, y: 1.0 }, { x: 2025, y: 1.0 } ]
+      },
+      {
         label: "Hypothèse 0,7 % (référence depuis 2025)",
         year: 2025,
         color: "#c2185b",
