@@ -22,11 +22,12 @@ Les autres fichiers (`Annexes`, `Compléments`, `Résultats`, `Partie 1/2/3`,
 
 ## Contenu présent — collection COMPLÈTE (parties 1 à 8 sur 8)
 
-Rapports de **2001 à 2025** : 30 sous-dossiers, **76 fichiers Excel**,
-99 PDF, 3 PPTX.
+Rapports de **2001 à 2026** : 31 sous-dossiers, **81 fichiers Excel**,
+102 PDF, 3 PPTX.
 
 Millésimes annuels exploitables pour la comparaison dans le temps :
-**2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025.**
+**2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025,
+2026.**
 
 Le rapport **2025** fournit même des Excel d'hypothèses dédiés :
 « Hypothèses de salaires, prix et PIB », « Hypothèses d'emploi et de chômage »,
