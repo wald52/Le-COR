@@ -460,7 +460,7 @@
     const share = document.getElementById("btn-share");
     if (share) {
       share.hidden = false;
-      const data = { title: document.title, text: "Le COR change-t-il d'avis sur nos retraites ?", url: location.href };
+      const data = { title: document.title, text: "Ceci est mon COR — le COR change-t-il d'avis sur nos retraites ?", url: location.href };
       if (navigator.share) {
         share.innerHTML = icon("share") + "<span>Partager</span>";
         share.addEventListener("click", () => navigator.share(data).catch(() => {}));
