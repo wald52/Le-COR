@@ -58,7 +58,7 @@ a { color: var(--bleu-clair); }
   font-weight: 800; letter-spacing: 1px; color: #fff; background: var(--bleu);
   padding: 4px 9px; border-radius: 8px; font-size: 0.95rem;
 }
-.brand-text { color: var(--gris); font-size: 0.9rem; }
+.brand-text { color: var(--encre); font-size: 0.95rem; font-weight: 600; white-space: nowrap; }
 .nav-menu { display: flex; gap: 4px; flex-wrap: wrap; }
 .nav-link {
   text-decoration: none; color: var(--gris); font-size: 0.9rem; font-weight: 600;
@@ -323,7 +323,6 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   .nav-menu.open { display: flex; }
   .nav-link { padding: 10px; }
   .chart-grid-2 { grid-template-columns: 1fr; }
-  .brand-text { display: none; }
   .key-figures { grid-template-columns: 1fr 1fr; }
   .key-figures strong { font-size: 1.4rem; }
 
