@@ -84,10 +84,12 @@
   function renderNiveauVie() {
     const b = window.COR_SERIES && window.COR_SERIES.niveauVie;
     if (!b) return;
+    const lastPt = b.projection.points[b.projection.points.length - 1];
+    const endNote = lastPt ? lastPt.y.toFixed(1).replace(".", ",") + " %" : "";
     lineChart(document.getElementById("chart-niveau"), {
       series: [
         { ...b.realise, kind: "solid", markers: false },
-        { ...b.projection, kind: "dash", endNote: "87,5 %" }
+        { ...b.projection, kind: "dash", endNote }
       ],
       x: { min: b.xMin, max: b.xMax },
       y: { min: b.yMin, max: b.yMax, suffix: " %" },

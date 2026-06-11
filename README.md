@@ -66,7 +66,7 @@ python3 icons/make_icons.py
 
 ## Sources principales
 
-- Rapports annuels du COR (2019–2025) — <https://www.cor-retraites.fr/>
+- Rapports annuels du COR (2019–2026) — <https://www.cor-retraites.fr/>
 - INSEE (projections de population, comptes nationaux)
 
 Site indépendant, **non affilié** au COR.
