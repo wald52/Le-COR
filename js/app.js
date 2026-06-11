@@ -10,6 +10,24 @@
   let explorerRedraw = null;   // permet de rejouer l'animation du graphe de l'explorateur
 
   /* ----------------------------------------------------------------------
+   * Icônes SVG inline (style « trait », inspiré de Feather Icons, MIT).
+   * Remplacent les glyphes Unicode (⤓ ⤢ ✕ …) dont le rendu varie beaucoup
+   * d'une plateforme à l'autre.
+   * -------------------------------------------------------------------- */
+  const ICONS = {
+    expand: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    close: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    play: '<polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/>',
+    pause: '<rect x="5" y="4" width="5" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4" width="5" height="16" rx="1" fill="currentColor" stroke="none"/>',
+    share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    phone: '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>'
+  };
+  const icon = name =>
+    `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+
+  /* ----------------------------------------------------------------------
    * 1. Graphique phare : dépenses de retraite en % du PIB, projections
    *    successives superposées.
    * -------------------------------------------------------------------- */
@@ -153,7 +171,7 @@
 
     const cap = document.createElement("p");
     cap.className = "chart-inline-legend";
-    cap.innerHTML = `<span class="legend-swatch" style="--c:#1f4e79"></span> éventail des scénarios &nbsp;·&nbsp; le point = scénario de référence &nbsp;·&nbsp; <span class="legend-swatch" style="--c:#d62728"></span> à partir de 2022, tout l'éventail glisse vers le bas`;
+    cap.innerHTML = `${window.CORChart.swatch("#1f4e79")} éventail des scénarios &nbsp;·&nbsp; le point = scénario de référence &nbsp;·&nbsp; ${window.CORChart.swatch("#d62728")} à partir de 2022, tout l'éventail glisse vers le bas`;
     container.appendChild(cap);
   }
 
@@ -219,27 +237,6 @@
         y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
         ariaLabel: ind.label
       });
-      buildDataTable(ind);
-    }
-
-    // Tableau de données alternatif (lecteurs d'écran + transparence).
-    function buildDataTable(ind) {
-      const card = document.getElementById("chart-explorer").closest(".chart-card");
-      const old = card.querySelector(".data-details");
-      if (old) old.remove();
-      const years = [...new Set(ind.series.flatMap(s => s.points.map(p => p.x)))]
-        .sort((a, b) => a - b).filter(y => y % 5 === 0 || y === ind.xMax || y === ind.xMin);
-      const at = (s, y) => { const p = s.points.find(p => p.x === y); return p ? String(Math.round(p.y * 10) / 10).replace(".", ",") + (ind.suffix || "") : "—"; };
-      let html = `<details class="data-details"><summary class="data-toggle">Voir les données (tableau)</summary><div class="data-table-wrap"><table><caption class="visually-hidden">${ind.label}</caption><thead><tr><th scope="col">Année</th>`;
-      ind.series.forEach(s => html += `<th scope="col">${s.label}</th>`);
-      html += "</tr></thead><tbody>";
-      years.forEach(y => {
-        html += `<tr><th scope="row">${y}</th>`;
-        ind.series.forEach(s => html += `<td>${at(s, y)}</td>`);
-        html += "</tr>";
-      });
-      html += "</tbody></table></div></details>";
-      card.insertAdjacentHTML("beforeend", html);
     }
 
     function buildChips(theme) {
@@ -319,7 +316,7 @@
     host.appendChild(svg);
     const leg = document.createElement("p");
     leg.className = "chart-inline-legend";
-    leg.innerHTML = `<span class="legend-swatch" style="--c:#1f4e79"></span> Dépenses publiques &nbsp;·&nbsp; <span class="legend-swatch" style="--c:#7fb0e0"></span> Dépenses privées &nbsp;·&nbsp; <strong style="color:#c2185b">France</strong> en surbrillance`;
+    leg.innerHTML = `${window.CORChart.swatch("#1f4e79")} Dépenses publiques &nbsp;·&nbsp; ${window.CORChart.swatch("#7fb0e0")} Dépenses privées &nbsp;·&nbsp; <strong style="color:#c2185b">France</strong> en surbrillance`;
     host.appendChild(leg);
   }
 
@@ -465,9 +462,10 @@
       share.hidden = false;
       const data = { title: document.title, text: "Le COR change-t-il d'avis sur nos retraites ?", url: location.href };
       if (navigator.share) {
+        share.innerHTML = icon("share") + "<span>Partager</span>";
         share.addEventListener("click", () => navigator.share(data).catch(() => {}));
       } else {
-        share.textContent = "Copier le lien";
+        share.innerHTML = icon("link") + "<span>Copier le lien</span>";
         share.addEventListener("click", async () => {
           try { await navigator.clipboard.writeText(location.href); toast("Lien copié dans le presse-papier ✓"); }
           catch (e) { toast("Copie impossible — copiez l'URL manuellement."); }
@@ -476,6 +474,7 @@
     }
     let deferred = null;
     const install = document.getElementById("btn-install");
+    if (install) install.innerHTML = icon("phone") + "<span>Installer l'app</span>";
     window.addEventListener("beforeinstallprompt", e => {
       e.preventDefault(); deferred = e; if (install) install.hidden = false;
     });
@@ -539,12 +538,12 @@
       bar.className = "chart-tools";
       const zoom = document.createElement("button");
       zoom.className = "chart-tool"; zoom.type = "button";
-      zoom.innerHTML = '<span aria-hidden="true">⤢</span><span class="tlabel"> Agrandir</span>';
+      zoom.innerHTML = icon("expand") + '<span class="tlabel">Agrandir</span>';
       zoom.title = "Agrandir ce graphique"; zoom.setAttribute("aria-label", "Agrandir ce graphique");
       zoom.addEventListener("click", () => openZoom(card));
       const dl = document.createElement("button");
       dl.className = "chart-tool"; dl.type = "button";
-      dl.innerHTML = '<span aria-hidden="true">⤓</span><span class="tlabel"> PNG</span>';
+      dl.innerHTML = icon("download") + '<span class="tlabel">PNG</span>';
       dl.title = "Télécharger ce graphique en image"; dl.setAttribute("aria-label", "Télécharger en PNG");
       dl.addEventListener("click", () => {
         const svg = card.querySelector("svg");
@@ -561,29 +560,44 @@
   }
 
   function openZoom(card) {
-    const svg = card.querySelector("svg");
-    if (!svg) return;
     const modal = document.getElementById("zoom-modal");
     const body = document.getElementById("zoom-body");
     document.getElementById("zoom-title").textContent = cardTitle(card);
-    const clone = svg.cloneNode(true);
-    clone.querySelectorAll(".reveal-rect").forEach(r => r.setAttribute("width", 99999));
-    clone.removeAttribute("height"); clone.style.width = "100%"; clone.style.height = "auto";
     body.innerHTML = "";
-    body.appendChild(clone);
-    document.getElementById("zoom-dl").onclick = () =>
-      downloadSvgPng(clone, "cor-" + slug(cardTitle(card)) + ".png");
-    modal.hidden = false;
+    modal.showModal();                 // <dialog> natif : focus piégé, Échap géré
     document.body.style.overflow = "hidden";
+
+    const host = card.querySelector(".chart-host");
+    if (host && host.__zoomRender) {
+      // Re-trace le graphique à la taille de la vue agrandie : les textes
+      // restent nets et lisibles (au lieu d'étirer une copie de l'image).
+      const target = document.createElement("div");
+      target.className = "chart-host";
+      body.appendChild(target);
+      host.__zoomRender(target);
+    } else {
+      const svg = card.querySelector("svg");
+      if (!svg) return;
+      const clone = svg.cloneNode(true);
+      clone.querySelectorAll(".reveal-rect").forEach(r => r.setAttribute("width", 99999));
+      clone.removeAttribute("height"); clone.style.width = "100%"; clone.style.height = "auto";
+      body.appendChild(clone);
+    }
+    document.getElementById("zoom-dl").onclick = () => {
+      const svg = body.querySelector("svg");
+      if (svg) downloadSvgPng(svg, "cor-" + slug(cardTitle(card)) + ".png");
+    };
   }
 
   function setupZoom() {
     const modal = document.getElementById("zoom-modal");
     if (!modal) return;
-    const close = () => { modal.hidden = true; document.body.style.overflow = ""; };
-    document.getElementById("zoom-close").addEventListener("click", close);
-    modal.addEventListener("click", e => { if (e.target === modal) close(); });
-    document.addEventListener("keydown", e => { if (e.key === "Escape" && !modal.hidden) close(); });
+    document.getElementById("zoom-close").addEventListener("click", () => modal.close());
+    modal.addEventListener("click", e => { if (e.target === modal) modal.close(); });
+    modal.addEventListener("close", () => {
+      document.body.style.overflow = "";
+      document.getElementById("zoom-body").innerHTML = "";
+    });
   }
 
   function setupAnim() {
@@ -592,7 +606,9 @@
     const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) { btn.hidden = true; return; }
     btn.hidden = false;
-    const label = on => { btn.textContent = on ? "⏸ Animation" : "▶ Rejouer"; };
+    const label = on => {
+      btn.innerHTML = on ? icon("pause") + "<span>Animation</span>" : icon("play") + "<span>Rejouer</span>";
+    };
     label(window.CORChart.isAnimating());
     btn.addEventListener("click", () => {
       if (window.CORChart.isAnimating()) {

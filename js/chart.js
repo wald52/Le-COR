@@ -54,6 +54,48 @@
     return pts.map((p, i) => (i === 0 ? "M" : "L") + p.x + "," + p.y).join(" ");
   }
 
+  /*
+   * Pastille de légende en SVG inline (attributs stroke/fill).
+   * Important : certains navigateurs (Samsung Internet en « mode sombre »)
+   * réécrivent les couleurs CSS (backgrounds…) mais pas les attributs SVG.
+   * En dessinant les pastilles comme les courbes (attributs SVG), la légende
+   * garde toujours exactement les mêmes couleurs que les courbes.
+   */
+  function swatchHTML(color, kind) {
+    const dash = kind === "dash" ? ' stroke-dasharray="5 3"' : "";
+    return `<svg class="legend-swatch" width="20" height="6" viewBox="0 0 20 6" aria-hidden="true">` +
+      `<line x1="1" y1="3" x2="19" y2="3" stroke="${color}" stroke-width="3" stroke-linecap="round"${dash}/></svg>`;
+  }
+  function dotHTML(color) {
+    return `<svg class="tt-dot" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">` +
+      `<circle cx="4.5" cy="4.5" r="4.5" fill="${color}"/></svg>`;
+  }
+
+  // Tableau de données repliable sous le graphique — alternative accessible
+  // (lecteurs d'écran, malvoyants) et gage de transparence.
+  function buildDataTable(container, cfg, suffix) {
+    const years = [...new Set(cfg.series.flatMap(s => s.points.map(p => p.x)))].sort((a, b) => a - b);
+    if (!years.length) return;
+    const first = years[0], last = years[years.length - 1];
+    const kept = years.filter(y => y % 5 === 0 || y === first || y === last);
+    const at = (s, y) => {
+      const p = s.points.find(p => p.x === y);
+      return p ? String(Math.round(p.y * 10) / 10).replace(".", ",") + suffix : "—";
+    };
+    let html = `<details class="data-details"><summary class="data-toggle">Voir les données (tableau)</summary>` +
+      `<div class="data-table-wrap"><table><caption class="visually-hidden">${cfg.ariaLabel || "Données du graphique"}</caption>` +
+      `<thead><tr><th scope="col">Année</th>`;
+    cfg.series.forEach(s => { html += `<th scope="col">${s.label}</th>`; });
+    html += "</tr></thead><tbody>";
+    kept.forEach(y => {
+      html += `<tr><th scope="row">${y}</th>`;
+      cfg.series.forEach(s => { html += `<td>${at(s, y)}</td>`; });
+      html += "</tr>";
+    });
+    html += "</tbody></table></div></details>";
+    container.insertAdjacentHTML("beforeend", html);
+  }
+
   /**
    * Crée un graphique en courbes.
    * @param {HTMLElement} container
@@ -191,7 +233,7 @@
     svg.appendChild(seriesLayer);
 
     // --- Animation « tracé » (révélation gauche → droite) ---
-    if (ANIMATE && !reducedMotion()) {
+    if (ANIMATE && !reducedMotion() && cfg.animate !== false) {
       revealRect.setAttribute("width", 0);
       const dur = 1100, t0 = performance.now();
       let raf;
@@ -249,7 +291,7 @@
         const v = valueAt(s, xr);
         if (v != null) {
           any = true;
-          rows += `<div class="tt-row"><span class="tt-dot" style="background:${s.color}"></span>${s.label} : <strong>${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}</strong></div>`;
+          rows += `<div class="tt-row">${dotHTML(s.color)}${s.label} : <strong>${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}</strong></div>`;
         }
       });
       if (!any) { tip.style.opacity = 0; return; }
@@ -274,11 +316,9 @@
       legend.className = "chart-legend";
       seriesNodes.forEach((sn, idx) => {
         const item = document.createElement("button");
-        item.className = "legend-item";
+        item.className = "legend-item" + (sn.cfg.kind === "solid" ? " is-solid" : "");
         item.type = "button";
-        item.innerHTML =
-          `<span class="legend-swatch ${sn.cfg.kind === 'dash' ? 'is-dash' : ''}" style="--c:${sn.cfg.color}"></span>` +
-          `<span>${sn.cfg.label}</span>`;
+        item.innerHTML = swatchHTML(sn.cfg.color, sn.cfg.kind) + `<span>${sn.cfg.label}</span>`;
         const dim = on => {
           seriesNodes.forEach(o => {
             o.node.style.opacity = on && o !== sn ? 0.18 : 1;
@@ -293,8 +333,15 @@
       container.appendChild(legend);
     }
 
+    if (cfg.table !== false) buildDataTable(container, cfg, suffix);
+
+    // Permet à la vue agrandie de re-tracer le graphique à sa propre taille
+    // (textes nets et lisibles) au lieu d'étirer une copie de l'image.
+    container.__zoomRender = target =>
+      lineChart(target, Object.assign({}, cfg, { animate: false, table: false }));
+
     return svg;
   }
 
-  window.CORChart = { lineChart, setAnimate, isAnimating: () => ANIMATE };
+  window.CORChart = { lineChart, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
 })();

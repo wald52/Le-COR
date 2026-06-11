@@ -6,6 +6,10 @@
   <title>Le COR sous l'œil des citoyens — l'évolution des hypothèses sur les retraites</title>
   <meta name="description" content="Un outil citoyen pour visualiser comment les hypothèses du Conseil d'orientation des retraites (COR) évoluent dans le temps, et si ses prévisions se sont réalisées." />
   <meta name="theme-color" content="#1f4e79" />
+  <!-- Le site n'a qu'un thème clair : on refuse l'assombrissement automatique
+       (mode sombre forcé de Chrome / Samsung Internet) qui fausse les couleurs
+       des graphiques. -->
+  <meta name="color-scheme" content="only light" />
   <link rel="canonical" href="https://wald52.github.io/Le-COR/" />
 
   <!-- Aperçu social (Open Graph / Twitter) -->
@@ -35,7 +39,9 @@
       <span class="brand-mark">COR</span>
       <span class="brand-text">sous l'œil des citoyens</span>
     </a>
-    <button id="nav-toggle" class="nav-toggle" aria-label="Ouvrir le menu">☰</button>
+    <button id="nav-toggle" class="nav-toggle" aria-label="Ouvrir le menu">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <nav id="nav-menu" class="nav-menu" aria-label="Navigation principale">
       <a class="nav-link" href="#depenses">Le graphique clé</a>
       <a class="nav-link" href="#deficit">Le déficit</a>
@@ -64,8 +70,10 @@
           simplement, <em>comment l'avis du COR évolue</em> et <em>si ses prévisions se réalisent</em>.
         </p>
         <div class="hero-actions">
-          <a class="cta" href="#depenses">Voir le graphique clé ↓</a>
-          <button id="btn-anim" class="cta cta-ghost" type="button" hidden>⏸ Animation</button>
+          <a class="cta" href="#depenses">Voir le graphique clé
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>
+          </a>
+          <button id="btn-anim" class="cta cta-ghost" type="button" hidden>Animation</button>
           <button id="btn-share" class="cta cta-ghost" type="button" hidden>Partager</button>
           <button id="btn-install" class="cta cta-ghost" type="button" hidden>Installer l'app</button>
         </div>
@@ -378,7 +386,7 @@
             <li><strong>Courbe en pointillés</strong> = <em>projection</em> faite par le COR à une date donnée.</li>
             <li>Superposer ces courbes permet de voir si le COR <em>change d'avis</em>.</li>
           </ul>
-          <h3>Honnêteté sur les données</h3>
+          <h3>D'où viennent les données&nbsp;?</h3>
           <p>
             Toutes les courbes sont construites à partir des <strong>fichiers Excel officiels du
             COR</strong> (rapports annuels 2014→2025), série par série, année par année — pas
@@ -435,20 +443,26 @@
     </div>
   </footer>
 
-  <a href="#top" class="to-top" id="to-top" aria-label="Revenir en haut">↑</a>
+  <a href="#top" class="to-top" id="to-top" aria-label="Revenir en haut">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </a>
 
-  <div id="zoom-modal" class="zoom-modal" hidden role="dialog" aria-modal="true" aria-labelledby="zoom-title">
-    <div class="zoom-inner">
-      <div class="zoom-bar">
-        <strong id="zoom-title"></strong>
-        <span class="zoom-actions">
-          <button id="zoom-dl" class="chart-tool" type="button">⤓ Télécharger PNG</button>
-          <button id="zoom-close" class="chart-tool" type="button" aria-label="Fermer">✕ Fermer</button>
-        </span>
-      </div>
-      <div id="zoom-body" class="zoom-body"></div>
+  <dialog id="zoom-modal" class="zoom-modal" aria-labelledby="zoom-title">
+    <div class="zoom-bar">
+      <strong id="zoom-title"></strong>
+      <span class="zoom-actions">
+        <button id="zoom-dl" class="chart-tool" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Télécharger PNG</span>
+        </button>
+        <button id="zoom-close" class="chart-tool" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>Fermer</span>
+        </button>
+      </span>
     </div>
-  </div>
+    <div id="zoom-body" class="zoom-body"></div>
+  </dialog>
 
   <div id="toast" class="toast" hidden role="status" aria-live="polite">
     <span id="toast-msg"></span>
