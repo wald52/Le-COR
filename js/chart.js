@@ -134,6 +134,9 @@
     const allY_pre = cfg.series.flatMap(s => s.points.map(p => p.y));
     const yMin_pre = cfg.y?.min ?? Math.min(...allY_pre);
     const yMax_pre = cfg.y?.max ?? Math.max(...allY_pre);
+    const allX_pre = cfg.series.flatMap(s => s.points.map(p => p.x));
+    const xMin_pre = cfg.x?.min ?? Math.min(...allX_pre);
+    const xMax_pre = cfg.x?.max ?? Math.max(...allX_pre);
     const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.52, 440));
     const plotH_pre = H - 16 - (narrow ? 34 : 46); // top=16, bottom fixe
     const toSvgY = v => 16 + (1 - (v - yMin_pre) / (yMax_pre - yMin_pre)) * plotH_pre;
@@ -149,6 +152,10 @@
       if (!s.endNote && !s.endLabel) return "none";
       const lastPt = s.points[s.points.length - 1];
       if (!lastPt) return "outside";
+      // Une série qui s'arrête avant le bord droit aurait son étiquette
+      // « extérieure » au milieu du tracé, parmi les courbes : on la place en
+      // mode intérieur, qui garantit un écart minimal avec les courbes.
+      if (lastPt.x < xMax_pre - 0.02 * (xMax_pre - xMin_pre)) return "inside";
       const thisY = toSvgY(lastPt.y);
       for (const os of cfg.series) {
         if (os === s) continue;
@@ -290,10 +297,71 @@
     });
     svg.appendChild(seriesLayer);
 
-    // Anti-chevauchement : les étiquettes de fin de courbe sont écartées
-    // verticalement d'un pas minimal, puis ramenées dans la zone de tracé.
+    // Écart minimal entre le texte d'une étiquette intérieure et les courbes :
+    // le texte s'étend vers la gauche depuis le point final, il ne doit donc
+    // reposer sur aucune courbe le long de son emprise horizontale. On
+    // échantillonne toutes les courbes sur cette emprise et on décale le texte
+    // au-dessus ou en dessous, à la position libre la plus proche.
+    const LABEL_H = 12;     // hauteur approximative du texte (px SVG)
+    const LABEL_CLEAR = 6;  // écart minimal entre le bord du texte et une courbe
+    const placedInside = []; // étiquettes intérieures déjà posées : {x1, x2, cy}
+    seriesNodes.forEach(sn => {
+      if (!sn.endNoteEl || labelMode[sn.idx] !== "inside") return;
+      const last = sn.scaled[sn.scaled.length - 1];
+      const textW = (sn.endNoteEl.textContent || "").length * CHAR_W;
+      const x2 = last.x - 8;
+      const x1 = Math.max(M.left, x2 - textW);
+      // Ordonnées (SVG) de toutes les courbes sur l'emprise du texte.
+      const obstacles = [];
+      const stepX = Math.max(4, (x2 - x1) / 12);
+      seriesNodes.forEach(o => {
+        const pts = o.scaled;
+        const lo = pts[0].x, hi = pts[pts.length - 1].x;
+        for (let x = x1; x <= x2 + 0.01; x += stepX) {
+          if (x < lo || x > hi) continue;
+          obstacles.push(interpolateY(pts, x));
+        }
+      });
+      const need = LABEL_H / 2 + LABEL_CLEAR;
+      const clearanceAt = cy => obstacles.length
+        ? Math.min(...obstacles.map(oy => Math.abs(oy - cy)))
+        : Infinity;
+      // Les autres étiquettes intérieures dont l'emprise horizontale recoupe
+      // celle-ci sont aussi des obstacles (texte sur texte = illisible).
+      const labelFree = cy => placedInside.every(p =>
+        p.x2 < x1 || p.x1 > x2 || Math.abs(p.cy - cy) >= LABEL_H + 2
+      );
+      let center = null;
+      let best = { cy: last.y - need, clear: -Infinity };
+      for (let d = need; d <= 80 && center === null; d += 2) {
+        for (const cy of [last.y - d, last.y + d]) {
+          if (cy - LABEL_H / 2 < M.top + 2 || cy + LABEL_H / 2 > M.top + plotH - 2) continue;
+          if (!labelFree(cy)) continue;
+          const clear = clearanceAt(cy);
+          if (clear >= need) { center = cy; break; }
+          if (clear > best.clear) best = { cy, clear };
+        }
+      }
+      if (center === null) center = best.cy;
+      sn.endNoteEl.setAttribute("y", center + 4);
+      placedInside.push({ x1, x2, cy: center });
+      // Trait de liaison si le texte a dû s'éloigner nettement de la courbe.
+      if (Math.abs(center - last.y) > 18) {
+        const above = center < last.y;
+        seriesLayer.appendChild(el("line", {
+          x1: last.x, y1: above ? last.y - 4 : last.y + 4,
+          x2: last.x, y2: above ? center + 2 : center - 8,
+          stroke: sn.cfg.color, "stroke-width": 1, opacity: 0.55
+        }));
+      }
+    });
+
+    // Anti-chevauchement : les étiquettes extérieures (marge droite) sont
+    // écartées verticalement d'un pas minimal, puis ramenées dans la zone de
+    // tracé. Les étiquettes intérieures sont déjà placées ci-dessus avec un
+    // écart garanti vis-à-vis des courbes : on n'y retouche plus.
     const placed = seriesNodes
-      .filter(sn => sn.endNoteEl)
+      .filter(sn => sn.endNoteEl && labelMode[sn.idx] === "outside")
       .map(sn => {
         const last = sn.scaled[sn.scaled.length - 1];
         const y0 = +sn.endNoteEl.getAttribute("y");
