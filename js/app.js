@@ -500,30 +500,152 @@
     ".chart-axis-label{fill:#5b6671;font-size:12px}.chart-endnote{font-size:12px;font-weight:700}" +
     ".chart-ref-line{stroke:#d62728;stroke-dasharray:4 4}.chart-focus-line{display:none}";
 
-  function downloadSvgPng(svg, filename) {
+  const EXPORT_FONT = "'Segoe UI', Arial, sans-serif";
+
+  // Découpe un texte en lignes tenant dans une largeur donnée.
+  function wrapLines(ctx, text, maxW) {
+    const words = String(text).split(/\s+/).filter(Boolean);
+    const lines = []; let line = "";
+    words.forEach(w => {
+      const t = line ? line + " " + w : w;
+      if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; }
+      else line = t;
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  // Entrées de légende d'une carte : [{ color, dash, label }] — couleur nulle
+  // pour un simple texte. Les libellés complets sont pris dans l'attribut
+  // title (la légende affichée peut être raccourcie sur mobile).
+  function legendEntries(card) {
+    const items = [...card.querySelectorAll(".chart-legend .legend-item")];
+    if (items.length) {
+      return items.map(it => {
+        const line = it.querySelector(".legend-swatch line");
+        return {
+          color: line ? line.getAttribute("stroke") : null,
+          dash: !!(line && line.getAttribute("stroke-dasharray")),
+          label: (it.title || it.textContent).replace(/\s+/g, " ").trim()
+        };
+      });
+    }
+    const inline = card.querySelector(".chart-inline-legend");
+    if (!inline) return [];
+    const entries = []; let cur = null;
+    inline.childNodes.forEach(n => {
+      if (n.nodeType === 1 && n.classList && n.classList.contains("legend-swatch")) {
+        const l = n.querySelector("line");
+        cur = { color: l ? l.getAttribute("stroke") : null, dash: !!(l && l.getAttribute("stroke-dasharray")), label: "" };
+        entries.push(cur);
+      } else if (cur) {
+        cur.label += n.textContent;
+      } else if (n.textContent.trim()) {
+        cur = { color: null, dash: false, label: n.textContent };
+        entries.push(cur);
+      }
+    });
+    entries.forEach(e => { e.label = e.label.replace(/\s+/g, " ").replace(/^[\s·]+|[\s·]+$/g, "").trim(); });
+    return entries.filter(e => e.label);
+  }
+
+  // Export PNG complet : titre, sous-titre, graphique, légende et source —
+  // l'image se suffit à elle-même une fois partagée.
+  function exportChartPng(card, svg, filename) {
+    if (!svg) return;
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const cw = (vb && vb.width) || svg.clientWidth || 760;
+    const ch = (vb && vb.height) || svg.clientHeight || 440;
+    const W = Math.max(cw, 640);
+    const chartH = ch * (W / cw);
+    const pad = 20, innerW = W - 2 * pad;
+
+    const txt = sel => { const e = card.querySelector(sel); return e ? e.textContent.replace(/\s+/g, " ").trim() : ""; };
+    const title = txt(".chart-title strong");
+    const subtitle = txt(".chart-title span");
+    const source = txt(".chart-source");
+    const legend = legendEntries(card);
+    const credit = "Le COR sous l'œil des citoyens — wald52.github.io/Le-COR";
+
+    // Pré-calcul de la mise en page avec un contexte de mesure.
+    const meas = document.createElement("canvas").getContext("2d");
+    meas.font = "700 17px " + EXPORT_FONT;
+    const titleLines = wrapLines(meas, title, innerW);
+    meas.font = "12.5px " + EXPORT_FONT;
+    const subLines = wrapLines(meas, subtitle, innerW);
+    meas.font = "11.5px " + EXPORT_FONT;
+    const rows = [];
+    {
+      let x = 0, row = [];
+      legend.forEach(e => {
+        const swW = e.color ? 30 : 0;
+        const wEntry = swW + meas.measureText(e.label).width + 22;
+        if (x + wEntry > innerW && row.length) { rows.push(row); row = []; x = 0; }
+        row.push(Object.assign({ x: x }, e));
+        x += wEntry;
+      });
+      if (row.length) rows.push(row);
+    }
+    meas.font = "italic 10.5px " + EXPORT_FONT;
+    const srcLines = wrapLines(meas, source, innerW);
+
+    const H = pad + titleLines.length * 22 + 6 + subLines.length * 17 +
+      8 + chartH + 6 + rows.length * 19 + 10 + srcLines.length * 15 + 6 + 14 + pad;
+
+    // Image SVG du graphique, styles embarqués (axes, libellés…).
     const clone = svg.cloneNode(true);
+    clone.querySelectorAll(".reveal-rect").forEach(r => r.setAttribute("width", 99999));
     const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
     style.textContent = EXPORT_CSS;
     clone.insertBefore(style, clone.firstChild);
-    const vb = svg.viewBox.baseVal;
-    const w = (vb && vb.width) || svg.clientWidth || 760;
-    const h = (vb && vb.height) || svg.clientHeight || 440;
     const xml = new XMLSerializer().serializeToString(clone);
-    const src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
     const img = new Image();
     img.onload = () => {
-      const s = 2, c = document.createElement("canvas");
-      c.width = w * s; c.height = h * s;
+      const s = 2;
+      const c = document.createElement("canvas");
+      c.width = Math.round(W * s); c.height = Math.round(H * s);
       const ctx = c.getContext("2d");
-      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
-      ctx.drawImage(img, 0, 0, c.width, c.height);
+      ctx.scale(s, s);
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+      ctx.textBaseline = "top";
+      let y = pad;
+      ctx.fillStyle = "#1f4e79"; ctx.font = "700 17px " + EXPORT_FONT;
+      titleLines.forEach(l => { ctx.fillText(l, pad, y); y += 22; });
+      y += 6;
+      ctx.fillStyle = "#5b6671"; ctx.font = "12.5px " + EXPORT_FONT;
+      subLines.forEach(l => { ctx.fillText(l, pad, y); y += 17; });
+      y += 8;
+      ctx.drawImage(img, 0, y, W, chartH);
+      y += chartH + 6;
+      ctx.font = "11.5px " + EXPORT_FONT;
+      rows.forEach(row => {
+        row.forEach(e => {
+          let x = pad + e.x;
+          if (e.color) {
+            ctx.strokeStyle = e.color; ctx.lineWidth = 3; ctx.lineCap = "round";
+            ctx.setLineDash(e.dash ? [5, 3] : []);
+            ctx.beginPath(); ctx.moveTo(x, y + 6); ctx.lineTo(x + 22, y + 6); ctx.stroke();
+            ctx.setLineDash([]);
+            x += 30;
+          }
+          ctx.fillStyle = "#1c2530";
+          ctx.fillText(e.label, x, y);
+        });
+        y += 19;
+      });
+      y += 10;
+      ctx.fillStyle = "#5b6671"; ctx.font = "italic 10.5px " + EXPORT_FONT;
+      srcLines.forEach(l => { ctx.fillText(l, pad, y); y += 15; });
+      y += 6;
+      ctx.fillStyle = "#9aa7b4"; ctx.font = "10px " + EXPORT_FONT;
+      ctx.fillText(credit, pad, y);
       c.toBlob(b => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(b); a.download = filename;
         a.click(); URL.revokeObjectURL(a.href);
       });
     };
-    img.src = src;
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
   }
 
   function cardTitle(card) {
@@ -546,8 +668,7 @@
       dl.innerHTML = icon("download") + '<span class="tlabel">PNG</span>';
       dl.title = "Télécharger ce graphique en image"; dl.setAttribute("aria-label", "Télécharger en PNG");
       dl.addEventListener("click", () => {
-        const svg = card.querySelector("svg");
-        if (svg) downloadSvgPng(svg, "cor-" + slug(cardTitle(card)) + ".png");
+        exportChartPng(card, card.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
       });
       bar.appendChild(zoom); bar.appendChild(dl);
       card.appendChild(bar);
@@ -576,17 +697,15 @@
       body.appendChild(target);
       host.__zoomRender(target);
     } else {
-      const svg = card.querySelector("svg");
+      const svg = card.querySelector(".chart-svg");
       if (!svg) return;
       const clone = svg.cloneNode(true);
       clone.querySelectorAll(".reveal-rect").forEach(r => r.setAttribute("width", 99999));
       clone.removeAttribute("height"); clone.style.width = "100%"; clone.style.height = "auto";
       body.appendChild(clone);
     }
-    document.getElementById("zoom-dl").onclick = () => {
-      const svg = body.querySelector("svg");
-      if (svg) downloadSvgPng(svg, "cor-" + slug(cardTitle(card)) + ".png");
-    };
+    document.getElementById("zoom-dl").onclick = () =>
+      exportChartPng(card, body.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
   }
 
   function setupZoom() {
