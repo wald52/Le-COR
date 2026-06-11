@@ -154,11 +154,15 @@ window.COR_DATA = {
     title: "Le COR a discrètement abaissé son hypothèse de productivité",
     subtitle: "Croissance annuelle de la productivité du travail retenue à long terme (en %)",
     yLabel: "% / an",
-    note: "Jusqu'en 2021, l'éventail allait de 1,0 % à 1,8 %. À partir de 2022, le COR décale tous ses scénarios vers le bas (0,7 % à 1,6 %), puis retient 0,7 % comme référence en 2025 — confirmé en 2026.",
-    source: "COR, rapports annuels 2019 à 2026 (hypothèses économiques de long terme).",
+    note: "Jusqu'en 2021, l'éventail allait de 1,0 % à 1,8 % (et même 2,0 % en 2016). À partir de 2022, le COR décale tous ses scénarios vers le bas (0,7 % à 1,6 %), puis retient 0,7 % comme référence en 2025 — confirmé en 2026.",
+    source: "COR, rapports annuels 2016 à 2026 (scénarios de productivité des fichiers de résultats).",
     // Pour chaque rapport : éventail des scénarios + scénario de référence.
     rapports: [
+      { year: 2016, min: 1.0, max: 2.0, central: 1.3 },
+      { year: 2017, min: 1.0, max: 1.8, central: 1.3 },
+      { year: 2018, min: 1.0, max: 1.8, central: 1.3 },
       { year: 2019, min: 1.0, max: 1.8, central: 1.3 },
+      { year: 2020, min: 1.0, max: 1.8, central: 1.3 },
       { year: 2021, min: 1.0, max: 1.8, central: 1.3 },
       { year: 2022, min: 0.7, max: 1.6, central: 1.3 },
       { year: 2023, min: 0.7, max: 1.6, central: 1.0 },

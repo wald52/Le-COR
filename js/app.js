@@ -135,7 +135,7 @@
 
     d.rapports.forEach((r, i) => {
       const x = sx(i);
-      const color = i >= 2 ? "#d62728" : "#1f4e79"; // bascule visible à partir de 2022
+      const color = r.year >= 2022 ? "#d62728" : "#1f4e79"; // bascule visible à partir de 2022
       // Barre min→max
       svg.appendChild(mk("line", {
         x1: x, y1: sy(r.max), x2: x, y2: sy(r.min),
@@ -150,10 +150,12 @@
       const ct = mk("text", { x: x + 12, y: sy(r.central) - 8, class: "chart-endnote", fill: color });
       ct.textContent = r.central.toFixed(1).replace(".", ",");
       svg.appendChild(ct);
-      // Étiquette année
-      const yl = mk("text", { x: x, y: M.top + plotH + 24, class: "chart-axis-label", "text-anchor": "middle" });
-      yl.textContent = r.year;
-      svg.appendChild(yl);
+      // Étiquette année (une sur deux quand l'écran est étroit)
+      if (!narrow || i % 2 === 0) {
+        const yl = mk("text", { x: x, y: M.top + plotH + 24, class: "chart-axis-label", "text-anchor": "middle" });
+        yl.textContent = r.year;
+        svg.appendChild(yl);
+      }
     });
 
     svg.appendChild(mk("line", { x1: M.left, y1: M.top + plotH, x2: M.left + plotW, y2: M.top + plotH, class: "chart-axis" }));

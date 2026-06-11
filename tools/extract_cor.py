@@ -720,7 +720,7 @@ def build_explorer(multi=None):
             series,
             "Le solde migratoire (entrées − sorties). Hypothèse de +70 000/an jusqu'au "
             "rapport 2025, relevée à +150 000/an dans les projections 2026.",
-            "COR / INSEE, rapports 2019-2026 (fig. 1.2 de chaque rapport).", 1995)
+            "COR / INSEE, rapports 2017-2026 (solde migratoire, scénario central de chaque rapport).", 1995)
     r = _rows("partie 1", "Fig 1.11")
     if r:
         o, p = _obs_proj(r, 100)
@@ -731,7 +731,7 @@ def build_explorer(multi=None):
             "Le taux de chômage de long terme retenu par chaque rapport — longtemps 7 %, "
             "abaissé à 4,5 % en 2023 (cible de plein emploi) puis 5 % en 2024, avant de "
             "revenir à 7 % dès 2025.",
-            "COR, rapports 2019-2026 (taux de chômage observé puis projeté).")
+            "COR, rapports 2017-2026 (taux de chômage observé puis projeté).")
     r = _rows("partie 1", "Fig 1.5")
     if r:
         o, p = _obs_proj(r, 1)
@@ -742,7 +742,7 @@ def build_explorer(multi=None):
             series,
             "Combien de personnes en âge de travailler pour une personne de 65 ans et plus. "
             "Il s'effondre avec le vieillissement — un peu plus à chaque jeu de projections.",
-            "COR / INSEE, rapports 2019-2026 (projections 2016, 2021 et 2026).")
+            "COR / INSEE, rapports 2019-2026 (rapport démographique, projections INSEE successives).")
     # Les effectifs cotisants/retraités ne sont publiés que dans les « données
     # complémentaires », absentes du rapport 2026 : on superpose 2024 et 2025.
     cr = _rows("complémentaires", "Cotisants_Retraités", R25)
@@ -773,7 +773,7 @@ def build_explorer(multi=None):
             series,
             "Nombre d'enfants par femme. Hypothèse de 1,95 jusqu'en 2021, abaissée à "
             "1,80 en 2022 puis à 1,45 en 2026 — cette fois sous l'observé (~1,56 en 2025).",
-            "COR / INSEE, rapports 2019-2026 (fig. 1.1 de chaque rapport).")
+            "COR / INSEE, rapports 2017-2026 (fécondité, scénario central de chaque rapport).")
     ev = _rows("partie 1", "Fig 1.3")
     if ev:
         o = _row_label(ev, "Observé")
@@ -785,7 +785,7 @@ def build_explorer(multi=None):
             series,
             "Nombre d'années encore à vivre à 65 ans (femmes). Elle progresse à chaque "
             "jeu de projections, ce qui allonge la durée de retraite.",
-            "COR / INSEE, rapports 2019-2026 (espérance de vie à 65 ans, scénario central).")
+            "COR / INSEE, rapports 2019-2026 (espérance de vie à 65 ans, scénario central de chaque rapport).")
 
     # --- Emploi & économie
     r = _rows("partie 1", "Fig 1.12")
@@ -816,7 +816,7 @@ def build_explorer(multi=None):
             add("productivite", "Productivité du travail", "%/an", " %", s,
                 "Croissance de la productivité : moteur des salaires donc des cotisations. "
                 "Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025).",
-                "COR, rapports 2019-2026 (productivité observée puis projetée, scénario central).")
+                "COR, rapports 2018-2026 (productivité observée puis projetée, scénario central de chaque rapport).")
 
     # --- Pensions & retraités
     r = _rows("synthèse", "Âge conjoncturel")
@@ -844,7 +844,7 @@ def build_explorer(multi=None):
             series = vintage_series(pen, multi["pension_rel"])
         add("pension_rel", "Pension moyenne rapportée au salaire net", "%", " %",
             series, desc,
-            "COR, rapports 2023-2026 (pension nette moyenne et revenu net moyen, "
+            "COR, rapports 2022-2026 (pension nette moyenne et revenu net moyen, "
             "scénario de référence de chaque rapport).")
     nv = _rows("synthèse", "Niveau de vie relatif")
     if nv:
@@ -1277,48 +1277,54 @@ def build():
         }
         print(f"✓ productivité obs : {x0}-{x1}, {len(ma)} pts")
 
-    # ---- Hypothèses démographiques : scénario central de chaque époque
-    #      (espérance de vie et migration changent avec chaque jeu de
-    #      projections INSEE ; la fécondité est reprise des blocs ci-dessus).
-    ev_hyps = {}
-    for vy, dpat, fpat in [("2019", "2019-06", "Partie 1"),
-                           ("2025", "2025-06", "juin 2025 - partie 1"),
-                           ("2026", "2026-06", "partie 1")]:
-        s = labeled_row(first_file(dpat, fpat), ("espérance de vie", "65 ans"),
-                        "scénario central")
+    # ---- Hypothèses de la partie 1, sondées sur TOUS les millésimes : on
+    #      tente l'extraction partout, on ne garde que ce qui existe (les
+    #      formats trop anciens — 2016 et avant — sont écartés d'eux-mêmes).
+    ALL_P1 = [("2017", "2017-06", "Contexte"), ("2018", "2018-06", "contexte"),
+              ("2019", "2019-06", "partie 1"), ("2020", "2020-11", "partie 1"),
+              ("2021", "2021-06", "partie 1"), ("2022", "2022-09", "septembre 2022 - partie 1"),
+              ("2023", "2023-06", "partie 1"), ("2024", "2024-06", "partie 1"),
+              ("2025", "2025-06", "juin 2025 - partie 1"), ("2026", "2026-06", "partie 1")]
+
+    ev_hyps, mig_hyps, fec_hyps, ratio_hyps = {}, {}, {}, {}
+    for vy, dpat, fpat in ALL_P1:
+        path = first_file(dpat, fpat)
+        if not path:
+            continue
+        s = labeled_row(path, ("espérance de vie", "65 ans"), "scénario central")
         if s:
             ev_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
-    if ev_hyps:
-        print(f"✓ espérance de vie : {len(ev_hyps)} époques "
-              f"(2070 : {', '.join(f'{vy}={ev_hyps[vy].get(2070)}' for vy in sorted(ev_hyps))})")
-
-    mig_hyps = {}
-    for vy, dpat, fpat in [("2019", "2019-06", "partie 1"),
-                           ("2025", "2025-06", "juin 2025 - partie 1"),
-                           ("2026", "2026-06", "partie 1")]:
-        s = labeled_row(first_file(dpat, fpat), ("solde migratoire",),
-                        "scénario central", 0.001)
+        s = labeled_row(path, ("solde migratoire",), "scénario central", 0.001)
         if s:
             mig_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
-    if mig_hyps:
-        print(f"✓ migration : {len(mig_hyps)} époques")
-
-    fec_hyps = {}
-    for vy, f in (("2019", f_old), ("2025", f_2025), ("2026", f_2026)):
-        if f and f["central"]:
+        f = extract_fecondite(path)
+        if f and f.get("central"):
             fec_hyps[vy] = {y: v for y, v in f["central"].items() if y >= int(vy)}
+        s = block_labeled_row(path, ("rapport", "démographique"),
+                              "20-64 / 65+", "scénario central")
+        if s:
+            ratio_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
+    print(f"✓ espérance de vie : {len(ev_hyps)} millésimes "
+          f"(2070 : {', '.join(f'{vy}={ev_hyps[vy].get(2070)}' for vy in sorted(ev_hyps))})")
+    print(f"✓ migration : {len(mig_hyps)} millésimes")
+    print(f"✓ fécondité (hypothèses) : {len(fec_hyps)} millésimes "
+          f"(2070 : {', '.join(f'{vy}={fec_hyps[vy].get(2070)}' for vy in sorted(fec_hyps))})")
+    print(f"✓ rapport démographique : {len(ratio_hyps)} millésimes")
 
-    # ---- Chômage et taux d'emploi : le scénario retenu par chaque rapport
-    #      (le libellé porte l'hypothèse : 7 %, 4,5 %… → annotation de légende)
-    P1_FILES = [("2019", "2019-06", "partie 1"), ("2020", "2020-11", "partie 1"),
-                ("2021", "2021-06", "partie 1"), ("2022", "2022-09", "septembre 2022 - partie 1"),
-                ("2023", "2023-06", "partie 1"), ("2024", "2024-06", "partie 1"),
-                ("2025", "2025-06", "juin 2025 - partie 1"), ("2026", "2026-06", "partie 1")]
+    # ---- Chômage, taux d'emploi, productivité : le scénario retenu par
+    #      chaque rapport (le libellé porte l'hypothèse : 7 %, 4,5 %, 1,3 %…
+    #      → annotation de légende)
     REF_KEYS = ("tous scénarios", "scénario de référence")
+    PROD_KEYS = {"1,3": ("scénario de référence", "scénario 1,3"),
+                 "1,0": ("scénario de référence", "scénario 1,0"),
+                 "0,7": ("scénario de référence", "scénario 0,7")}
     cho_hyps, cho_notes = {}, {}
     emp_hyps, emp_notes = {}, {}
-    for vy, dpat, fpat in P1_FILES:
+    prod_hyps, prod_notes = {}, {}
+    for vy, dpat, fpat in ALL_P1:
         path = first_file(dpat, fpat)
+        if not path:
+            continue
         s, lbl = labeled_row_any(path, ("chômage", "projeté"), REF_KEYS, 100)
         if s:
             cho_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
@@ -1327,41 +1333,22 @@ def build():
         if s:
             emp_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
             emp_notes[vy] = _hyp_note(lbl)
-    print(f"✓ chômage : {len(cho_hyps)} millésimes "
-          f"({', '.join(f'{vy}:{cho_notes[vy]}' for vy in sorted(cho_hyps))})")
-    print(f"✓ emploi : {len(emp_hyps)} millésimes")
-
-    # ---- Productivité projetée : scénario central de chaque rapport
-    prod_hyps, prod_notes = {}, {}
-    for vy, dpat, fpat, keys in [
-            ("2019", "2019-06", "partie 1", ("scénario 1,3",)),
-            ("2021", "2021-06", "partie 1", ("scénario 1,3",)),
-            ("2023", "2023-06", "partie 1", ("scénario 1,0",)),
-            ("2025", "2025-06", "juin 2025 - partie 1", ("scénario de référence",)),
-            ("2026", "2026-06", "partie 1", ("scénario de référence",))]:
-        s, lbl = labeled_row_any(first_file(dpat, fpat),
-                                 ("productivité", "observés"), keys, 100)
+        s, lbl = labeled_row_any(path, ("productivité", "observés"),
+                                 PROD_KEYS.get(PROD_LABEL.get(vy, ""), REF_KEYS), 100)
         if s:
             prod_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
             prod_notes[vy] = _hyp_note(lbl)
+    print(f"✓ chômage : {len(cho_hyps)} millésimes "
+          f"({', '.join(f'{vy}:{cho_notes[vy]}' for vy in sorted(cho_hyps))})")
+    print(f"✓ emploi : {len(emp_hyps)} millésimes")
     print(f"✓ productivité projetée : {len(prod_hyps)} millésimes "
           f"({', '.join(f'{vy}:{prod_notes[vy]}' for vy in sorted(prod_hyps))})")
 
-    # ---- Rapport démographique 20-64 / 65+ : une époque par jeu de
-    #      projections INSEE (2016, 2021, 2026)
-    ratio_hyps = {}
-    for vy, dpat, fpat in [("2019", "2019-06", "partie 1"),
-                           ("2025", "2025-06", "juin 2025 - partie 1"),
-                           ("2026", "2026-06", "partie 1")]:
-        s = block_labeled_row(first_file(dpat, fpat), ("rapport", "démographique"),
-                              "20-64 / 65+", "scénario central")
-        if s:
-            ratio_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
-    print(f"✓ rapport démographique : {len(ratio_hyps)} époques")
-
     # ---- Pension moyenne / salaire moyen : scénario de référence par rapport
+    #      (avant 2022, la figure n'isole pas ces deux blocs : hors champ)
     pension_projs = {}
     for vy, dpat, fpat, ref in [
+            ("2022", "2022-09", "septembre 2022 - partie 2", 0.013),
             ("2023", "2023-06", "partie 2", 0.010),
             ("2024", "2024-06", "partie 2", "Sc. Ref"),
             ("2025", "2025-06", "juin 2025 - partie 2", "Sc. Ref"),
