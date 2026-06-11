@@ -54,6 +54,48 @@
     return pts.map((p, i) => (i === 0 ? "M" : "L") + p.x + "," + p.y).join(" ");
   }
 
+  /*
+   * Pastille de légende en SVG inline (attributs stroke/fill).
+   * Important : certains navigateurs (Samsung Internet en « mode sombre »)
+   * réécrivent les couleurs CSS (backgrounds…) mais pas les attributs SVG.
+   * En dessinant les pastilles comme les courbes (attributs SVG), la légende
+   * garde toujours exactement les mêmes couleurs que les courbes.
+   */
+  function swatchHTML(color, kind) {
+    const dash = kind === "dash" ? ' stroke-dasharray="5 3"' : "";
+    return `<svg class="legend-swatch" width="20" height="6" viewBox="0 0 20 6" aria-hidden="true">` +
+      `<line x1="1" y1="3" x2="19" y2="3" stroke="${color}" stroke-width="3" stroke-linecap="round"${dash}/></svg>`;
+  }
+  function dotHTML(color) {
+    return `<svg class="tt-dot" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">` +
+      `<circle cx="4.5" cy="4.5" r="4.5" fill="${color}"/></svg>`;
+  }
+
+  // Tableau de données repliable sous le graphique — alternative accessible
+  // (lecteurs d'écran, malvoyants) et gage de transparence.
+  function buildDataTable(container, cfg, suffix) {
+    const years = [...new Set(cfg.series.flatMap(s => s.points.map(p => p.x)))].sort((a, b) => a - b);
+    if (!years.length) return;
+    const first = years[0], last = years[years.length - 1];
+    const kept = years.filter(y => y % 5 === 0 || y === first || y === last);
+    const at = (s, y) => {
+      const p = s.points.find(p => p.x === y);
+      return p ? String(Math.round(p.y * 10) / 10).replace(".", ",") + suffix : "—";
+    };
+    let html = `<details class="data-details"><summary class="data-toggle">Voir les données (tableau)</summary>` +
+      `<div class="data-table-wrap"><table><caption class="visually-hidden">${cfg.ariaLabel || "Données du graphique"}</caption>` +
+      `<thead><tr><th scope="col">Année</th>`;
+    cfg.series.forEach(s => { html += `<th scope="col">${s.label}</th>`; });
+    html += "</tr></thead><tbody>";
+    kept.forEach(y => {
+      html += `<tr><th scope="row">${y}</th>`;
+      cfg.series.forEach(s => { html += `<td>${at(s, y)}</td>`; });
+      html += "</tr>";
+    });
+    html += "</tbody></table></div></details>";
+    container.insertAdjacentHTML("beforeend", html);
+  }
+
   /**
    * Crée un graphique en courbes.
    * @param {HTMLElement} container
@@ -72,9 +114,14 @@
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const hasEnd = cfg.series.some(s => s.endNote || s.endLabel);
+    // Marge droite dimensionnée sur la plus longue étiquette de fin de courbe
+    // (≈ 6,8 px par caractère en 12 px) pour qu'aucun mot ne soit coupé.
+    const endLen = Math.max(0, ...cfg.series.map(s => String(s.endNote || s.endLabel || "").length));
     const M = {
       top: 16,
-      right: hasEnd ? (narrow ? 46 : 92) : (narrow ? 14 : 24),
+      right: hasEnd
+        ? Math.min(Math.max(endLen * 6.8 + 14, narrow ? 40 : 56), narrow ? 96 : 124)
+        : (narrow ? 14 : 24),
       bottom: narrow ? 34 : 46,
       left: narrow ? 46 : 52
     };
@@ -172,26 +219,46 @@
       }
 
       // Étiquette de fin de courbe (label + valeur), façon PIIE.
+      let endNoteEl = null;
       if (s.endNote || s.endLabel) {
         const last = scaled[scaled.length - 1];
-        const txt = el("text", {
-          x: Math.min(last.x + 8, W - 4),
+        endNoteEl = el("text", {
+          x: Math.min(last.x + 8, W - M.right + 6),
           y: last.y + 4,
           class: "chart-endnote",
           fill: s.color,
           "text-anchor": "start"
         });
-        txt.textContent = s.endNote || s.endLabel;
-        g.appendChild(txt);
+        endNoteEl.textContent = s.endNote || s.endLabel;
+        g.appendChild(endNoteEl);
       }
 
       seriesLayer.appendChild(g);
-      seriesNodes.push({ cfg: s, node: g, scaled });
+      seriesNodes.push({ cfg: s, node: g, scaled, endNoteEl });
     });
     svg.appendChild(seriesLayer);
 
+    // Anti-chevauchement : les étiquettes de fin de courbe sont écartées
+    // verticalement d'un pas minimal, puis ramenées dans la zone de tracé.
+    const placed = seriesNodes
+      .filter(sn => sn.endNoteEl)
+      .map(sn => ({ el: sn.endNoteEl, y: +sn.endNoteEl.getAttribute("y") }))
+      .sort((a, b) => a.y - b.y);
+    if (placed.length > 1) {
+      const minGap = narrow ? 11 : 13;
+      const topY = M.top + 8, bottomY = M.top + plotH + 4;
+      for (let i = 1; i < placed.length; i++) {
+        if (placed[i].y - placed[i - 1].y < minGap) placed[i].y = placed[i - 1].y + minGap;
+      }
+      for (let i = placed.length - 1; i >= 0; i--) {
+        if (placed[i].y > bottomY) placed[i].y = bottomY;
+        if (i < placed.length - 1 && placed[i + 1].y - placed[i].y < minGap) placed[i].y = placed[i + 1].y - minGap;
+      }
+      placed.forEach(p => p.el.setAttribute("y", Math.max(p.y, topY)));
+    }
+
     // --- Animation « tracé » (révélation gauche → droite) ---
-    if (ANIMATE && !reducedMotion()) {
+    if (ANIMATE && !reducedMotion() && cfg.animate !== false) {
       revealRect.setAttribute("width", 0);
       const dur = 1100, t0 = performance.now();
       let raf;
@@ -249,7 +316,7 @@
         const v = valueAt(s, xr);
         if (v != null) {
           any = true;
-          rows += `<div class="tt-row"><span class="tt-dot" style="background:${s.color}"></span>${s.label} : <strong>${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}</strong></div>`;
+          rows += `<div class="tt-row">${dotHTML(s.color)}${s.label} : <strong>${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}</strong></div>`;
         }
       });
       if (!any) { tip.style.opacity = 0; return; }
@@ -272,13 +339,37 @@
     if (cfg.legend !== false) {
       const legend = document.createElement("div");
       legend.className = "chart-legend";
+      // Sur petit écran, les libellés du type « Rapport 2023 (réf. 1,0 %) »
+      // sont raccourcis à l'année pour tenir sur une seule ligne ; le libellé
+      // complet reste disponible (title, infobulle, tableau de données).
+      const shortFor = label => {
+        if (!narrow) return label;
+        const m = /^(Rapport|Projection|Hypothèse)\b/.test(label) &&
+          label.match(/(19|20)\d{2}(\s*→\s*(19|20)\d{2})?/);
+        return m ? m[0] : label;
+      };
+      // Quand les libellés sont réduits à l'année, une ligne d'en-tête rappelle
+      // que ces courbes sont des projections (et non des données observées).
+      let groupDone = false;
+      const groupHeader = label => {
+        const d = document.createElement("div");
+        d.className = "legend-group";
+        d.textContent = /^Hypothèse/.test(label) ? "Hypothèses des rapports :" : "Projections des rapports :";
+        return d;
+      };
       seriesNodes.forEach((sn, idx) => {
+        const text = shortFor(sn.cfg.label);
+        if (text !== sn.cfg.label && !groupDone) {
+          legend.appendChild(groupHeader(sn.cfg.label));
+          groupDone = true;
+        }
         const item = document.createElement("button");
-        item.className = "legend-item";
+        item.className = "legend-item" +
+          (sn.cfg.kind === "solid" ? " is-solid" : "") +
+          (text === sn.cfg.label ? " is-long" : "");
         item.type = "button";
-        item.innerHTML =
-          `<span class="legend-swatch ${sn.cfg.kind === 'dash' ? 'is-dash' : ''}" style="--c:${sn.cfg.color}"></span>` +
-          `<span>${sn.cfg.label}</span>`;
+        item.title = sn.cfg.label;
+        item.innerHTML = swatchHTML(sn.cfg.color, sn.cfg.kind) + `<span>${text}</span>`;
         const dim = on => {
           seriesNodes.forEach(o => {
             o.node.style.opacity = on && o !== sn ? 0.18 : 1;
@@ -293,8 +384,15 @@
       container.appendChild(legend);
     }
 
+    if (cfg.table !== false) buildDataTable(container, cfg, suffix);
+
+    // Permet à la vue agrandie de re-tracer le graphique à sa propre taille
+    // (textes nets et lisibles) au lieu d'étirer une copie de l'image.
+    container.__zoomRender = target =>
+      lineChart(target, Object.assign({}, cfg, { animate: false, table: false }));
+
     return svg;
   }
 
-  window.CORChart = { lineChart, setAnimate, isAnimating: () => ANIMATE };
+  window.CORChart = { lineChart, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
 })();
