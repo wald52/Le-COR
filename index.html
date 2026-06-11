@@ -17,14 +17,14 @@
   <meta property="og:locale" content="fr_FR" />
   <meta property="og:site_name" content="Le COR sous l'œil des citoyens" />
   <meta property="og:title" content="Ceci est mon COR — le COR change-t-il d'avis sur nos retraites ?" />
-  <meta property="og:description" content="Outil citoyen : l'évolution des hypothèses du Conseil d'orientation des retraites (2001–2025), en données officielles. Graphiques, explorateur et simulateur." />
+  <meta property="og:description" content="Outil citoyen : l'évolution des hypothèses du Conseil d'orientation des retraites (2001–2026), en données officielles. Graphiques, explorateur et simulateur." />
   <meta property="og:url" content="https://wald52.github.io/Le-COR/" />
   <meta property="og:image" content="https://wald52.github.io/Le-COR/icons/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Ceci est mon COR — le COR change-t-il d'avis sur nos retraites ?" />
-  <meta name="twitter:description" content="L'évolution des hypothèses du COR (2001–2025) en données officielles : graphiques, explorateur, simulateur." />
+  <meta name="twitter:description" content="L'évolution des hypothèses du COR (2001–2026) en données officielles : graphiques, explorateur, simulateur." />
   <meta name="twitter:image" content="https://wald52.github.io/Le-COR/icons/og-image.png" />
 
   <link rel="manifest" href="./manifest.webmanifest" />
@@ -60,7 +60,7 @@
     <!-- HERO -->
     <section class="hero" id="intro">
       <div class="hero-inner">
-        <p class="kicker">Outil citoyen · données publiques · à jour&nbsp;: rapport de juin 2025</p>
+        <p class="kicker">Outil citoyen · données publiques · à jour&nbsp;: rapport de juin 2026</p>
         <h1>Le COR change-t-il d'avis sur nos retraites&nbsp;?</h1>
         <p class="lede">
           Chaque année, le <strong>Conseil d'orientation des retraites</strong> publie des
@@ -78,10 +78,10 @@
           <button id="btn-install" class="cta cta-ghost" type="button" hidden>Installer l'app</button>
         </div>
         <ul class="key-figures" aria-label="Chiffres-clés">
-          <li><strong>2001→2025</strong><span>rapports du COR analysés, en données officielles</span></li>
-          <li><strong>0,7 %</strong><span>productivité supposée en 2025 (abaissée depuis 1,3 %)</span></li>
-          <li><strong>1,62</strong><span>fécondité réelle 2024 (le COR supposait 1,80)</span></li>
-          <li><strong>−1,4 %</strong><span>du PIB&nbsp;: solde du système projeté en 2070</span></li>
+          <li><strong>2001→2026</strong><span>rapports du COR analysés, en données officielles</span></li>
+          <li><strong>0,7 %</strong><span>productivité supposée depuis 2025 (abaissée depuis 1,3 %)</span></li>
+          <li><strong>1,45</strong><span>fécondité supposée dès 2028 (1,80 jusqu'au rapport 2025)</span></li>
+          <li><strong>−2,4 %</strong><span>du PIB&nbsp;: solde du système projeté en 2070 (−1,4 % il y a un an)</span></li>
         </ul>
       </div>
     </section>
@@ -102,17 +102,19 @@
             <span>Dépenses de retraite, en % du PIB — scénario de référence de chaque rapport</span>
           </figcaption>
           <div id="chart-pib" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2016–2025 — <strong>données officielles</strong> extraites des fichiers Excel du COR (séries année par année, scénario de référence de chaque rapport).</p>
+          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2016–2026 — <strong>données officielles</strong> extraites des fichiers Excel du COR (séries année par année, scénario de référence de chaque rapport).</p>
         </figure>
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>
           <p>
             Les rapports jusqu'en 2021 (scénario 1,3 %) projetaient des dépenses
             <strong>décroissantes</strong> — jusqu'à ~12,3 % du PIB en 2070 : le système se
-            « finançait » avec le temps. Le rapport 2025, lui, retient une productivité
-            de référence de <strong>0,7 %</strong> et projette des dépenses <strong>en hausse</strong>
-            (~14,2 % en 2070). Ce n'est pas la réalité qui a changé&nbsp;: c'est surtout
-            l'<strong>hypothèse de productivité</strong> qui a été abaissée d'un rapport à l'autre.
+            « finançait » avec le temps. En 2025, l'hypothèse de productivité abaissée à
+            <strong>0,7 %</strong> faisait remonter la projection à ~14,2 %. Le rapport 2026
+            va plus loin&nbsp;: avec les <strong>nouvelles hypothèses démographiques</strong>
+            (fécondité abaissée à 1,45), les dépenses grimperaient à <strong>~15,3 % du PIB
+            en 2070</strong>. En sept ans, la même courbe est passée de « ça baisse » à
+            « ça monte fortement » — sans que la réalité, elle, ait encore tranché.
           </p>
         </div>
       </div>
@@ -130,10 +132,10 @@
         <figure class="chart-card">
           <figcaption class="chart-title">
             <strong>Le solde du système de retraite plonge dans les projections récentes</strong>
-            <span>Solde en % du PIB — scénario de référence des rapports 2023, 2024 et 2025</span>
+            <span>Solde en % du PIB — scénario de référence des rapports 2023 à 2026</span>
           </figcaption>
           <div id="chart-solde" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, synthèses des rapports 2023–2025 — <strong>données officielles</strong> (scénario de référence).</p>
+          <p class="chart-source">Source&nbsp;: COR, synthèses des rapports 2023–2026 — <strong>données officielles</strong> (scénario de référence).</p>
         </figure>
 
         <p class="section-intro" style="margin-top:32px">
@@ -143,20 +145,21 @@
         <figure class="chart-card">
           <figcaption class="chart-title">
             <strong>Dépenses vs ressources&nbsp;: l'effet ciseaux</strong>
-            <span>Système de retraite en % du PIB — scénario de référence du rapport 2025</span>
+            <span>Système de retraite en % du PIB — scénario de référence du rapport 2026</span>
           </figcaption>
           <div id="chart-ciseaux" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, rapport annuel 2025 — données officielles (scénario de référence).</p>
+          <p class="chart-source">Source&nbsp;: COR, rapport annuel 2026 — données officielles (scénario de référence).</p>
         </figure>
 
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>
           <p>
-            Le rapport 2025 projette un solde à <strong>−1,4 % du PIB en 2070</strong>, bien
-            plus dégradé que les rapports 2023 et 2024 (≈−0,8 %). La cause principale n'est
-            pas une explosion des dépenses, mais une <strong>érosion des ressources</strong>
-            (12,8 % du PIB en 2070 contre 13,9 % aujourd'hui), liée notamment aux hypothèses
-            économiques retenues.
+            Le rapport 2026 projette un solde à <strong>−2,4 % du PIB en 2070</strong> —
+            contre −1,4 % dans le rapport 2025 et ≈−0,8 % dans ceux de 2023-2024&nbsp;: en
+            trois rapports, le déficit projeté a triplé. Cette fois, le ciseaux joue des
+            deux côtés&nbsp;: des <strong>ressources qui s'érodent</strong> (12,9 % du PIB en
+            2070 contre 14,0 % aujourd'hui) et des <strong>dépenses qui remontent</strong>
+            (15,3 % en 2070), sous l'effet des nouvelles hypothèses démographiques.
           </p>
         </div>
       </div>
@@ -170,7 +173,8 @@
           La <strong>croissance de la productivité</strong> détermine la croissance des salaires,
           donc des cotisations qui financent les retraites. Le COR a longtemps testé
           des scénarios de 1,0&nbsp;% à 1,8&nbsp;%. À partir de 2022, il a <strong>décalé tout
-          l'éventail vers le bas</strong>, puis retenu 0,7&nbsp;% comme référence en 2025.
+          l'éventail vers le bas</strong>, puis retenu 0,7&nbsp;% comme référence en 2025 —
+          un choix confirmé par le rapport 2026.
         </p>
         <figure class="chart-card">
           <figcaption class="chart-title">
@@ -178,7 +182,7 @@
             <span>Croissance annuelle de la productivité du travail à long terme (en&nbsp;%)</span>
           </figcaption>
           <div id="chart-prod" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, hypothèses économiques de long terme, rapports 2019–2025.</p>
+          <p class="chart-source">Source&nbsp;: COR, hypothèses économiques de long terme, rapports 2019–2026.</p>
         </figure>
         <div class="takeaway">
           <h3>Pourquoi c'est important</h3>
@@ -208,14 +212,14 @@
             <span>Niveau de vie des retraités / ensemble de la population (100 % = parité)</span>
           </figcaption>
           <div id="chart-niveau" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, rapport annuel 2025 — données officielles (Insee-DGI, scénario de référence).</p>
+          <p class="chart-source">Source&nbsp;: COR, rapport annuel 2026 — données officielles (Insee-DGI, scénario de référence).</p>
         </figure>
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>
           <p>
             Le niveau de vie relatif des retraités est passé de ~70 % en 1970 à la
-            <strong>quasi-parité (~97 %) aujourd'hui</strong>. Mais le rapport 2025 projette
-            une <strong>baisse jusqu'à ~87 % en 2070</strong>&nbsp;: les pensions progresseraient
+            <strong>parité (~100 %) aujourd'hui</strong>. Mais le rapport 2026 projette
+            une <strong>baisse jusqu'à ~90 % en 2070</strong>&nbsp;: les pensions progresseraient
             moins vite que les salaires. C'est l'un des effets les moins visibles des
             hypothèses retenues.
           </p>
@@ -239,7 +243,7 @@
               <span>Nombre d'enfants par femme</span>
             </figcaption>
             <div id="chart-fecondite" class="chart-host"></div>
-            <p class="chart-source">Source&nbsp;: COR, rapports 2019 et 2025 — <strong>données officielles</strong> (hypothèses INSEE reprises par le COR ; observé INSEE, état civil).</p>
+            <p class="chart-source">Source&nbsp;: COR, rapports 2019, 2025 et 2026 — <strong>données officielles</strong> (hypothèses INSEE reprises par le COR ; observé INSEE, état civil).</p>
           </figure>
 
           <figure class="chart-card">
@@ -248,7 +252,7 @@
               <span>Croissance de la productivité du travail (%/an)</span>
             </figcaption>
             <div id="chart-prod-reel" class="chart-host"></div>
-            <p class="chart-source">Source&nbsp;: COR, rapport 2025 (fig. 1.9) — <strong>données officielles</strong> ; observé en moyenne mobile 5 ans.</p>
+            <p class="chart-source">Source&nbsp;: COR, rapport 2026 (fig. 1.10) — <strong>données officielles</strong> ; observé en moyenne mobile 5 ans.</p>
           </figure>
         </div>
 
@@ -256,11 +260,13 @@
           <h3>Le constat</h3>
           <p>
             Dans les deux cas, la <strong>réalité est passée sous l'hypothèse</strong>&nbsp;: la fécondité
-            a chuté plus vite que prévu (≈1,62 en 2024 contre 1,80–1,95 supposé) et la
-            productivité réelle (≈0,6&nbsp;%/an) est bien en dessous des 1,3&nbsp;% longtemps retenus.
-            C'est précisément pour cela que le COR <strong>révise ses hypothèses</strong> — souvent
-            avec retard. En février 2026, le COR a lui-même reconnu que ses hypothèses
-            démographiques « ne correspondent plus à la réalité ».
+            a chuté plus vite que prévu (≈1,56 en 2025 contre 1,80–1,95 supposé) et la
+            productivité réelle est restée très en dessous des 1,3&nbsp;% longtemps retenus
+            (jusqu'à devenir négative autour du Covid). Après avoir reconnu début 2026 que ses
+            hypothèses démographiques « ne correspondent plus à la réalité », le COR en tire
+            les conséquences dans son rapport de juin 2026&nbsp;: <strong>fécondité abaissée à
+            1,45</strong> — cette fois sous l'observé — et <strong>solde migratoire relevé à
+            +150 000/an</strong>. Réviser les hypothèses, c'est aussi changer le diagnostic.
           </p>
         </div>
       </div>
@@ -274,7 +280,7 @@
           Les principales hypothèses du <strong>scénario de référence</strong>, rapport après rapport.
         </p>
         <div id="hyp-table" class="table-wrap"></div>
-        <p class="chart-source">Source&nbsp;: COR, rapports annuels 2019–2025.</p>
+        <p class="chart-source">Source&nbsp;: COR, rapports annuels 2019–2026. En 2026, le COR adopte les nouvelles projections démographiques&nbsp;: fécondité abaissée à 1,45, solde migratoire relevé à +150 000/an.</p>
       </div>
     </section>
 
@@ -285,7 +291,7 @@
         <p class="section-intro">
           Plutôt qu'une longue liste de graphiques, choisissez un <strong>thème</strong> puis un
           <strong>indicateur</strong>&nbsp;: le graphique se met à jour. Tous viennent des fichiers
-          officiels du COR (rapport 2025, scénario de référence).
+          officiels du COR (rapport 2026, scénario de référence).
         </p>
         <div id="explorer-themes" class="exp-tabs" role="tablist" aria-label="Thèmes"></div>
         <div id="explorer-indicators" class="exp-chips" role="tablist" aria-label="Indicateurs"></div>
@@ -315,7 +321,7 @@
             <span>Dépenses publiques + privées — pays suivis par le COR</span>
           </figcaption>
           <div id="chart-international" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: OCDE (base SOCX), repris par le COR — rapport 2025.</p>
+          <p class="chart-source">Source&nbsp;: OCDE (base SOCX), repris par le COR — rapport 2026.</p>
         </figure>
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>
@@ -343,17 +349,17 @@
         <div class="sim">
           <div class="sim-lever">
             <div class="sim-head"><span>⏳ Reculer l'âge de départ</span><strong id="lv-age-out">+0 mois</strong></div>
-            <input type="range" id="lv-age" min="0" max="24" step="1" value="0" aria-label="Recul de l'âge de départ, en mois" />
+            <input type="range" id="lv-age" min="0" max="40" step="1" value="0" aria-label="Recul de l'âge de départ, en mois" />
             <p class="sim-note" id="lv-age-note"></p>
           </div>
           <div class="sim-lever">
             <div class="sim-head"><span>💶 Augmenter les cotisations</span><strong id="lv-cot-out">+0,0 pt</strong></div>
-            <input type="range" id="lv-cot" min="0" max="40" step="1" value="0" aria-label="Hausse du taux de cotisation, en dixièmes de point" />
+            <input type="range" id="lv-cot" min="0" max="60" step="1" value="0" aria-label="Hausse du taux de cotisation, en dixièmes de point" />
             <p class="sim-note" id="lv-cot-note"></p>
           </div>
           <div class="sim-lever">
             <div class="sim-head"><span>📉 Baisser le niveau des pensions</span><strong id="lv-pen-out">−0,0 %</strong></div>
-            <input type="range" id="lv-pen" min="0" max="24" step="1" value="0" aria-label="Baisse du niveau des pensions, en demi-points de pourcentage" />
+            <input type="range" id="lv-pen" min="0" max="36" step="1" value="0" aria-label="Baisse du niveau des pensions, en demi-points de pourcentage" />
             <p class="sim-note" id="lv-pen-note"></p>
           </div>
         </div>
@@ -389,7 +395,7 @@
           <h3>D'où viennent les données&nbsp;?</h3>
           <p>
             Toutes les courbes sont construites à partir des <strong>fichiers Excel officiels du
-            COR</strong> (rapports annuels 2014→2025), série par série, année par année — pas
+            COR</strong> (rapports annuels 2014→2026), série par série, année par année — pas
             d'estimation « à la louche ». L'extraction est faite par un script
             <strong>reproductible et public</strong> (<code>tools/extract_cor.py</code>)&nbsp;: à chaque nouveau
             rapport, il suffit de le relancer pour mettre le site à jour. Les fichiers sources
@@ -422,7 +428,7 @@
 
           <h3>Sources</h3>
           <p class="method-note">
-            Données issues des fichiers Excel des rapports annuels du COR (2014→2025),
+            Données issues des fichiers Excel des rapports annuels du COR (2014→2026),
             archivés dans le <a href="https://github.com/wald52/Le-COR/tree/main/data" target="_blank" rel="noopener">dossier <code>data/</code> du dépôt</a>.
           </p>
           <ul id="sources-list" class="sources"></ul>

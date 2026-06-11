@@ -10,7 +10,22 @@ traçable (réexécuter ce script régénère les données).
 Lancement :  python3 tools/extract_cor.py
 Dépendance :  openpyxl
 """
-import glob, os, json, openpyxl
+import glob, os, json, types, openpyxl
+from openpyxl.worksheet import print_settings
+
+# Certains classeurs du COR (ex. partie 3 de juin 2026) contiennent une zone
+# d'impression invalide (« #N/A ») qu'openpyxl refuse : on la tolère.
+_orig_print_titles = print_settings.PrintTitles.from_string.__func__
+
+
+def _safe_print_titles(cls, value):
+    try:
+        return _orig_print_titles(cls, value)
+    except Exception:
+        return types.SimpleNamespace(rows=None, cols=None)
+
+
+print_settings.PrintTitles.from_string = classmethod(_safe_print_titles)
 
 BASE = os.path.join(os.path.dirname(__file__), "..", "data", "Données du COR")
 
@@ -28,19 +43,24 @@ VINTAGES = [
     ("2023", "2023-06", "synthèse", 0.010),
     ("2024", "2024-06", "synthèse", None),
     ("2025", "2025-06", "synthèse", None),
+    ("2026", "2026-06", "synthèse", None),
 ]
+
+# Millésime le plus récent : sert de série « réalisé » et de base à
+# l'explorateur d'indicateurs.
+LATEST = "2026"
 
 # Productivité de référence affichée dans la légende (en %).
 PROD_LABEL = {"2016": "1,3", "2017": "1,3", "2018": "1,3", "2019": "1,3",
               "2020": "1,3", "2021": "1,3", "2022": "1,3", "2023": "1,0",
-              "2024": "1,0", "2025": "0,7"}
+              "2024": "1,0", "2025": "0,7", "2026": "0,7"}
 
 # Couleur par millésime : dégradé gris → bleu → vert → orange → rouge,
-# pour lire visuellement l'écoulement du temps (2025 = le plus saillant).
+# pour lire visuellement l'écoulement du temps (2026 = le plus saillant).
 COLORS = {"2016": "#9aa7b4", "2017": "#7d8ca0", "2018": "#5b6f93",
           "2019": "#3f7cb0", "2020": "#2ca089", "2021": "#6aa84f",
           "2022": "#e0a800", "2023": "#e8731c", "2024": "#d6452a",
-          "2025": "#c2185b"}
+          "2025": "#c2185b", "2026": "#7b1fa2"}
 
 
 def find_depenses_block(wb):
@@ -107,8 +127,10 @@ SOLDE_VINTAGES = [
     ("2023", "2023-06", "synthèse", "Solde_dép_ress", "1,0"),
     ("2024", "2024-06", "synthèse", "Solde dépenses ressources", "1,0"),
     ("2025", "2025-06", "synthèse", "Solde dépenses ressources", "0,7"),
+    ("2026", "2026-06", "synthèse", "Solde dépenses ressources", "0,7"),
 ]
-SOLDE_COLORS = {"2023": "#e8731c", "2024": "#d6452a", "2025": "#c2185b"}
+SOLDE_COLORS = {"2023": "#e8731c", "2024": "#d6452a", "2025": "#c2185b",
+                "2026": "#7b1fa2"}
 
 
 def extract_sdr(path, sheet):
@@ -243,11 +265,12 @@ def extract_niveau_vie(path):
 # (un seul graphique sur le site, indicateur sélectionnable). Permet d'avoir
 # « tous les indicateurs » sans empiler les graphiques.
 # ==========================================================================
-R25 = "2025-06"  # on s'appuie sur le rapport le plus récent
+R26 = "2026-06"  # on s'appuie sur le rapport le plus récent
+R25 = "2025-06"  # rapport précédent (certains fichiers n'existent qu'en 2025)
 
 
-def _rows(filepat, sheet):
-    path = first_file(R25, filepat)
+def _rows(filepat, sheet, vintage=R26):
+    path = first_file(vintage, filepat)
     if not path:
         return None
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
@@ -338,7 +361,7 @@ def _series(obs, proj, color, obs_from=2000, to=2070):
     if o:
         out.append({"label": "Observé", "color": "#1f2d3d", "kind": "solid", "points": o})
     if p:
-        out.append({"label": "Projeté (réf. 2025)", "color": color, "kind": "dash", "points": p})
+        out.append({"label": f"Projeté (réf. {LATEST})", "color": color, "kind": "dash", "points": p})
     return out
 
 
@@ -371,15 +394,15 @@ def build_explorer():
         o, p = _obs_proj(r, 0.001)
         add("migration", "Solde migratoire", "milliers de personnes / an", " k",
             _series(o, p, DEMO, 1995),
-            "Le solde migratoire (entrées − sorties). L'hypothèse du COR est de +70 000/an — "
-            "or le solde réel récent est bien plus élevé.",
-            "COR / INSEE, rapport 2025 (fig. 1.2).", 1995)
-    r = _rows("partie 1", "Fig 1.10")
+            "Le solde migratoire (entrées − sorties). Les projections 2026 retiennent "
+            "+150 000/an à long terme (contre +70 000 auparavant).",
+            "COR / INSEE, rapport 2026 (fig. 1.2).", 1995)
+    r = _rows("partie 1", "Fig 1.11")
     if r:
         o, p = _obs_proj(r, 100)
         add("chomage", "Taux de chômage", "%", " %", _series(o, p, DEMO),
             "Le taux de chômage de long terme retenu est de 7,0 %.",
-            "COR, rapport 2025 (fig. 1.10).")
+            "COR, rapport 2026 (fig. 1.11).")
     r = _rows("partie 1", "Fig 1.5")
     if r:
         o, p = _obs_proj(r, 1)
@@ -387,8 +410,10 @@ def build_explorer():
             _series(o, p, DEMO),
             "Combien de personnes en âge de travailler pour une personne de 65 ans et plus. "
             "Il s'effondre avec le vieillissement.",
-            "COR / INSEE, rapport 2025 (fig. 1.5).")
-    cr = _rows("complémentaires", "Cotisants_Retraités")
+            "COR / INSEE, rapport 2026 (fig. 1.5).")
+    # Les effectifs cotisants/retraités ne sont publiés que dans les « données
+    # complémentaires », absentes du rapport 2026 : on garde celles de 2025.
+    cr = _rows("complémentaires", "Cotisants_Retraités", R25)
     if cr:
         co, cp = _block_sub(cr, "cotisants", "Obs"), _block_sub(cr, "cotisants", "Sc. Ref")
         ro, rp = _block_sub(cr, "retraités", "Obs"), _block_sub(cr, "retraités", "Sc. Ref")
@@ -396,36 +421,36 @@ def build_explorer():
             _series(_ratio(co, ro), _ratio(cp, rp), DEMO),
             "Le cœur du système par répartition : chaque retraité est financé par les "
             "cotisations des actifs. Ce ratio baisse de ~1,8 vers ~1,4.",
-            "COR, rapport 2025 (données complémentaires).")
+            "COR, rapport 2025 (données complémentaires, non republiées en 2026).")
     fec = _rows("partie 1", "Fig 1.1")
     if fec:
-        o = _row_label(fec, "Observé (définitif)")
+        o = _row_label(fec, "Observé")
         o.update(_row_label(fec, "Données provisoires"))
         p = _row_label(fec, "central")
         add("fecondite", "Indice de fécondité", "enfants / femme", "",
             _series(o, p, DEMO),
-            "Nombre d'enfants par femme. L'hypothèse (1,80) est déjà au-dessus de la "
-            "réalité observée (~1,62 en 2024).",
-            "COR / INSEE, rapport 2025 (fig. 1.1).")
+            "Nombre d'enfants par femme. Le rapport 2026 abaisse l'hypothèse de long "
+            "terme de 1,80 à 1,45 — sous l'observé 2025 (~1,56).",
+            "COR / INSEE, rapport 2026 (fig. 1.1).")
     ev = _rows("partie 1", "Fig 1.3")
     if ev:
-        o = _row_label(ev, "Observé (définitif)")
+        o = _row_label(ev, "Observé")
         p = _row_label(ev, "scénario central")
         add("esp_vie", "Espérance de vie à 65 ans (femmes)", "ans", " ans",
             _series(o, p, DEMO),
             "Nombre d'années encore à vivre à 65 ans (femmes). Elle continue de progresser, "
             "ce qui allonge la durée de retraite.",
-            "COR / INSEE, rapport 2025 (fig. 1.3).")
+            "COR / INSEE, rapport 2026 (fig. 1.3).")
 
     # --- Emploi & économie
-    r = _rows("partie 1", "Fig 1.11")
+    r = _rows("partie 1", "Fig 1.12")
     if r:
         o, p = _obs_proj(r, 100)
         add("emploi", "Taux d'emploi des 15-64 ans", "%", " %", _series(o, p, ECO),
             "Part des 15-64 ans qui ont un emploi. Plus il est élevé, plus il y a de "
             "cotisants.",
-            "COR, rapport 2025 (fig. 1.11).")
-    pr = _rows("partie 1", "Fig 1.9")
+            "COR, rapport 2026 (fig. 1.12).")
+    pr = _rows("partie 1", "Fig 1.10")
     if pr:
         annual = {}
         for r2 in pr:
@@ -441,7 +466,7 @@ def build_explorer():
             add("productivite", "Productivité du travail", "%/an", " %", s,
                 "Croissance de la productivité : moteur des salaires donc des cotisations. "
                 "L'hypothèse de référence (0,7 %) a été fortement abaissée.",
-                "COR, rapport 2025 (fig. 1.9).")
+                "COR, rapport 2026 (fig. 1.10).")
 
     # --- Pensions & retraités
     r = _rows("synthèse", "Âge conjoncturel")
@@ -449,16 +474,19 @@ def build_explorer():
         o, p = _obs_proj(r, 1)
         add("age_depart", "Âge de départ à la retraite", "ans", " ans", _series(o, p, PENS),
             "L'âge « conjoncturel » de départ : il monte sous l'effet des réformes.",
-            "COR / DREES, rapport 2025 (âge conjoncturel).")
-    p26 = _rows("partie 2", "Fig 2.6")
-    if p26:
-        pen = _ratio(_block_sub(p26, "Pension moyenne", "Obs"), _block_sub(p26, "Rémunération nett", "Obs"), 100)
-        penp = _ratio(_block_sub(p26, "Pension moyenne", "Sc. Ref"), _block_sub(p26, "Rémunération nett", "Sc. Ref"), 100)
+            "COR / DREES, rapport 2026 (âge conjoncturel).")
+    p24 = _rows("partie 2", "Fig 2.4")
+    if p24:
+        pen = _ratio(_block_sub(p24, "Pension moyenne", "Obs"), _block_sub(p24, "Rémunération nett", "Obs"), 100)
+        penp = _ratio(_block_sub(p24, "Pension moyenne", "Sc. Ref"), _block_sub(p24, "Rémunération nett", "Sc. Ref"), 100)
+        desc = "La pension nette moyenne en % du salaire net moyen. Elle décroche au fil de la projection."
+        if penp:
+            y0, y1 = min(penp), max(penp)
+            desc = (f"La pension nette moyenne en % du salaire net moyen. Elle décroche : "
+                    f"~{penp[y0]:.0f} % aujourd'hui, ~{penp[y1]:.0f} % en {y1}.")
         add("pension_rel", "Pension moyenne rapportée au salaire net", "%", " %",
-            _series(pen, penp, PENS),
-            "La pension nette moyenne en % du salaire net moyen. Elle décroche : "
-            "~65 % aujourd'hui, ~57 % en 2070.",
-            "COR, rapport 2025 (fig. 2.6).")
+            _series(pen, penp, PENS), desc,
+            "COR, rapport 2026 (fig. 2.4).")
     nv = _rows("synthèse", "Niveau de vie relatif")
     if nv:
         o, p = _obs_proj(nv, 100)
@@ -466,7 +494,7 @@ def build_explorer():
             _series(o, p, PENS, 1996),
             "Niveau de vie moyen des retraités rapporté à l'ensemble de la population "
             "(100 % = parité).",
-            "COR / INSEE-DGI, rapport 2025.", 1996)
+            "COR / INSEE-DGI, rapport 2026.", 1996)
 
     # --- Finances
     for iid, sheet, label, desc in [
@@ -481,37 +509,52 @@ def build_explorer():
         if r:
             o, p = _obs_proj(r, 100)
             add(iid, label, "% du PIB", " %", _series(o, p, FIN),
-                desc, "COR, rapport 2025 (synthèse, scénario de référence).")
+                desc, "COR, rapport 2026 (synthèse, scénario de référence).")
 
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
-        """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}."""
+        """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
+
+        Les sous-libellés sont en général 'Sc. Ref' / 'Var …' ; pour la
+        sensibilité à la productivité (fig. 2.22 de 2026), ce sont des taux
+        numériques (0.01, 0.004…) qu'on normalise en clés texte ('0.01').
+        """
         ym = _ymap(rows)
         res, started = {}, False
         for r in rows:
             c1 = r[1] if len(r) > 1 else None
             c2 = r[2] if len(r) > 2 else None
-            if c1 == "Dépenses, en % du PIB":
+            if c1 and str(c1).startswith("Dépenses, en % du PIB"):
                 started = True
             if started and c1 and "Solde" in str(c1):
                 break
-            if started and isinstance(c2, str):
+            if not started:
+                continue
+            k = None
+            if isinstance(c2, str) and (c2.strip() == "Sc. Ref" or c2.strip().startswith("Var")):
                 k = c2.strip()
-                if k == "Sc. Ref" or k.startswith("Var"):
-                    res[k] = {ym[i]: round(r[i] * 100, 3) for i in ym
-                              if i < len(r) and isinstance(r[i], (int, float))}
+            elif isinstance(c2, float):
+                k = format(c2, "g")
+            if k:
+                res[k] = {ym[i]: round(r[i] * 100, 3) for i in ym
+                          if i < len(r) and isinstance(r[i], (int, float))}
         return res
 
     FANS = [
-        ("sens_fec", "Si la fécondité changeait…", "Fig 2.16",
-         [("haute", "Fécondité 2,0", "#2ca089"), ("basse", "Fécondité 1,6", "#d6452a")]),
-        ("sens_ev", "Si on vivait plus ou moins longtemps…", "Fig 2.17",
-         [("basse (EV haute)", "Espérance de vie haute", "#d6452a"),
-          ("haute (EV basse)", "Espérance de vie basse", "#2ca089")]),
-        ("sens_mig", "Si les migrations changeaient…", "Fig 2.18",
-         [("haut", "Migrations hautes", "#2ca089"), ("bas", "Migrations basses", "#d6452a")]),
-        ("sens_cho", "Si le chômage changeait…", "Fig 2.19",
+        ("sens_fec", "Si la fécondité changeait…", "Fig 2.18",
+         [("fécondité haute", "Fécondité 1,7", "#2ca089"),
+          ("fécondité basse", "Fécondité 1,2", "#d6452a")]),
+        ("sens_ev", "Si on vivait plus ou moins longtemps…", "Fig 2.19",
+         [("mortalité basse (EV haute)", "Espérance de vie haute", "#d6452a"),
+          ("mortalité haute (EV basse)", "Espérance de vie basse", "#2ca089")]),
+        ("sens_mig", "Si les migrations changeaient…", "Fig 2.20",
+         [("smi haut", "Migrations hautes (+230 k)", "#2ca089"),
+          ("smi bas", "Migrations basses (+70 k)", "#d6452a")]),
+        ("sens_cho", "Si le chômage changeait…", "Fig 2.21",
          [("C5", "Chômage 5 %", "#2ca089"), ("C10", "Chômage 10 %", "#d6452a")]),
+        ("sens_prod", "Si la productivité changeait…", "Fig 2.22",
+         [("0.01", "Productivité 1,0 %", "#2ca089"),
+          ("0.004", "Productivité 0,4 %", "#d6452a")]),
     ]
     for iid, label, sheet, variants in FANS:
         rows = _rows("partie 2", sheet)
@@ -538,14 +581,14 @@ def build_explorer():
         b = _bounds(series)
         ind[iid] = {"label": label, "unit": "% du PIB", "suffix": " %",
                     "desc": "Dépenses de retraite en % du PIB selon l'hypothèse retenue." + rng,
-                    "source": f"COR, rapport 2025 ({sheet}).", "series": series, **b}
+                    "source": f"COR, rapport 2026 ({sheet}).", "series": series, **b}
 
     themes = [
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
         {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde"]},
-        {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho"]},
+        {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits
     for t in themes:
@@ -556,41 +599,69 @@ def build_explorer():
 
 
 def extract_international(path):
-    """Part des dépenses de retraite (publiques/privées) dans le PIB par pays, 2021."""
+    """Part des dépenses de retraite (publiques/privées) dans le PIB par pays.
+
+    Gère les deux mises en page du COR :
+    - 2025 (« Part des dépenses OCDE ») : pays en ligne 4, années 2000/2021 en
+      ligne 5, puis publiques/privées ;
+    - 2026 (« Dépenses_OCDE ») : bloc « En 2021 » avec un pays par colonne,
+      lignes « Publiques » / « Privées » (premier bloc = rapporté au PIB).
+    """
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    if "Part des dépenses OCDE" not in wb.sheetnames:
+    sheet = next((s for s in ("Dépenses_OCDE", "Part des dépenses OCDE")
+                  if s in wb.sheetnames), None)
+    if sheet is None:
         wb.close()
         return None
-    rows = list(wb["Part des dépenses OCDE"].iter_rows(values_only=True))
-    names = rows[3]      # ligne des pays
-    years = rows[4]      # 2000 / 2021 par pays
-    pub = rows[5]
-    priv = rows[6]
-    countries = []
-    for i, nm in enumerate(names):
-        if isinstance(nm, str) and nm.strip() and not nm.lower().startswith(("lecture", "champ", "source")):
-            # colonne 2021 = juste après ce pays (où years==2021)
-            col = next((j for j in range(i, min(i + 5, len(years)))
-                        if isinstance(years[j], int) and years[j] == 2021), None)
-            if col is None:
-                continue
-            p = pub[col] if col < len(pub) and isinstance(pub[col], (int, float)) else 0
-            v = priv[col] if col < len(priv) and isinstance(priv[col], (int, float)) else 0
-            countries.append({"name": nm.strip(),
-                              "pub": round(p * 100, 1), "priv": round(v * 100, 1),
-                              "total": round((p + v) * 100, 1)})
+    rows = list(wb[sheet].iter_rows(values_only=True))
     wb.close()
+    countries, year = [], 2021
+
+    # Mise en page 2026 : ligne « En AAAA | pays… » suivie de Publiques/Privées.
+    for i, r in enumerate(rows[:10]):
+        c1 = str(r[1]).strip() if len(r) > 1 and r[1] is not None else ""
+        if c1.startswith("En ") and c1[3:7].isdigit() and i + 2 < len(rows) \
+                and str(rows[i + 1][1]).strip().startswith("Publiques"):
+            year = int(c1[3:7])
+            names, pub, priv = r, rows[i + 1], rows[i + 2]
+            for j in range(2, len(names)):
+                nm = names[j]
+                if not (isinstance(nm, str) and nm.strip()):
+                    continue
+                p = pub[j] if j < len(pub) and isinstance(pub[j], (int, float)) else 0
+                v = priv[j] if j < len(priv) and isinstance(priv[j], (int, float)) else 0
+                countries.append({"name": nm.strip(),
+                                  "pub": round(p * 100, 1), "priv": round(v * 100, 1),
+                                  "total": round((p + v) * 100, 1)})
+            break
+
+    # Mise en page 2025 : pays et colonnes d'années côte à côte.
+    if not countries:
+        names, years, pub, priv = rows[3], rows[4], rows[5], rows[6]
+        for i, nm in enumerate(names):
+            if isinstance(nm, str) and nm.strip() and not nm.lower().startswith(("lecture", "champ", "source")):
+                col = next((j for j in range(i, min(i + 5, len(years)))
+                            if isinstance(years[j], int) and years[j] == year), None)
+                if col is None:
+                    continue
+                p = pub[col] if col < len(pub) and isinstance(pub[col], (int, float)) else 0
+                v = priv[col] if col < len(priv) and isinstance(priv[col], (int, float)) else 0
+                countries.append({"name": nm.strip(),
+                                  "pub": round(p * 100, 1), "priv": round(v * 100, 1),
+                                  "total": round((p + v) * 100, 1)})
+    if not countries:
+        return None
     countries.sort(key=lambda c: c["total"], reverse=True)
-    return {"year": 2021, "countries": countries}
+    return {"year": year, "countries": countries}
 
 
-def extract_leviers(path):
+def extract_leviers(path, sheet="Fig 2.24"):
     """Calibrage des 3 leviers : ajustement (via un seul levier) pour équilibrer en 2070."""
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    if "Fig 2.21" not in wb.sheetnames:
+    if sheet not in wb.sheetnames:
         wb.close()
         return None
-    rows = list(wb["Fig 2.21"].iter_rows(values_only=True))
+    rows = list(wb[sheet].iter_rows(values_only=True))
     ym = {i: c for i, c in enumerate(rows[3]) if isinstance(c, int) and 1990 <= c <= 2100}
     col = next((i for i, c in ym.items() if c == 2070), None)
     if col is None:
@@ -610,13 +681,14 @@ def extract_leviers(path):
         "cotis": {"ref": round(tx_ref * 100, 1), "full_pts": round((tx_eq - tx_ref) * 100, 2)},
         "pension": {"ref_pct": round(pen_ref * 100, 1),
                     "full_pct": round((pen_ref - pen_eq) / pen_ref * 100, 1)},
-        "source": "COR, rapport 2025 (fig. 2.21) — niveau de chaque levier pour équilibrer en 2070.",
+        "source": f"COR, rapport 2026 ({sheet.lower().replace('fig ', 'fig. ')}) — "
+                  "niveau de chaque levier pour équilibrer en 2070.",
     }
 
 
 def build():
     extracted = {}
-    realised = None  # série observée la plus récente (rapport 2025, base 2020)
+    realised = None  # série observée la plus récente (rapport LATEST)
     for vy, dpat, fpat, prod in VINTAGES:
         path = first_file(dpat, fpat)
         if not path:
@@ -627,7 +699,7 @@ def build():
             print("✗ bloc dépenses introuvable :", vy)
             continue
         extracted[vy] = data
-        if vy == "2025":
+        if vy == LATEST:
             realised = data["observed"]
         print(f"✓ {vy} : {len(data['projection'])} points de projection")
 
@@ -653,9 +725,9 @@ def build():
             "points": pts,
         })
 
-    # ---- Solde du système (réf.), millésimes 2023-2025 + Dépenses/Ressources 2025
+    # ---- Solde du système (réf.), millésimes 2023-2026 + Dépenses/Ressources 2026
     solde_proj = []
-    sdr_2025 = None
+    sdr_latest = None
     solde_realise = None
     for vy, dpat, fpat, sheet, prodlbl in SOLDE_VINTAGES:
         path = first_file(dpat, fpat)
@@ -666,8 +738,8 @@ def build():
         if not sdr or "Solde" not in sdr:
             print("✗ solde bloc introuvable :", vy)
             continue
-        if vy == "2025":
-            sdr_2025 = sdr
+        if vy == LATEST:
+            sdr_latest = sdr
         solde = sdr["Solde"]
         year = int(vy)
         # projection = à partir de l'année du rapport ; réalisé = avant.
@@ -679,7 +751,7 @@ def build():
             "source": f"COR, rapport annuel {vy} — solde du système de retraite, scénario de référence.",
             "points": pts,
         })
-        if vy == "2025":
+        if vy == LATEST:
             solde_realise = [{"x": y, "y": solde[y]} for y in sorted(solde) if y <= year]
         print(f"✓ solde {vy} : 2070={solde.get(2070)}  pts proj={len(pts)}")
 
@@ -688,22 +760,22 @@ def build():
         solde_block = {
             "title": "Le solde du système de retraite plonge dans les projections récentes",
             "subtitle": "Solde (ressources − dépenses) en % du PIB — scénario de référence de chaque rapport",
-            "yLabel": "% du PIB", "yMin": -2, "yMax": 1, "xMin": 2000, "xMax": 2070,
+            "yLabel": "% du PIB", "yMin": -2.6, "yMax": 1, "xMin": 2000, "xMax": 2070,
             "realise": {"label": "Solde réalisé (observé)", "color": "#1f2d3d",
                         "kind": "solid", "points": solde_realise or []},
             "projections": solde_proj,
         }
 
-    # ---- Dépenses vs Ressources 2025 (effet « ciseaux »)
+    # ---- Dépenses vs Ressources (effet « ciseaux »), rapport le plus récent
     ciseaux_block = None
-    if sdr_2025:
-        dep = sdr_2025.get("Dépenses", {})
-        res = sdr_2025.get("Ressources", {})
+    if sdr_latest:
+        dep = sdr_latest.get("Dépenses", {})
+        res = sdr_latest.get("Ressources", {})
         ys = sorted(set(dep) | set(res))
         ciseaux_block = {
             "title": "Pourquoi un déficit ? Les dépenses montent, les ressources baissent",
-            "subtitle": "Système de retraite en % du PIB — scénario de référence du rapport 2025",
-            "yLabel": "% du PIB", "yMin": 12, "yMax": 15, "xMin": 2000, "xMax": 2070,
+            "subtitle": f"Système de retraite en % du PIB — scénario de référence du rapport {LATEST}",
+            "yLabel": "% du PIB", "yMin": 12, "yMax": 15.5, "xMin": 2000, "xMax": 2070,
             "series": [
                 {"label": "Dépenses", "color": "#c2185b", "kind": "solid",
                  "points": [{"x": y, "y": dep[y]} for y in ys if y in dep]},
@@ -712,9 +784,9 @@ def build():
             ],
         }
 
-    # ---- Niveau de vie relatif des retraités (rapport 2025)
+    # ---- Niveau de vie relatif des retraités (rapport le plus récent)
     niveau_block = None
-    nv_path = first_file("2025-06", "synthèse")
+    nv_path = first_file(R26, "synthèse")
     nv = extract_niveau_vie(nv_path) if nv_path else None
     if nv and nv["observed"]:
         # On démarre à 1996 (données annuelles continues) pour éviter les longues
@@ -727,16 +799,17 @@ def build():
             "yLabel": "%", "yMin": 80, "yMax": 110,
             "xMin": 1996, "xMax": 2070,
             "realise": {"label": "Observé", "color": "#1f2d3d", "kind": "solid", "points": obs_pts},
-            "projection": {"label": "Projeté (réf. 2025)", "color": "#c2185b", "kind": "dash", "points": ref_pts},
+            "projection": {"label": f"Projeté (réf. {LATEST})", "color": "#c2185b", "kind": "dash", "points": ref_pts},
         }
         print(f"✓ niveau de vie : obs {len(obs_pts)} pts, proj {len(ref_pts)} pts")
 
-    # ---- Fécondité : observé (réel) + hypothèse centrale de deux époques
+    # ---- Fécondité : observé (réel) + hypothèse centrale de trois époques
     fecondite_block = None
-    f_recent = extract_fecondite(first_file("2025-06", "juin 2025 - partie 1") or "")
+    f_2026 = extract_fecondite(first_file("2026-06", "partie 1") or "")
+    f_2025 = extract_fecondite(first_file("2025-06", "juin 2025 - partie 1") or "")
     f_old = extract_fecondite(first_file("2019-06", "Partie 1") or "")
-    if f_recent and f_recent["observed"]:
-        obs = f_recent["observed"]
+    if f_2026 and f_2026["observed"]:
+        obs = f_2026["observed"]
         obs_pts = [{"x": y, "y": obs[y]} for y in sorted(obs)]
 
         def central_line(fec, ymin):
@@ -747,14 +820,18 @@ def build():
             hyps.append({"label": "Hypothèse centrale 2016-2021 (1,95)",
                          "color": "#2ca089", "kind": "dash", "endNote": "1,95",
                          "points": central_line(f_old, 2017)})
-        if f_recent["central"]:
+        if f_2025 and f_2025["central"]:
             hyps.append({"label": "Hypothèse centrale 2022-2025 (1,80)",
                          "color": "#e8731c", "kind": "dash", "endNote": "1,80",
-                         "points": central_line(f_recent, 2023)})
+                         "points": central_line(f_2025, 2023)})
+        if f_2026["central"]:
+            hyps.append({"label": "Hypothèse centrale 2026 (1,45)",
+                         "color": "#7b1fa2", "kind": "dash", "endNote": "1,45",
+                         "points": central_line(f_2026, 2025)})
         fecondite_block = {
-            "title": "Fécondité : une hypothèse revue à la baisse, mais que la réalité dépasse",
+            "title": "Fécondité : l'hypothèse, longtemps trop haute, passe sous la réalité",
             "subtitle": "Indice conjoncturel de fécondité (enfants par femme)",
-            "yLabel": "", "yMin": 1.5, "yMax": 2.05, "xMin": 2000, "xMax": 2050,
+            "yLabel": "", "yMin": 1.35, "yMax": 2.05, "xMin": 2000, "xMax": 2050,
             "realise": {"label": "Fécondité réelle observée", "color": "#1f2d3d",
                         "kind": "solid", "points": [p for p in obs_pts if p["x"] >= 2000]},
             "hypotheses": hyps,
@@ -763,7 +840,7 @@ def build():
 
     # ---- Productivité réelle (moyenne mobile) vs hypothèses
     prod_block = None
-    annual = extract_productivite_obs(first_file("2025-06", "juin 2025 - partie 1") or "")
+    annual = extract_productivite_obs(first_file("2026-06", "partie 1") or "")
     if annual:
         ma = [p for p in moving_average(annual, 5) if p["x"] >= 2000]
         xs = [p["x"] for p in ma]
@@ -778,7 +855,7 @@ def build():
                 {"label": "Hypothèse 1,3 % (rapports jusqu'à 2022)", "color": "#d6452a",
                  "kind": "dash", "endNote": "1,3 %",
                  "points": [{"x": x0, "y": 1.3}, {"x": 2030, "y": 1.3}]},
-                {"label": "Hypothèse 0,7 % (référence 2025)", "color": "#c2185b",
+                {"label": "Hypothèse 0,7 % (référence depuis 2025)", "color": "#c2185b",
                  "kind": "dash", "endNote": "0,7 %",
                  "points": [{"x": x0, "y": 0.7}, {"x": 2030, "y": 0.7}]},
             ],
@@ -808,8 +885,8 @@ def build():
         "fecondite": fecondite_block,
         "productiviteReel": prod_block,
         "explorer": build_explorer(),
-        "international": extract_international(first_file(R25, "synthèse") or ""),
-        "leviers": extract_leviers(first_file(R25, "partie 2") or ""),
+        "international": extract_international(first_file(R26, "synthèse") or ""),
+        "leviers": extract_leviers(first_file(R26, "partie 2") or ""),
     }
 
     dest = os.path.join(os.path.dirname(__file__), "..", "data", "cor-series.generated.js")

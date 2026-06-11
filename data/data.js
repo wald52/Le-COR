@@ -36,7 +36,7 @@ window.COR_DATA = {
     subtitle: "Dépenses de retraite, en % du PIB — scénario de référence de chaque rapport annuel",
     yLabel: "% du PIB",
     yMin: 11,
-    yMax: 15,
+    yMax: 15.5,
     xMin: 2000,
     xMax: 2070,
 
@@ -45,14 +45,14 @@ window.COR_DATA = {
       label: "Réalisé",
       color: "#1f4e79",
       kind: "solid",
-      source: "COR, rapports annuels (séries observées) ; INSEE (comptes nationaux).",
+      source: "COR, rapport annuel juin 2026 (série observée, fig. 2.2) ; INSEE (comptes nationaux).",
       points: [
-        { x: 2002, y: 12.6 }, { x: 2005, y: 12.7 }, { x: 2008, y: 13.0 },
-        { x: 2010, y: 13.6 }, { x: 2012, y: 13.8 }, { x: 2014, y: 13.8 },
-        { x: 2016, y: 13.5 }, { x: 2018, y: 13.5 }, { x: 2019, y: 13.5 },
+        { x: 2002, y: 11.8 }, { x: 2005, y: 12.1 }, { x: 2008, y: 12.4 },
+        { x: 2010, y: 13.4 }, { x: 2012, y: 13.8 }, { x: 2014, y: 14.1 },
+        { x: 2016, y: 14.0 }, { x: 2018, y: 13.8 }, { x: 2019, y: 13.7 },
         { x: 2020, y: 14.7 }, // pic Covid : le PIB chute, le ratio grimpe mécaniquement
-        { x: 2021, y: 13.8 }, { x: 2022, y: 13.4 }, { x: 2023, y: 13.6 },
-        { x: 2024, y: 13.9 }
+        { x: 2021, y: 13.8 }, { x: 2022, y: 13.6 }, { x: 2023, y: 13.5 },
+        { x: 2024, y: 13.9 }, { x: 2025, y: 14.1 }
       ]
     },
 
@@ -127,6 +127,19 @@ window.COR_DATA = {
           { x: 2025, y: 13.9 }, { x: 2030, y: 14.0 }, { x: 2040, y: 14.0 },
           { x: 2050, y: 14.1 }, { x: 2060, y: 14.1 }, { x: 2070, y: 14.2 }
         ]
+      },
+      {
+        label: "Projection 2026",
+        year: 2026,
+        color: "#7b1fa2",
+        endNote: "≈15,3 %",
+        source: "COR, rapport annuel juin 2026 — nouvelles hypothèses démographiques (fécondité 1,45) : les dépenses montent nettement à long terme.",
+        points: [
+          { x: 2025, y: 14.1 }, { x: 2030, y: 14.1 }, { x: 2035, y: 14.0 },
+          { x: 2040, y: 14.0 }, { x: 2045, y: 14.2 }, { x: 2050, y: 14.4 },
+          { x: 2055, y: 14.6 }, { x: 2060, y: 14.7 }, { x: 2065, y: 15.0 },
+          { x: 2070, y: 15.3 }
+        ]
       }
     ]
   },
@@ -141,8 +154,8 @@ window.COR_DATA = {
     title: "Le COR a discrètement abaissé son hypothèse de productivité",
     subtitle: "Croissance annuelle de la productivité du travail retenue à long terme (en %)",
     yLabel: "% / an",
-    note: "Jusqu'en 2021, l'éventail allait de 1,0 % à 1,8 %. À partir de 2022, le COR décale tous ses scénarios vers le bas (0,7 % à 1,6 %), puis retient 0,7 % comme référence en 2025.",
-    source: "COR, rapports annuels 2019 à 2025 (hypothèses économiques de long terme).",
+    note: "Jusqu'en 2021, l'éventail allait de 1,0 % à 1,8 %. À partir de 2022, le COR décale tous ses scénarios vers le bas (0,7 % à 1,6 %), puis retient 0,7 % comme référence en 2025 — confirmé en 2026.",
+    source: "COR, rapports annuels 2019 à 2026 (hypothèses économiques de long terme).",
     // Pour chaque rapport : éventail des scénarios + scénario de référence.
     rapports: [
       { year: 2019, min: 1.0, max: 1.8, central: 1.3 },
@@ -150,7 +163,8 @@ window.COR_DATA = {
       { year: 2022, min: 0.7, max: 1.6, central: 1.3 },
       { year: 2023, min: 0.7, max: 1.6, central: 1.0 },
       { year: 2024, min: 0.7, max: 1.3, central: 1.0 },
-      { year: 2025, min: 0.4, max: 1.0, central: 0.7 }
+      { year: 2025, min: 0.4, max: 1.0, central: 0.7 },
+      { year: 2026, min: 0.4, max: 1.0, central: 0.7 }
     ]
   },
 
@@ -164,19 +178,19 @@ window.COR_DATA = {
     title: "Fécondité : l'hypothèse du COR rattrapée par la réalité",
     subtitle: "Indice conjoncturel de fécondité (enfants par femme)",
     yLabel: "enfants / femme",
-    yMin: 1.5,
+    yMin: 1.35,
     yMax: 2.1,
     xMin: 2010,
     xMax: 2040,
-    source: "Hypothèses : INSEE (projections de population) reprises par le COR. Réalisé : INSEE, état civil.",
+    source: "Hypothèses : INSEE (projections de population) reprises par le COR. Réalisé : INSEE, état civil (série du rapport juin 2026, 2024-2025 provisoires).",
     realise: {
       label: "Fécondité réelle observée",
       color: "#1f4e79",
       kind: "solid",
       points: [
-        { x: 2010, y: 2.03 }, { x: 2014, y: 1.99 }, { x: 2016, y: 1.92 },
-        { x: 2018, y: 1.87 }, { x: 2020, y: 1.83 }, { x: 2022, y: 1.79 },
-        { x: 2023, y: 1.68 }, { x: 2024, y: 1.62 }
+        { x: 2010, y: 2.03 }, { x: 2014, y: 2.00 }, { x: 2016, y: 1.92 },
+        { x: 2018, y: 1.87 }, { x: 2020, y: 1.82 }, { x: 2022, y: 1.78 },
+        { x: 2023, y: 1.65 }, { x: 2024, y: 1.61 }, { x: 2025, y: 1.56 }
       ]
     },
     hypotheses: [
@@ -193,6 +207,13 @@ window.COR_DATA = {
         color: "#ff7f0e",
         endNote: "1,80",
         points: [ { x: 2022, y: 1.79 }, { x: 2030, y: 1.80 }, { x: 2040, y: 1.80 } ]
+      },
+      {
+        label: "Hypothèse COR/INSEE 2026",
+        year: 2026,
+        color: "#7b1fa2",
+        endNote: "1,45",
+        points: [ { x: 2025, y: 1.56 }, { x: 2028, y: 1.45 }, { x: 2040, y: 1.45 } ]
       }
     ]
   },
@@ -203,21 +224,22 @@ window.COR_DATA = {
    * ====================================================================== */
   productiviteReel: {
     title: "Productivité : ce que le COR supposait vs ce qui s'est passé",
-    subtitle: "Croissance de la productivité du travail (%/an, moyenne mobile)",
+    subtitle: "Croissance de la productivité du travail (%/an, moyenne mobile 5 ans)",
     yLabel: "% / an",
-    yMin: 0,
-    yMax: 2,
+    yMin: -0.5,
+    yMax: 2.5,
     xMin: 2000,
     xMax: 2025,
-    source: "Réalisé : INSEE / OCDE (productivité horaire). Hypothèse : scénario central du COR.",
+    source: "Réalisé : INSEE, comptes nationaux (rapport COR juin 2026, fig. 1.10) — moyenne mobile 5 ans. Hypothèses : scénarios centraux du COR.",
     realise: {
       label: "Productivité réellement observée",
       color: "#1f4e79",
       kind: "solid",
       points: [
-        { x: 2000, y: 1.6 }, { x: 2005, y: 1.3 }, { x: 2008, y: 0.9 },
-        { x: 2011, y: 1.0 }, { x: 2014, y: 0.8 }, { x: 2017, y: 0.7 },
-        { x: 2019, y: 0.6 }, { x: 2022, y: 0.5 }, { x: 2024, y: 0.6 }
+        { x: 2000, y: 2.16 }, { x: 2003, y: 1.47 }, { x: 2006, y: 0.86 },
+        { x: 2009, y: 0.24 }, { x: 2012, y: 1.16 }, { x: 2015, y: 1.00 },
+        { x: 2018, y: 0.52 }, // puis creux Covid : productivité négative en 2021-2022
+        { x: 2021, y: -0.23 }, { x: 2023, y: -0.03 }, { x: 2025, y: 0.94 }
       ]
     },
     hypotheses: [
@@ -228,6 +250,14 @@ window.COR_DATA = {
         kind: "dash",
         endNote: "1,3 %",
         points: [ { x: 2010, y: 1.3 }, { x: 2025, y: 1.3 } ]
+      },
+      {
+        label: "Hypothèse 0,7 % (référence depuis 2025)",
+        year: 2025,
+        color: "#c2185b",
+        kind: "dash",
+        endNote: "0,7 %",
+        points: [ { x: 2010, y: 0.7 }, { x: 2025, y: 0.7 } ]
       }
     ]
   },
@@ -237,7 +267,7 @@ window.COR_DATA = {
    * ====================================================================== */
   hypothesesTable: {
     title: "Les hypothèses du scénario de référence, rapport par rapport",
-    source: "COR, rapports annuels 2019 à 2025.",
+    source: "COR, rapports annuels 2019 à 2026.",
     colonnes: ["Rapport", "Productivité (LT)", "Fécondité", "Solde migratoire", "Chômage (LT)"],
     lignes: [
       ["2019", "1,3 %", "1,95", "+70 000 / an", "7,0 %"],
@@ -245,7 +275,8 @@ window.COR_DATA = {
       ["2022", "1,3 %", "1,80", "+70 000 / an", "7,0 %"],
       ["2023", "1,0 %", "1,80", "+70 000 / an", "7,0 %"],
       ["2024", "1,0 %", "1,80", "+70 000 / an", "7,0 %"],
-      ["2025", "0,7 %", "1,80", "+70 000 / an", "7,0 %"]
+      ["2025", "0,7 %", "1,80", "+70 000 / an", "7,0 %"],
+      ["2026", "0,7 %", "1,45", "+150 000 / an", "7,0 %"]
     ]
   },
 
@@ -253,6 +284,10 @@ window.COR_DATA = {
    * 6. SOURCES
    * ====================================================================== */
   sources: [
+    {
+      titre: "Rapport annuel du COR — juin 2026 (rapport, synthèse et données Excel)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-juin-2026-evolutions-perspectives-retraites-france"
+    },
     {
       titre: "Rapport annuel du COR — juin 2025",
       url: "https://www.cor-retraites.fr/sites/default/files/2025-06/RA_2025_def_publi.pdf"
