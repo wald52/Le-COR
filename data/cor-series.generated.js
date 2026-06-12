@@ -9546,179 +9546,179 @@ window.COR_SERIES = {
             "points": [
               {
                 "x": 2017,
-                "y": 990.0
+                "y": 9.9
               },
               {
                 "x": 2018,
-                "y": 990.0
+                "y": 9.9
               },
               {
                 "x": 2019,
-                "y": 990.0
+                "y": 9.9
               },
               {
                 "x": 2020,
-                "y": 970.0
+                "y": 9.7
               },
               {
                 "x": 2021,
-                "y": 936.0
+                "y": 9.36
               },
               {
                 "x": 2022,
-                "y": 902.0
+                "y": 9.02
               },
               {
                 "x": 2023,
-                "y": 868.0
+                "y": 8.68
               },
               {
                 "x": 2024,
-                "y": 834.0
+                "y": 8.34
               },
               {
                 "x": 2025,
-                "y": 800
+                "y": 8.0
               },
               {
                 "x": 2026,
-                "y": 786.0
+                "y": 7.86
               },
               {
                 "x": 2027,
-                "y": 771.0
+                "y": 7.71
               },
               {
                 "x": 2028,
-                "y": 757.0
+                "y": 7.57
               },
               {
                 "x": 2029,
-                "y": 743.0
+                "y": 7.43
               },
               {
                 "x": 2030,
-                "y": 729.0
+                "y": 7.29
               },
               {
                 "x": 2031,
-                "y": 714.0
+                "y": 7.14
               },
               {
                 "x": 2032,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2033,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2034,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2035,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2036,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2037,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2038,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2039,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2040,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2041,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2042,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2043,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2044,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2045,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2046,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2047,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2048,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2049,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2050,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2051,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2052,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2053,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2054,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2055,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2056,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2057,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2058,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2059,
-                "y": 700
+                "y": 7.0
               },
               {
                 "x": 2060,
-                "y": 700
+                "y": 7.0
               }
             ]
           },
@@ -11540,8 +11540,8 @@ window.COR_SERIES = {
         ],
         "xMin": 2000,
         "xMax": 2070,
-        "yMin": -54.63,
-        "yMax": 1049.13
+        "yMin": 4.14,
+        "yMax": 10.86
       },
       "ratio_demo": {
         "label": "Rapport démographique (20-64 ans / 65 ans et +)",
@@ -18360,7 +18360,7 @@ window.COR_SERIES = {
         "label": "Productivité du travail",
         "unit": "%/an",
         "suffix": " %",
-        "desc": "Croissance de la productivité : moteur des salaires donc des cotisations. Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025).",
+        "desc": "Croissance de la productivité : moteur des salaires donc des cotisations. Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025). La courbe du rapport 2020 sort du cadre en 2020-2021 : son scénario intégrait l'effondrement (−8,7 %) puis le rebond (+8,4 %) du Covid.",
         "source": "COR, rapports 2018-2026 (productivité observée puis projetée, scénario central de chaque rapport).",
         "series": [
           {
@@ -20136,8 +20136,8 @@ window.COR_SERIES = {
         ],
         "xMin": 2000,
         "xMax": 2070,
-        "yMin": -9.73,
-        "yMax": 9.43
+        "yMin": -1.0,
+        "yMax": 2.5
       },
       "age_depart": {
         "label": "Âge de départ à la retraite",
@@ -22098,7 +22098,7 @@ window.COR_SERIES = {
         "label": "Niveau de vie des retraités / population",
         "unit": "%",
         "suffix": " %",
-        "desc": "Niveau de vie moyen des retraités rapporté à l'ensemble de la population (100 % = parité). Chaque rapport repousse un peu le décrochage projeté.",
+        "desc": "Niveau de vie moyen des retraités rapporté à l'ensemble de la population (100 % = parité). Chaque rapport repousse un peu le décrochage projeté. Attention : l'Insee a révisé la série observée entre les rapports 2024 et 2025 (≈2 points) — comparer les pentes plutôt que les niveaux.",
         "source": "COR / INSEE-DGI, rapports 2023-2026.",
         "series": [
           {

@@ -363,8 +363,10 @@ def labeled_row(path, sheet_keys, row_key, scale=1.0):
         for j in (0, 1):
             v = r[j] if len(r) > j else None
             if isinstance(v, str) and row_key.lower() in _norm(v):
-                return {ym[i]: round(r[i] * scale, 3) for i in ym
-                        if i < len(r) and isinstance(r[i], (int, float))}
+                serie = {ym[i]: round(r[i] * scale, 3) for i in ym
+                         if i < len(r) and isinstance(r[i], (int, float))}
+                if serie:  # ignore les faux positifs sans données (ex. titre A1)
+                    return serie
     return {}
 
 
@@ -438,6 +440,17 @@ def _hyp_note(label):
     import re
     m = re.search(r"([\d]+(?:,\d+)?\s*%)", label or "")
     return m.group(1).replace("%", " %").replace("  ", " ") if m else None
+
+
+def _pct_fix(serie, ceiling=120):
+    """Corrige l'échelle quand un fichier stocke déjà des % et non des fractions.
+
+    Exemple : le taux de chômage du rapport 2017 est saisi « 8,5 » là où les
+    autres millésimes écrivent « 0,085 » ; multiplié par 100 il donnerait 850 %.
+    """
+    if serie and max(serie.values()) > ceiling:
+        return {y: round(v / 100, 3) for y, v in serie.items()}
+    return serie
 
 
 def _block_sub_ref(rows, label_key, ref):
@@ -813,10 +826,16 @@ def build_explorer(multi=None):
             s = _series(ma, _row_label(pr, "Scénario de référence", 100), ECO)
         if s:
             s[0]["label"] = "Observé (moy. mobile 5 ans)"
-            add("productivite", "Productivité du travail", "%/an", " %", s,
-                "Croissance de la productivité : moteur des salaires donc des cotisations. "
-                "Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025).",
-                "COR, rapports 2018-2026 (productivité observée puis projetée, scénario central de chaque rapport).")
+            iid = add("productivite", "Productivité du travail", "%/an", " %", s,
+                      "Croissance de la productivité : moteur des salaires donc des cotisations. "
+                      "Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025). "
+                      "La courbe du rapport 2020 sort du cadre en 2020-2021 : son scénario "
+                      "intégrait l'effondrement (−8,7 %) puis le rebond (+8,4 %) du Covid.",
+                      "COR, rapports 2018-2026 (productivité observée puis projetée, scénario central de chaque rapport).")
+            if iid:
+                # Axe borné pour garder lisibles les hypothèses de long terme ;
+                # la pointe Covid du rapport 2020 est rognée par le clipPath.
+                ind[iid]["yMin"], ind[iid]["yMax"] = -1.0, 2.5
 
     # --- Pensions & retraités
     r = _rows("synthèse", "Âge conjoncturel")
@@ -855,7 +874,9 @@ def build_explorer(multi=None):
         add("niveau_vie", "Niveau de vie des retraités / population", "%", " %",
             series,
             "Niveau de vie moyen des retraités rapporté à l'ensemble de la population "
-            "(100 % = parité). Chaque rapport repousse un peu le décrochage projeté.",
+            "(100 % = parité). Chaque rapport repousse un peu le décrochage projeté. "
+            "Attention : l'Insee a révisé la série observée entre les rapports 2024 et "
+            "2025 (≈2 points) — comparer les pentes plutôt que les niveaux.",
             "COR / INSEE-DGI, rapports 2023-2026.", 1996)
 
     # --- Finances
@@ -1327,11 +1348,11 @@ def build():
             continue
         s, lbl = labeled_row_any(path, ("chômage", "projeté"), REF_KEYS, 100)
         if s:
-            cho_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
+            cho_hyps[vy] = {y: v for y, v in _pct_fix(s).items() if y >= int(vy)}
             cho_notes[vy] = _hyp_note(lbl)
         s, lbl = labeled_row_any(path, ("taux d'emploi", "projeté"), REF_KEYS, 100)
         if s:
-            emp_hyps[vy] = {y: v for y, v in s.items() if y >= int(vy)}
+            emp_hyps[vy] = {y: v for y, v in _pct_fix(s).items() if y >= int(vy)}
             emp_notes[vy] = _hyp_note(lbl)
         s, lbl = labeled_row_any(path, ("productivité", "observés"),
                                  PROD_KEYS.get(PROD_LABEL.get(vy, ""), REF_KEYS), 100)
