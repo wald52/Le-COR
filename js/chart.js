@@ -182,7 +182,7 @@
     const isFarHigh = v => v > yMax_pre + yPadFar;
     const isFarLow = v => v < yMin_pre - yPadFar;
     const BAND_H = 26;  // hauteur d'une bande hors échelle (px SVG)
-    const BAND_GAP = 7; // coupure visuelle entre bande et zone de tracé
+    const BAND_GAP = 9; // coupure visuelle entre bande et zone de tracé
     const bandTop = allY_pre.some(isFarHigh) ? BAND_H : 0;
     const bandBot = allY_pre.some(isFarLow) ? BAND_H : 0;
 
@@ -298,14 +298,16 @@
       x1: M.left, y1: M.top + plotH, x2: M.left + plotW, y2: M.top + plotH, class: "chart-axis"
     }));
 
-    // Signe de coupure d'axe (double trait oblique) à l'entrée de chaque
-    // bande hors échelle, sur le bord gauche du tracé.
-    const breakMark = yCut => {
-      [-3, 3].forEach(off => svg.appendChild(el("line", {
-        x1: M.left - 8, y1: yCut + 4 + off, x2: M.left + 8, y2: yCut - 4 + off,
-        class: "chart-axis-break"
-      })));
-    };
+    // Signe de coupure d'axe : double zigzag parallèle séparé d'un interstice
+    // (symbole classique d'échelle interrompue), posé près de l'axe à gauche.
+    // La même marque est reprise sur chaque courbe au franchissement de la
+    // coupure (voir le tracé des séries).
+    const zigzag = (cx, cy, w, attrs) => el("path", Object.assign({
+      d: `M${cx - w / 2},${cy} L${cx - w / 8},${cy - 2.8} L${cx + w / 8},${cy + 2.8} L${cx + w / 2},${cy}`,
+      fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round"
+    }, attrs));
+    const breakMark = yCut => [-3, 3].forEach(off =>
+      svg.appendChild(zigzag(M.left, yCut + off, 20, { class: "chart-axis-break" })));
     if (bandTop) breakMark(M.top - BAND_GAP / 2);
     if (bandBot) breakMark(M.top + plotH + BAND_GAP / 2);
 
@@ -334,6 +336,23 @@
       });
       if (s.kind === "dash") path.setAttribute("stroke-dasharray", "7 5");
       g.appendChild(path);
+
+      // Marque de coupure (double zigzag) sur la courbe à chaque
+      // franchissement d'une bande hors échelle.
+      const cuts = [];
+      if (bandTop) cuts.push(M.top - BAND_GAP / 2);
+      if (bandBot) cuts.push(M.top + plotH + BAND_GAP / 2);
+      for (let i = 1; i < scaled.length; i++) {
+        const p = scaled[i - 1], q = scaled[i];
+        cuts.forEach(mid => {
+          if (Math.min(p.y, q.y) > mid || Math.max(p.y, q.y) < mid) return;
+          const t = (mid - p.y) / (q.y - p.y);
+          const cx = p.x + t * (q.x - p.x);
+          [-3, 3].forEach(off => g.appendChild(zigzag(cx, mid + off, 14, {
+            stroke: s.color, "stroke-width": 1.6
+          })));
+        });
+      }
 
       // Valeurs hors échelle : point + valeur exacte affichés dans la bande.
       scaled.forEach(sp => {
