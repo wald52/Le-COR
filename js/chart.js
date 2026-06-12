@@ -436,20 +436,29 @@
     seriesNodes.forEach(sn => {
       if (!sn.endNoteEl || labelMode[sn.idx] !== "inside") return;
       const last = sn.endScaled;
-      // Couloir d'ordre : l'étiquette doit rester plus près de son propre
-      // point final que de celui de toute autre série étiquetée arrivant au
-      // bord droit. Sans cette borne, la recherche au-dessus/en dessous peut
+      // Couloir d'ordre : sans borne, la recherche au-dessus/en dessous peut
       // poser l'étiquette de l'autre côté d'une courbe voisine, et les
       // millésimes se croisent (ex. « 2026 » rendu sous la courbe 2025).
+      // Deux contraintes : ne jamais dépasser le point final d'une autre
+      // série étiquetée au bord droit, et rester du bon côté des étiquettes
+      // intérieures déjà posées. Le couloir reste large pour que la
+      // recherche de dégagement garde ses chances (un couloir trop étroit
+      // finirait par poser le texte sur sa propre courbe).
+      const EDGE_GAP = LABEL_H / 2 + 2;
       let corTop = M.top + 2 + LABEL_H / 2;
       let corBot = M.top + plotH - 2 - LABEL_H / 2;
-      if (last.x >= edgeX) {
+      const atEdge = last.x >= edgeX;
+      if (atEdge) {
         seriesNodes.forEach(o => {
           if (o === sn || !o.endScaled || labelMode[o.idx] === "none") return;
           if (o.endScaled.x < edgeX) return;
-          const mid = (o.endScaled.y + last.y) / 2;
-          if (o.endScaled.y < last.y) corTop = Math.max(corTop, mid);
-          else if (o.endScaled.y > last.y) corBot = Math.min(corBot, mid);
+          if (o.endScaled.y < last.y) corTop = Math.max(corTop, o.endScaled.y + EDGE_GAP);
+          else if (o.endScaled.y > last.y) corBot = Math.min(corBot, o.endScaled.y - EDGE_GAP);
+        });
+        placedInside.forEach(p => {
+          if (p.anchorY == null || p.anchorY === last.y) return;
+          if (p.anchorY < last.y) corTop = Math.max(corTop, p.cy + LABEL_H);
+          else corBot = Math.min(corBot, p.cy - LABEL_H);
         });
       }
       const textW = (sn.endNoteEl.textContent || "").length * CHAR_W;
@@ -487,13 +496,25 @@
           if (clear > best.clear) best = { cy, clear };
         }
       }
-      if (center === null) center = best.cy;
-      // Quoi qu'il arrive, on reste dans le couloir : une étiquette un peu à
-      // l'étroit reste préférable à des millésimes inversés.
-      if (corTop > corBot) center = (corTop + corBot) / 2;
-      else center = Math.min(Math.max(center, corTop), corBot);
+      if (center === null) {
+        // Aucune position dégagée dans le couloir. Si la marge droite est
+        // déjà réservée (autres étiquettes extérieures) et que le repli
+        // poserait le texte sur une courbe, on bascule l'étiquette en mode
+        // extérieur : la passe d'empilement gère les paquets serrés en
+        // préservant l'ordre des courbes.
+        center = corTop > corBot
+          ? (corTop + corBot) / 2
+          : Math.min(Math.max(best.cy, corTop), corBot);
+        if (outsideEndLen > 0 && clearanceAt(center) < EDGE_GAP) {
+          labelMode[sn.idx] = "outside";
+          sn.endNoteEl.setAttribute("x", Math.min(last.x + 8, W - M.right + 6));
+          sn.endNoteEl.setAttribute("y", last.y + 4);
+          sn.endNoteEl.setAttribute("text-anchor", "start");
+          return;
+        }
+      }
       sn.endNoteEl.setAttribute("y", center + 4);
-      placedInside.push({ x1, x2, cy: center });
+      placedInside.push({ x1, x2, cy: center, anchorY: atEdge ? last.y : null });
       // Trait de liaison si le texte a dû s'éloigner nettement de la courbe.
       if (Math.abs(center - last.y) > 18) {
         const above = center < last.y;
