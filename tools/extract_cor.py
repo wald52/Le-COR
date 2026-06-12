@@ -1209,11 +1209,13 @@ def build():
                           "scénario de référence.",
                 "points": pts,
             })
+        _nv_all = [{"points": obs_pts}] + [{"points": p["points"]} for p in nv_proj_list]
+        _nv_b = _bounds(_nv_all)
         niveau_block = {
             "title": "Le niveau de vie des retraités décrocherait peu à peu",
             "subtitle": "Niveau de vie moyen des retraités rapporté à celui de l'ensemble de la "
                         "population (100 % = parité) — projection de chaque rapport",
-            "yLabel": "%", "yMin": 80, "yMax": 110,
+            "yLabel": "%", "yMin": _nv_b["yMin"], "yMax": _nv_b["yMax"],
             "xMin": 1996, "xMax": 2070,
             "realise": {"label": "Observé", "color": "#1f2d3d", "kind": "solid", "points": obs_pts},
             "projections": nv_proj_list,
