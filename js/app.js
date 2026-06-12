@@ -31,7 +31,7 @@
    * 1. Graphique phare : dépenses de retraite en % du PIB, projections
    *    successives superposées.
    * -------------------------------------------------------------------- */
-  function renderDepensesPib() {
+  function renderDepensesPib(animate) {
     // Données officielles générées depuis les Excel du COR si disponibles,
     // sinon valeurs d'amorçage de data.js.
     const d = (window.COR_SERIES && window.COR_SERIES.depensesPib) || D.depensesPib;
@@ -45,12 +45,13 @@
       series,
       x: { min: d.xMin, max: d.xMax },
       y: { min: d.yMin, max: d.yMax, suffix: " %" },
-      ariaLabel: d.subtitle
+      ariaLabel: d.subtitle,
+      animate
     });
   }
 
   /* Helper : graphique « réalisé + projections superposées ». */
-  function renderRealiseProjections(elId, block) {
+  function renderRealiseProjections(elId, block, animate) {
     if (!block) return;
     const series = [
       { ...block.realise, kind: "solid", markers: false },
@@ -62,27 +63,29 @@
       series,
       x: { min: block.xMin, max: block.xMax },
       y: { min: block.yMin, max: block.yMax, suffix: " %" },
-      ariaLabel: block.subtitle
+      ariaLabel: block.subtitle,
+      animate
     });
   }
 
-  function renderSolde() {
-    renderRealiseProjections("chart-solde", window.COR_SERIES && window.COR_SERIES.solde);
+  function renderSolde(animate) {
+    renderRealiseProjections("chart-solde", window.COR_SERIES && window.COR_SERIES.solde, animate);
   }
 
-  function renderCiseaux() {
+  function renderCiseaux(animate) {
     const b = window.COR_SERIES && window.COR_SERIES.ressourcesVsDepenses;
     if (!b) return;
     lineChart(document.getElementById("chart-ciseaux"), {
       series: b.series.map(s => ({ ...s, endNote: s.label })),
       x: { min: b.xMin, max: b.xMax },
       y: { min: b.yMin, max: b.yMax, suffix: " %" },
-      ariaLabel: b.subtitle
+      ariaLabel: b.subtitle,
+      animate
     });
   }
 
-  function renderNiveauVie() {
-    renderRealiseProjections("chart-niveau", window.COR_SERIES && window.COR_SERIES.niveauVie);
+  function renderNiveauVie(animate) {
+    renderRealiseProjections("chart-niveau", window.COR_SERIES && window.COR_SERIES.niveauVie, animate);
   }
 
   /* ----------------------------------------------------------------------
@@ -170,7 +173,7 @@
   /* ----------------------------------------------------------------------
    * 3. Fécondité : hypothèse vs réalité.
    * -------------------------------------------------------------------- */
-  function renderFecondite() {
+  function renderFecondite(animate) {
     const d = (window.COR_SERIES && window.COR_SERIES.fecondite) || D.fecondite;
     const series = [
       { ...d.realise, kind: "solid", markers: true },
@@ -180,14 +183,15 @@
       series,
       x: { min: d.xMin, max: d.xMax },
       y: { min: d.yMin, max: d.yMax, suffix: "" },
-      ariaLabel: d.subtitle
+      ariaLabel: d.subtitle,
+      animate
     });
   }
 
   /* ----------------------------------------------------------------------
    * 4. Productivité : hypothèse vs réalité.
    * -------------------------------------------------------------------- */
-  function renderProductiviteReel() {
+  function renderProductiviteReel(animate) {
     const d = (window.COR_SERIES && window.COR_SERIES.productiviteReel) || D.productiviteReel;
     const series = [
       { ...d.realise, kind: "solid", markers: true },
@@ -197,7 +201,8 @@
       series,
       x: { min: d.xMin, max: d.xMax },
       y: { min: d.yMin, max: d.yMax, suffix: " %" },
-      ariaLabel: d.subtitle
+      ariaLabel: d.subtitle,
+      animate
     });
   }
 
@@ -212,9 +217,9 @@
     let currentTheme = exp.themes[0];
 
     let currentId = null;
-    explorerRedraw = () => { if (currentId) drawIndicator(currentId); };
+    explorerRedraw = animate => { if (currentId) drawIndicator(currentId, animate); };
 
-    function drawIndicator(iid) {
+    function drawIndicator(iid, animate) {
       const ind = exp.indicators[iid];
       if (!ind) return;
       currentId = iid;
@@ -227,7 +232,8 @@
         series: ind.series,
         x: { min: ind.xMin, max: ind.xMax },
         y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
-        ariaLabel: ind.label
+        ariaLabel: ind.label,
+        animate
       });
     }
 
@@ -421,14 +427,14 @@
    * de la taille rendue.
    * -------------------------------------------------------------------- */
   let resizeTimer;
-  function renderAllCharts() {
-    renderDepensesPib();
-    renderSolde();
-    renderCiseaux();
-    renderNiveauVie();
+  function renderAllCharts(animate) {
+    renderDepensesPib(animate);
+    renderSolde(animate);
+    renderCiseaux(animate);
+    renderNiveauVie(animate);
     renderProductivite();
-    renderFecondite();
-    renderProductiviteReel();
+    renderFecondite(animate);
+    renderProductiviteReel(animate);
   }
 
   /* ----------------------------------------------------------------------
@@ -745,9 +751,20 @@
     setupChartTools();
     setupZoom();
     setupAnim();
+    // Sur mobile, le repli/déploiement de la barre d'adresse pendant le
+    // défilement déclenche des « resize » qui ne changent que la hauteur :
+    // on ne re-rend que si la largeur a réellement changé (rotation,
+    // redimensionnement de fenêtre), et sans rejouer les animations.
+    let lastWidth = window.innerWidth;
     window.addEventListener("resize", () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(renderAllCharts, 200);
+      resizeTimer = setTimeout(() => {
+        if (window.innerWidth === lastWidth) return;
+        lastWidth = window.innerWidth;
+        renderAllCharts(false);
+        if (explorerRedraw) explorerRedraw(false);
+        renderInternational();
+      }, 200);
     });
 
     // Enregistrement du service worker (PWA). Stratégie « réseau d'abord » :

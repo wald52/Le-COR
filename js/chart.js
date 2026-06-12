@@ -154,6 +154,9 @@
    *   cfg.y : { min, max, label, suffix }
    */
   function lineChart(container, cfg) {
+    // Annule l'animation (en cours ou en attente de visibilité) d'un rendu
+    // précédent : sa boucle rAF continuerait sinon sur un SVG orphelin.
+    if (container.__revealCancel) container.__revealCancel();
     container.innerHTML = "";
 
     // Dimensions responsives : on cale le viewBox sur la largeur réelle du
@@ -516,19 +519,45 @@
     }
 
     // --- Animation « tracé » (révélation gauche → droite) ---
+    // Le tracé ne démarre qu'à l'entrée du graphique dans la zone visible :
+    // chaque graphique est ainsi vu en train de se dessiner, une seule fois,
+    // au lieu de s'animer hors écran dès le chargement de la page.
     if (ANIMATE && !reducedMotion() && cfg.animate !== false) {
       revealRect.setAttribute("width", 0);
-      const dur = 1100, t0 = performance.now();
-      let raf;
-      const finish = () => { revealRect.setAttribute("width", revealW); running.delete(finish); };
-      const step = now => {
-        const k = Math.max(0, Math.min(1, (now - t0) / dur));
-        revealRect.setAttribute("width", revealW * (1 - Math.pow(1 - k, 3)));
-        if (k < 1) raf = requestAnimationFrame(step); else running.delete(finish);
+      const dur = 1100;
+      let raf, obs;
+      const done = () => { running.delete(finish); container.__revealCancel = null; };
+      const finish = () => {
+        if (obs) { obs.disconnect(); obs = null; }
+        revealRect.setAttribute("width", revealW);
+        done();
       };
-      finish.cancel = () => cancelAnimationFrame(raf);
+      finish.cancel = () => {
+        if (obs) { obs.disconnect(); obs = null; }
+        cancelAnimationFrame(raf);
+      };
+      const start = () => {
+        const t0 = performance.now();
+        const step = now => {
+          const k = Math.max(0, Math.min(1, (now - t0) / dur));
+          revealRect.setAttribute("width", revealW * (1 - Math.pow(1 - k, 3)));
+          if (k < 1) raf = requestAnimationFrame(step); else done();
+        };
+        raf = requestAnimationFrame(step);
+      };
       running.add(finish);
-      raf = requestAnimationFrame(step);
+      container.__revealCancel = () => { finish.cancel(); done(); };
+      if ("IntersectionObserver" in window) {
+        obs = new IntersectionObserver(entries => {
+          if (entries.some(e => e.isIntersecting)) {
+            obs.disconnect(); obs = null;
+            start();
+          }
+        }, { threshold: 0.15 });
+        obs.observe(svg);
+      } else {
+        start();
+      }
     }
 
     // --- Infobulle au survol ---
