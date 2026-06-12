@@ -3,7 +3,7 @@
  * Stratégie : « cache d'abord » pour les ressources de l'application
  * (le site est statique), avec mise à jour en arrière-plan.
  */
-const CACHE = "le-cor-citoyen-v22";
+const CACHE = "le-cor-citoyen-v23";
 const ASSETS = [
   "./",
   "./index.html",

@@ -310,8 +310,10 @@
       d: `M${cx - w / 2},${cy} L${cx - w / 8},${cy - 2.8} L${cx + w / 8},${cy + 2.8} L${cx + w / 2},${cy}`,
       fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round"
     }, attrs));
+    // Marque posée juste à l'intérieur du bord gauche du tracé, décalée des
+    // étiquettes de l'axe Y pour ne pas les chevaucher.
     const breakMark = yCut => [-3, 3].forEach(off =>
-      svg.appendChild(zigzag(M.left, yCut + off, 20, { class: "chart-axis-break" })));
+      svg.appendChild(zigzag(M.left + 14, yCut + off, 20, { class: "chart-axis-break" })));
     if (bandTop) breakMark(M.top - BAND_GAP / 2);
     if (bandBot) breakMark(M.top + plotH + BAND_GAP / 2);
 
