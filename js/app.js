@@ -229,7 +229,12 @@
       chipsEl.querySelectorAll(".exp-chip").forEach(c =>
         c.classList.toggle("active", c.dataset.id === iid));
       lineChart(document.getElementById("chart-explorer"), {
-        series: ind.series,
+        // Millésime en bout de courbe pour les indicateurs « rapports
+        // superposés », comme sur le graphique phare (« Rapport 2016 » → 2016).
+        series: ind.series.map(s => {
+          const m = /^Rapport (\d{4})/.exec(s.label);
+          return m && !s.endNote ? { ...s, endNote: m[1] } : s;
+        }),
         x: { min: ind.xMin, max: ind.xMax },
         y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
         ariaLabel: ind.label,
