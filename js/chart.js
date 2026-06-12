@@ -198,11 +198,22 @@
     const CHAR_W = 6.8;
     const MIN_CLEAR = narrow ? 14 : 16;
 
+    // Point de fin « visible » d'une série : les données peuvent dépasser la
+    // fenêtre X du graphique (ex. hypothèses 2070 sur un tracé arrêté à 2050).
+    // Les marqueurs et étiquettes de fin s'ancrent alors au bord droit (valeur
+    // interpolée à xMax), pas sur le dernier point brut, qui serait hors cadre.
+    const endAnchor = s => {
+      const last = s.points[s.points.length - 1];
+      if (!last || last.x <= xMax_pre) return last;
+      const y = interpolateY(s.points, xMax_pre);
+      return y === null ? last : { x: xMax_pre, y };
+    };
+
     // Pour chaque série : 'inside' si toutes les autres courbes sont à plus de
     // MIN_CLEAR px au niveau du dernier point, 'outside' sinon, 'none' sans label.
     const labelMode = cfg.series.map(s => {
       if (!s.endNote && !s.endLabel) return "none";
-      const lastPt = s.points[s.points.length - 1];
+      const lastPt = endAnchor(s);
       if (!lastPt) return "outside";
       // Une série qui s'arrête avant le bord droit aurait son étiquette
       // « extérieure » au milieu du tracé, parmi les courbes : on la place en
@@ -377,10 +388,13 @@
         g.appendChild(t);
       });
 
+      // Point de fin visible (au bord droit si la série dépasse xMax).
+      const endRaw = endAnchor(s);
+      const endScaled = endRaw ? { x: sx(endRaw.x), y: syAll(endRaw.y) } : null;
+
       // Points de marquage (optionnels) — utile pour le dernier point.
-      if (s.markers !== false) {
-        const last = scaled[scaled.length - 1];
-        g.appendChild(el("circle", { cx: last.x, cy: last.y, r: 3.5, fill: s.color }));
+      if (s.markers !== false && endScaled) {
+        g.appendChild(el("circle", { cx: endScaled.x, cy: endScaled.y, r: 3.5, fill: s.color }));
       }
 
       // Étiquette de fin de courbe (label + valeur), façon PIIE.
@@ -388,8 +402,8 @@
       // (text-anchor=end), ce qui évite d'agrandir la marge droite.
       // Mode 'outside' : comportement classique, dans la marge droite.
       let endNoteEl = null;
-      if (s.endNote || s.endLabel) {
-        const last = scaled[scaled.length - 1];
+      if ((s.endNote || s.endLabel) && endScaled) {
+        const last = endScaled;
         const mode = labelMode[idx];
         const xPos = mode === "inside"
           ? last.x - 8
@@ -406,7 +420,7 @@
       }
 
       seriesLayer.appendChild(g);
-      seriesNodes.push({ cfg: s, node: g, scaled, endNoteEl, idx });
+      seriesNodes.push({ cfg: s, node: g, scaled, endScaled, endNoteEl, idx });
     });
     svg.appendChild(seriesLayer);
 
@@ -420,7 +434,7 @@
     const placedInside = []; // étiquettes intérieures déjà posées : {x1, x2, cy}
     seriesNodes.forEach(sn => {
       if (!sn.endNoteEl || labelMode[sn.idx] !== "inside") return;
-      const last = sn.scaled[sn.scaled.length - 1];
+      const last = sn.endScaled;
       const textW = (sn.endNoteEl.textContent || "").length * CHAR_W;
       const x2 = last.x - 8;
       const x1 = Math.max(M.left, x2 - textW);
@@ -476,7 +490,7 @@
     const placed = seriesNodes
       .filter(sn => sn.endNoteEl && labelMode[sn.idx] === "outside")
       .map(sn => {
-        const last = sn.scaled[sn.scaled.length - 1];
+        const last = sn.endScaled;
         const y0 = +sn.endNoteEl.getAttribute("y");
         return {
           el: sn.endNoteEl,
