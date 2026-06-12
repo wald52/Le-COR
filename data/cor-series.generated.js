@@ -18360,7 +18360,7 @@ window.COR_SERIES = {
         "label": "Productivité du travail",
         "unit": "%/an",
         "suffix": " %",
-        "desc": "Croissance de la productivité : moteur des salaires donc des cotisations. Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025). La courbe du rapport 2020 sort de l'échelle affichée en 2020-2021 (les valeurs extrêmes sont tronquées) : son scénario intégrait l'effondrement (−8,7 %) puis le rebond (+8,4 %) du Covid.",
+        "desc": "Croissance de la productivité : moteur des salaires donc des cotisations. Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025). La courbe du rapport 2020 ne commence qu'en 2022 : son scénario s'ouvrait sur l'effondrement (−8,7 %) puis le rebond (+8,4 %) du Covid, hors de l'échelle affichée (valeurs non tracées).",
         "source": "COR, rapports 2018-2026 (productivité observée puis projetée, scénario central de chaque rapport).",
         "series": [
           {

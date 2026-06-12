@@ -73,13 +73,16 @@
   }
 
   // Construit le chemin SVG en découpant les segments hors de la zone de tracé.
-  // Chaque sortie hors zone produit une rupture dans le chemin.
+  // Chaque sortie hors zone produit une rupture dans le chemin. Les points
+  // marqués `out` (très au-delà de l'échelle) interrompent la courbe : un
+  // segment tronqué pleine hauteur ressemblerait à un débordement du cadre.
   function buildClippedPath(pts, x0, x1, y0, y1) {
     if (pts.length < 2) return '';
     const cmds = [];
     let open = false;
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i - 1], q = pts[i];
+      if (p.out || q.out) { open = false; continue; }
       const s = clipSegment(p.x, p.y, q.x, q.y, x0, x1, y0, y1);
       if (!s) { open = false; continue; }
       if (!open || s.entry) { cmds.push(`M${s.x1},${s.y1}`); open = true; }
@@ -228,6 +231,12 @@
     const sx = v => M.left + ((v - xMin) / (xMax - xMin)) * plotW;
     const sy = v => M.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
 
+    // Valeur « hors échelle » : au-delà d'une demi-amplitude en dehors des
+    // bornes Y (ex. choc Covid du rapport 2020 : −8,7 % sur une échelle
+    // −1/2,5). Ces points ne sont pas tracés, la courbe s'interrompt.
+    const yPad = (yMax - yMin) / 2;
+    const farOut = p => p.y > yMax + yPad || p.y < yMin - yPad;
+
     const svg = el("svg", {
       viewBox: `0 0 ${W} ${H}`,
       class: "chart-svg",
@@ -280,7 +289,7 @@
     // --- Courbes ---
     const seriesNodes = [];
     cfg.series.forEach((s, idx) => {
-      const scaled = s.points.map(p => ({ x: sx(p.x), y: sy(p.y), raw: p }));
+      const scaled = s.points.map(p => ({ x: sx(p.x), y: sy(p.y), out: farOut(p), raw: p }));
       const g = el("g", { class: "chart-series", "data-idx": idx });
 
       const path = el("path", {
