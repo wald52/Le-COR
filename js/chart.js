@@ -225,7 +225,9 @@
         ? Math.min(Math.max(outsideEndLen * CHAR_W + 14, narrow ? 40 : 56), narrow ? 96 : 124)
         : (narrow ? 8 : 14),
       bottom: (narrow ? 34 : 46) + bandBot,
-      left: narrow ? 42 : 46
+      // Marge gauche élargie en présence de coupures d'axe : les étiquettes Y
+      // sont repoussées à gauche des zigzags posés sur l'axe.
+      left: (narrow ? 42 : 46) + (bandTop || bandBot ? 10 : 0)
     };
     const plotW = W - M.left - M.right;
     const plotH = H - M.top - M.bottom;
@@ -276,7 +278,7 @@
       svg.appendChild(el("line", {
         x1: M.left, y1: y, x2: M.left + plotW, y2: y, class: "chart-grid"
       }));
-      const lbl = el("text", { x: M.left - 8, y: y + 4, class: "chart-axis-label", "text-anchor": "end" });
+      const lbl = el("text", { x: M.left - (bandTop || bandBot ? 18 : 8), y: y + 4, class: "chart-axis-label", "text-anchor": "end" });
       lbl.textContent = String(Math.round(t * 10) / 10).replace(".", ",") + suffix;
       svg.appendChild(lbl);
     });
@@ -310,10 +312,10 @@
       d: `M${cx - w / 2},${cy} L${cx - w / 8},${cy - 2.8} L${cx + w / 8},${cy + 2.8} L${cx + w / 2},${cy}`,
       fill: "none", "stroke-linejoin": "round", "stroke-linecap": "round"
     }, attrs));
-    // Marque posée juste à l'intérieur du bord gauche du tracé, décalée des
-    // étiquettes de l'axe Y pour ne pas les chevaucher.
+    // Marque posée à cheval sur l'axe Y ; les étiquettes de l'axe sont
+    // décalées à gauche (marge élargie) pour ne pas la chevaucher.
     const breakMark = yCut => [-3, 3].forEach(off =>
-      svg.appendChild(zigzag(M.left + 14, yCut + off, 20, { class: "chart-axis-break" })));
+      svg.appendChild(zigzag(M.left, yCut + off, 20, { class: "chart-axis-break" })));
     if (bandTop) breakMark(M.top - BAND_GAP / 2);
     if (bandBot) breakMark(M.top + plotH + BAND_GAP / 2);
 
