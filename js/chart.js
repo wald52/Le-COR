@@ -50,8 +50,43 @@
     return ticks;
   }
 
-  function buildPath(pts) {
-    return pts.map((p, i) => (i === 0 ? "M" : "L") + p.x + "," + p.y).join(" ");
+  // Liang-Barsky : découpe un segment contre un rectangle.
+  // Renvoie { x1,y1,x2,y2, entry,exit } ou null si hors zone.
+  function clipSegment(ax, ay, bx, by, x0, x1, y0, y1) {
+    const dx = bx - ax, dy = by - ay;
+    let t0 = 0, t1 = 1;
+    function clip(p, q) {
+      if (p === 0) return q >= 0;
+      const r = q / p;
+      if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; }
+      else        { if (r < t0) return false; if (r < t1) t1 = r; }
+      return true;
+    }
+    if (!clip(-dx, ax - x0) || !clip(dx, x1 - ax) ||
+        !clip(-dy, ay - y0) || !clip(dy, y1 - ay)) return null;
+    if (t0 >= t1) return null;
+    return {
+      x1: ax + t0*dx, y1: ay + t0*dy,
+      x2: ax + t1*dx, y2: ay + t1*dy,
+      entry: t0 > 1e-9, exit: t1 < 1 - 1e-9
+    };
+  }
+
+  // Construit le chemin SVG en découpant les segments hors de la zone de tracé.
+  // Chaque sortie hors zone produit une rupture dans le chemin.
+  function buildClippedPath(pts, x0, x1, y0, y1) {
+    if (pts.length < 2) return '';
+    const cmds = [];
+    let open = false;
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i - 1], q = pts[i];
+      const s = clipSegment(p.x, p.y, q.x, q.y, x0, x1, y0, y1);
+      if (!s) { open = false; continue; }
+      if (!open || s.entry) { cmds.push(`M${s.x1},${s.y1}`); open = true; }
+      cmds.push(`L${s.x2},${s.y2}`);
+      if (s.exit) open = false;
+    }
+    return cmds.join(' ');
   }
 
   // Interpolation linéaire de la valeur Y d'une série à un X donné.
@@ -200,14 +235,10 @@
       "aria-label": cfg.ariaLabel || "Graphique en courbes"
     });
 
-    // Zone de découpe : les courbes ne débordent jamais du cadre de tracé.
-    const rnd = Math.random().toString(36).slice(2, 8);
-    const clipId = "plotclip-" + rnd;
-    const defs = el("defs");
-    const clip = el("clipPath", { id: clipId });
-    clip.appendChild(el("rect", { x: M.left, y: M.top, width: plotW, height: plotH }));
-    defs.appendChild(clip);
     // Découpe « révélation » pour animer le tracé de gauche à droite.
+    // Les courbes restent dans le cadre grâce au découpage algorithmique (buildClippedPath).
+    const rnd = Math.random().toString(36).slice(2, 8);
+    const defs = el("defs");
     const revealId = "reveal-" + rnd;
     const revealClip = el("clipPath", { id: revealId });
     const revealW = W - M.left;             // couvre aussi les étiquettes de fin
@@ -253,7 +284,7 @@
       const g = el("g", { class: "chart-series", "data-idx": idx });
 
       const path = el("path", {
-        d: buildPath(scaled),
+        d: buildClippedPath(scaled, M.left, M.left + plotW, M.top, M.top + plotH),
         fill: "none",
         stroke: s.color,
         "stroke-width": s.kind === "solid" ? 3 : 2.2,
@@ -261,7 +292,6 @@
         "stroke-linecap": "round"
       });
       if (s.kind === "dash") path.setAttribute("stroke-dasharray", "7 5");
-      path.setAttribute("clip-path", `url(#${clipId})`);
       g.appendChild(path);
 
       // Points de marquage (optionnels) — utile pour le dernier point.
