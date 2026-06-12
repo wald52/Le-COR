@@ -432,9 +432,26 @@
     const LABEL_H = 12;     // hauteur approximative du texte (px SVG)
     const LABEL_CLEAR = 6;  // écart minimal entre le bord du texte et une courbe
     const placedInside = []; // étiquettes intérieures déjà posées : {x1, x2, cy}
+    const edgeX = M.left + plotW * 0.98; // ancrage « au bord droit »
     seriesNodes.forEach(sn => {
       if (!sn.endNoteEl || labelMode[sn.idx] !== "inside") return;
       const last = sn.endScaled;
+      // Couloir d'ordre : l'étiquette doit rester plus près de son propre
+      // point final que de celui de toute autre série étiquetée arrivant au
+      // bord droit. Sans cette borne, la recherche au-dessus/en dessous peut
+      // poser l'étiquette de l'autre côté d'une courbe voisine, et les
+      // millésimes se croisent (ex. « 2026 » rendu sous la courbe 2025).
+      let corTop = M.top + 2 + LABEL_H / 2;
+      let corBot = M.top + plotH - 2 - LABEL_H / 2;
+      if (last.x >= edgeX) {
+        seriesNodes.forEach(o => {
+          if (o === sn || !o.endScaled || labelMode[o.idx] === "none") return;
+          if (o.endScaled.x < edgeX) return;
+          const mid = (o.endScaled.y + last.y) / 2;
+          if (o.endScaled.y < last.y) corTop = Math.max(corTop, mid);
+          else if (o.endScaled.y > last.y) corBot = Math.min(corBot, mid);
+        });
+      }
       const textW = (sn.endNoteEl.textContent || "").length * CHAR_W;
       const x2 = last.x - 8;
       const x1 = Math.max(M.left, x2 - textW);
@@ -462,6 +479,7 @@
       let best = { cy: last.y - need, clear: -Infinity };
       for (let d = need; d <= 80 && center === null; d += 2) {
         for (const cy of [last.y - d, last.y + d]) {
+          if (cy < corTop || cy > corBot) continue;
           if (cy - LABEL_H / 2 < M.top + 2 || cy + LABEL_H / 2 > M.top + plotH - 2) continue;
           if (!labelFree(cy)) continue;
           const clear = clearanceAt(cy);
@@ -470,6 +488,10 @@
         }
       }
       if (center === null) center = best.cy;
+      // Quoi qu'il arrive, on reste dans le couloir : une étiquette un peu à
+      // l'étroit reste préférable à des millésimes inversés.
+      if (corTop > corBot) center = (corTop + corBot) / 2;
+      else center = Math.min(Math.max(center, corTop), corBot);
       sn.endNoteEl.setAttribute("y", center + 4);
       placedInside.push({ x1, x2, cy: center });
       // Trait de liaison si le texte a dû s'éloigner nettement de la courbe.
