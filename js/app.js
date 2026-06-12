@@ -750,20 +750,11 @@
       resizeTimer = setTimeout(renderAllCharts, 200);
     });
 
-    // Enregistrement du service worker (PWA) + notification de mise à jour.
+    // Enregistrement du service worker (PWA). Stratégie « réseau d'abord » :
+    // les visiteurs ont toujours la dernière version, pas besoin de notification.
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").then(reg => {
-          reg.addEventListener("updatefound", () => {
-            const nw = reg.installing;
-            if (!nw) return;
-            nw.addEventListener("statechange", () => {
-              if (nw.state === "installed" && navigator.serviceWorker.controller) {
-                toast("Une nouvelle version est disponible.", "Actualiser", () => location.reload());
-              }
-            });
-          });
-        }).catch(() => {});
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
       });
     }
   }
