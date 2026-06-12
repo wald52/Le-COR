@@ -829,14 +829,14 @@ def build_explorer(multi=None):
             iid = add("productivite", "Productivité du travail", "%/an", " %", s,
                       "Croissance de la productivité : moteur des salaires donc des cotisations. "
                       "Le scénario central est passé de 1,3 % à 1,0 % (2023) puis 0,7 % (2025). "
-                      "La courbe du rapport 2020 ne commence qu'en 2022 : son scénario "
-                      "s'ouvrait sur l'effondrement (−8,7 %) puis le rebond (+8,4 %) du Covid, "
-                      "hors de l'échelle affichée (valeurs non tracées).",
+                      "Le scénario du rapport 2020 s'ouvrait sur l'effondrement (−8,7 % en 2020) "
+                      "puis le rebond (+8,4 % en 2021) du Covid : ces valeurs extrêmes sont "
+                      "affichées au-delà des coupures de l'axe (échelle interrompue).",
                       "COR, rapports 2018-2026 (productivité observée puis projetée, scénario central de chaque rapport).")
             if iid:
                 # Axe borné pour garder lisibles les hypothèses de long terme ;
-                # la pointe Covid du rapport 2020, très hors échelle, n'est pas
-                # tracée (rupture de courbe, voir farOut dans chart.js).
+                # la pointe Covid du rapport 2020, très hors échelle, est
+                # affichée dans les bandes à axe interrompu (voir chart.js).
                 ind[iid]["yMin"], ind[iid]["yMax"] = -1.0, 2.5
 
     # --- Pensions & retraités

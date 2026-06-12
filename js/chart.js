@@ -73,16 +73,13 @@
   }
 
   // Construit le chemin SVG en découpant les segments hors de la zone de tracé.
-  // Chaque sortie hors zone produit une rupture dans le chemin. Les points
-  // marqués `out` (très au-delà de l'échelle) interrompent la courbe : un
-  // segment tronqué pleine hauteur ressemblerait à un débordement du cadre.
+  // Chaque sortie hors zone produit une rupture dans le chemin.
   function buildClippedPath(pts, x0, x1, y0, y1) {
     if (pts.length < 2) return '';
     const cmds = [];
     let open = false;
     for (let i = 1; i < pts.length; i++) {
       const p = pts[i - 1], q = pts[i];
-      if (p.out || q.out) { open = false; continue; }
       const s = clipSegment(p.x, p.y, q.x, q.y, x0, x1, y0, y1);
       if (!s) { open = false; continue; }
       if (!open || s.entry) { cmds.push(`M${s.x1},${s.y1}`); open = true; }
@@ -175,9 +172,23 @@
     const allX_pre = cfg.series.flatMap(s => s.points.map(p => p.x));
     const xMin_pre = cfg.x?.min ?? Math.min(...allX_pre);
     const xMax_pre = cfg.x?.max ?? Math.max(...allX_pre);
-    const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.52, 440));
-    const plotH_pre = H - 16 - (narrow ? 34 : 46); // top=16, bottom fixe
-    const toSvgY = v => 16 + (1 - (v - yMin_pre) / (yMax_pre - yMin_pre)) * plotH_pre;
+
+    // Axe interrompu : une valeur très au-delà des bornes Y (plus d'une
+    // demi-amplitude en dehors, ex. choc Covid du rapport 2020 sur une échelle
+    // −1/2,5) est affichée dans une bande « coupée » au-dessus ou en dessous
+    // du tracé, séparée par un signe de coupure, plutôt que d'écraser toute
+    // l'échelle ou de masquer la valeur.
+    const yPadFar = (yMax_pre - yMin_pre) / 2;
+    const isFarHigh = v => v > yMax_pre + yPadFar;
+    const isFarLow = v => v < yMin_pre - yPadFar;
+    const BAND_H = 26;  // hauteur d'une bande hors échelle (px SVG)
+    const BAND_GAP = 7; // coupure visuelle entre bande et zone de tracé
+    const bandTop = allY_pre.some(isFarHigh) ? BAND_H : 0;
+    const bandBot = allY_pre.some(isFarLow) ? BAND_H : 0;
+
+    const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.52, 440)) + bandTop + bandBot;
+    const plotH_pre = H - 16 - bandTop - bandBot - (narrow ? 34 : 46); // top=16, bottom fixe
+    const toSvgY = v => 16 + bandTop + (1 - (v - yMin_pre) / (yMax_pre - yMin_pre)) * plotH_pre;
 
     // Espace minimal (px SVG) entre une étiquette intérieure et toute autre
     // courbe pour que l'étiquette reste lisible sans chevauchement.
@@ -209,11 +220,11 @@
       labelMode[i] === "outside" ? String(s.endNote || s.endLabel || "").length : 0
     ));
     const M = {
-      top: 16,
+      top: 16 + bandTop,
       right: outsideEndLen > 0
         ? Math.min(Math.max(outsideEndLen * CHAR_W + 14, narrow ? 40 : 56), narrow ? 96 : 124)
         : (narrow ? 8 : 14),
-      bottom: narrow ? 34 : 46,
+      bottom: (narrow ? 34 : 46) + bandBot,
       left: narrow ? 42 : 46
     };
     const plotW = W - M.left - M.right;
@@ -231,11 +242,12 @@
     const sx = v => M.left + ((v - xMin) / (xMax - xMin)) * plotW;
     const sy = v => M.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
 
-    // Valeur « hors échelle » : au-delà d'une demi-amplitude en dehors des
-    // bornes Y (ex. choc Covid du rapport 2020 : −8,7 % sur une échelle
-    // −1/2,5). Ces points ne sont pas tracés, la courbe s'interrompt.
-    const yPad = (yMax - yMin) / 2;
-    const farOut = p => p.y > yMax + yPad || p.y < yMin - yPad;
+    // Position Y, bandes comprises : une valeur très hors échelle est posée à
+    // hauteur fixe au milieu de sa bande (l'écart réel n'est pas à l'échelle,
+    // c'est tout le sens de la coupure ; la valeur exacte est affichée à côté).
+    const yTopBand = M.top - BAND_GAP - (BAND_H - BAND_GAP) / 2;
+    const yBotBand = M.top + plotH + BAND_GAP + (BAND_H - BAND_GAP) / 2;
+    const syAll = v => isFarHigh(v) ? yTopBand : isFarLow(v) ? yBotBand : sy(v);
 
     const svg = el("svg", {
       viewBox: `0 0 ${W} ${H}`,
@@ -276,7 +288,7 @@
       svg.appendChild(el("line", {
         x1: x, y1: M.top + plotH, x2: x, y2: M.top + plotH + 5, class: "chart-tick"
       }));
-      const lbl = el("text", { x: x, y: M.top + plotH + 22, class: "chart-axis-label", "text-anchor": "middle" });
+      const lbl = el("text", { x: x, y: M.top + plotH + bandBot + 22, class: "chart-axis-label", "text-anchor": "middle" });
       lbl.textContent = String(t).replace(/\s/g, "");
       svg.appendChild(lbl);
     });
@@ -286,14 +298,34 @@
       x1: M.left, y1: M.top + plotH, x2: M.left + plotW, y2: M.top + plotH, class: "chart-axis"
     }));
 
+    // Signe de coupure d'axe (double trait oblique) à l'entrée de chaque
+    // bande hors échelle, sur le bord gauche du tracé.
+    const breakMark = yCut => {
+      [-3, 3].forEach(off => svg.appendChild(el("line", {
+        x1: M.left - 8, y1: yCut + 4 + off, x2: M.left + 8, y2: yCut - 4 + off,
+        class: "chart-axis-break"
+      })));
+    };
+    if (bandTop) breakMark(M.top - BAND_GAP / 2);
+    if (bandBot) breakMark(M.top + plotH + BAND_GAP / 2);
+
     // --- Courbes ---
     const seriesNodes = [];
     cfg.series.forEach((s, idx) => {
-      const scaled = s.points.map(p => ({ x: sx(p.x), y: sy(p.y), out: farOut(p), raw: p }));
+      const scaled = s.points.map(p => ({
+        x: sx(p.x), y: syAll(p.y),
+        far: isFarHigh(p.y) || isFarLow(p.y), raw: p
+      }));
       const g = el("g", { class: "chart-series", "data-idx": idx });
 
+      // La courbe est découpée séparément dans la zone principale et dans
+      // chaque bande hors échelle : l'interstice entre les deux matérialise
+      // la coupure de l'axe.
+      let d = buildClippedPath(scaled, M.left, M.left + plotW, M.top, M.top + plotH);
+      if (bandTop) d += " " + buildClippedPath(scaled, M.left, M.left + plotW, M.top - BAND_H, M.top - BAND_GAP);
+      if (bandBot) d += " " + buildClippedPath(scaled, M.left, M.left + plotW, M.top + plotH + BAND_GAP, M.top + plotH + BAND_H);
       const path = el("path", {
-        d: buildClippedPath(scaled, M.left, M.left + plotW, M.top, M.top + plotH),
+        d: d.trim(),
         fill: "none",
         stroke: s.color,
         "stroke-width": s.kind === "solid" ? 3 : 2.2,
@@ -302,6 +334,18 @@
       });
       if (s.kind === "dash") path.setAttribute("stroke-dasharray", "7 5");
       g.appendChild(path);
+
+      // Valeurs hors échelle : point + valeur exacte affichés dans la bande.
+      scaled.forEach(sp => {
+        if (!sp.far) return;
+        g.appendChild(el("circle", { cx: sp.x, cy: sp.y, r: 3, fill: s.color }));
+        const t = el("text", {
+          x: sp.x + 6, y: sp.y + 4,
+          class: "chart-endnote", fill: s.color
+        });
+        t.textContent = String(sp.raw.y).replace(".", ",").replace("-", "−") + suffix;
+        g.appendChild(t);
+      });
 
       // Points de marquage (optionnels) — utile pour le dernier point.
       if (s.markers !== false) {

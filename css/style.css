@@ -118,6 +118,7 @@ a { color: var(--bleu-clair); }
 .chart-tick { stroke: #b9c4d0; stroke-width: 1; }
 .chart-axis-label { fill: var(--gris); font-size: 12px; font-family: var(--police); }
 .chart-endnote { font-size: 12px; font-weight: 700; font-family: var(--police); }
+.chart-axis-break { stroke: #5b6f93; stroke-width: 1.4; }
 .chart-focus-line { stroke: #9aa7b4; stroke-width: 1; stroke-dasharray: 3 3; }
 .chart-ref-line { stroke: var(--rouge); stroke-width: 1.2; stroke-dasharray: 4 4; opacity: 0.6; }
 .chart-series { transition: opacity 0.15s ease; }
