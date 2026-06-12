@@ -282,20 +282,24 @@
     });
 
     // --- Axe X ---
+    // La ligne d'axe est posée sous la bande hors échelle du bas (le point
+    // extrême reste ainsi au-dessus de l'abscisse) ; la borne basse de
+    // l'échelle principale reste matérialisée par sa ligne de grille.
+    const xAxisY = M.top + plotH + bandBot;
     const xTicks = niceTicks(xMin, xMax, narrow ? 4 : 6).filter(t => t >= xMin && t <= xMax);
     xTicks.forEach(t => {
       const x = sx(t);
       svg.appendChild(el("line", {
-        x1: x, y1: M.top + plotH, x2: x, y2: M.top + plotH + 5, class: "chart-tick"
+        x1: x, y1: xAxisY, x2: x, y2: xAxisY + 5, class: "chart-tick"
       }));
-      const lbl = el("text", { x: x, y: M.top + plotH + bandBot + 22, class: "chart-axis-label", "text-anchor": "middle" });
+      const lbl = el("text", { x: x, y: xAxisY + 22, class: "chart-axis-label", "text-anchor": "middle" });
       lbl.textContent = String(t).replace(/\s/g, "");
       svg.appendChild(lbl);
     });
 
     // Axe de base
     svg.appendChild(el("line", {
-      x1: M.left, y1: M.top + plotH, x2: M.left + plotW, y2: M.top + plotH, class: "chart-axis"
+      x1: M.left, y1: xAxisY, x2: M.left + plotW, y2: xAxisY, class: "chart-axis"
     }));
 
     // Signe de coupure d'axe : double zigzag parallèle séparé d'un interstice
