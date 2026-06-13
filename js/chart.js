@@ -633,8 +633,11 @@
 
     function valueAt(series, xv) {
       const pts = series.points;
-      if (xv <= pts[0].x) return null;
-      if (xv >= pts[pts.length - 1].x) return null;
+      // Hors de la plage de données de la série : rien à afficher. Bornes
+      // INCLUSES (< et > stricts) : à la première comme à la dernière année,
+      // on renvoie la valeur du point exact. Avec <=/>=, l'infobulle restait
+      // vide pile sur ces années (bug du survol sur la dernière année).
+      if (xv < pts[0].x || xv > pts[pts.length - 1].x) return null;
       for (let i = 1; i < pts.length; i++) {
         if (xv <= pts[i].x) {
           const a = pts[i - 1], b = pts[i];
@@ -642,7 +645,7 @@
           return a.y + t * (b.y - a.y);
         }
       }
-      return null;
+      return pts[pts.length - 1].y;
     }
 
     overlay.addEventListener("mousemove", evt => {
