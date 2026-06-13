@@ -871,11 +871,11 @@
   }
 
   function init() {
-    // Graphique phare construit tout de suite ; les autres graphiques et
-    // l'explorateur à l'approche du viewport (voir le bloc « rendu différé »).
-    renderDepensesPib(true);
-    chartsDrawn.add("chart-pib");
-    CHARTS.slice(1).forEach(entry =>
+    // Aucun graphique n'est au-dessus de la ligne de flottaison : on les
+    // construit tous (y compris le graphique phare) à l'approche du viewport.
+    // Le chargement initial ne dessine ainsi aucun SVG — le thread principal
+    // reste libre (Total Blocking Time bas) et le travail s'étale au défilement.
+    CHARTS.forEach(entry =>
       whenVisible(document.getElementById(entry.id), () => drawChart(entry, true)));
     whenVisible(document.getElementById("chart-explorer"), () => {
       renderExplorer();

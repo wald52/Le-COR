@@ -1450,9 +1450,15 @@ def build():
         f.write("/* FICHIER GÉNÉRÉ — ne pas éditer à la main.\n")
         f.write("   Source : fichiers Excel officiels du COR (data/Données du COR/).\n")
         f.write("   Régénérer avec : python3 tools/extract_cor.py */\n")
-        f.write("window.COR_SERIES = ")
-        json.dump(out, f, ensure_ascii=False, indent=2)
-        f.write(";\n")
+        # Émis sous forme JSON.parse("…") minifié : le moteur JS analyse cette
+        # forme nettement plus vite qu'un littéral objet équivalent (chemin JSON
+        # optimisé de V8), et le fichier est ~3× plus léger qu'en indenté — ce
+        # qui réduit d'autant le temps de parsing au chargement (Total Blocking
+        # Time). La double sérialisation produit un littéral de chaîne JS sûr.
+        f.write("window.COR_SERIES = JSON.parse(")
+        compact = json.dumps(out, ensure_ascii=False, separators=(",", ":"))
+        f.write(json.dumps(compact, ensure_ascii=False))
+        f.write(");\n")
     print("\nÉcrit :", os.path.relpath(dest))
     print("Millésimes :", ", ".join(k for k in extracted))
 
