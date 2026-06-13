@@ -73,6 +73,43 @@ a { color: var(--bleu-clair); }
 }
 .nav-toggle:hover { background: var(--bleu-pale); }
 
+/* ---------- Logo partenaire « Le Modèle Social Français » ---------- */
+.ms-logo {
+  position: relative; flex: none;            /* ne rétrécit jamais */
+  display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none; transition: transform 0.2s ease;
+}
+.ms-logo:hover { transform: scale(1.08); }
+.ms-logo-img {
+  width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+  background: #fff; border: 2px solid #d4af37;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35), 0 0 0 2px rgba(212, 175, 55, 0.12);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.ms-logo:hover .ms-logo-img {
+  border-color: #e6c75a;
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+/* pastille « lien » en haut à droite */
+.ms-logo::before {
+  content: "🔗"; position: absolute; top: -6px; right: -6px;
+  width: 20px; height: 20px; font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bleu); border: 1px solid #d4af37; border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); z-index: 1;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.ms-logo:hover::before { transform: scale(1.12); background: var(--bleu-clair); }
+/* infobulle au survol — ancrée à droite pour ne jamais déborder de l'écran */
+.ms-logo-tip {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--bleu); color: #fff; font-size: 0.72rem; font-weight: 600;
+  white-space: nowrap; padding: 4px 9px; border-radius: 8px; box-shadow: var(--ombre);
+  opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.ms-logo:hover .ms-logo-tip { opacity: 1; visibility: visible; transform: translateY(0); }
+
 /* ---------- Hero ---------- */
 .hero {
   background: linear-gradient(135deg, #1f4e79 0%, #2f6fb0 100%);
@@ -331,6 +368,9 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   }
   .nav-menu.open { display: flex; }
   .nav-link { padding: 10px; }
+  /* Logo partenaire : un peu plus compact pour tenir à côté du menu burger */
+  .ms-logo-img { width: 36px; height: 36px; }
+  .ms-logo-tip { display: none; }            /* pas de survol sur mobile */
   .chart-grid-2 { grid-template-columns: 1fr; }
   .key-figures { grid-template-columns: 1fr 1fr; }
   .key-figures strong { font-size: 1.4rem; }
