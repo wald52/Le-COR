@@ -742,6 +742,20 @@
       bar.appendChild(zoom); bar.appendChild(dl);
       card.appendChild(bar);
     });
+    reserveTitleSpaceForTools();
+  }
+
+  // Sur grand écran, la barre d'outils (Agrandir / PNG) est en absolu en haut à
+  // droite : sans précaution, un titre long passe dessous et devient illisible.
+  // On mesure sa largeur réelle (qui dépend de la police du système) et on
+  // l'expose au CSS via --chart-tools-w, qui réserve d'autant la droite du titre.
+  // Sous 760px la barre passe en pied de carte (en flux) : aucune réservation.
+  function reserveTitleSpaceForTools() {
+    const desktop = !window.matchMedia("(max-width: 760px)").matches;
+    document.querySelectorAll(".chart-card").forEach(card => {
+      const bar = card.querySelector(".chart-tools");
+      if (bar) card.style.setProperty("--chart-tools-w", desktop ? bar.offsetWidth + "px" : "0px");
+    });
   }
 
   function slug(s) {
@@ -837,6 +851,7 @@
         renderAllCharts(false);
         if (explorerRedraw) explorerRedraw(false);
         renderInternational();
+        reserveTitleSpaceForTools();
         scheduleChartPngCache();
       }, 200);
     });

@@ -260,6 +260,10 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   background: #fff; border: 1px solid var(--gris-clair); border-radius: 8px; padding: 5px 10px;
 }
 .chart-tool:hover { border-color: var(--bleu-clair); color: var(--bleu); }
+/* Réserve à droite du titre la largeur réelle de la barre d'outils (mesurée en
+   JS → --chart-tools-w) pour qu'un titre long ne passe pas sous les boutons
+   « Agrandir » / « PNG » positionnés en absolu en haut à droite de la carte. */
+.chart-title strong { padding-right: var(--chart-tools-w, 0); }
 
 /* Vue agrandie : élément <dialog> natif (focus piégé, Échap, fond géré). */
 .zoom-modal {
@@ -338,7 +342,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 
   /* Graphiques : outils déplacés SOUS le graphique (plus de superposition) */
   .chart-card { padding: 14px; }
-  .chart-title strong { font-size: 0.98rem; }
+  .chart-title strong { font-size: 0.98rem; padding-right: 0; }
   .chart-tools {
     position: static; justify-content: center; gap: 10px;
     margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--gris-clair);
