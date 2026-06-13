@@ -226,8 +226,11 @@
       document.getElementById("exp-label").textContent = ind.label;
       document.getElementById("exp-desc").textContent = ind.desc || "";
       document.getElementById("exp-source").textContent = "Source : " + (ind.source || "COR.");
-      chipsEl.querySelectorAll(".exp-chip").forEach(c =>
-        c.classList.toggle("active", c.dataset.id === iid));
+      chipsEl.querySelectorAll(".exp-chip").forEach(c => {
+        const on = c.dataset.id === iid;
+        c.classList.toggle("active", on);
+        c.setAttribute("aria-pressed", on ? "true" : "false");
+      });
       lineChart(document.getElementById("chart-explorer"), {
         // Millésime en bout de courbe pour les indicateurs « rapports
         // superposés », comme sur le graphique phare (« Rapport 2016 » → 2016).
@@ -256,6 +259,7 @@
         const btn = document.createElement("button");
         btn.className = "exp-chip";
         btn.type = "button";
+        btn.setAttribute("aria-pressed", "false");
         btn.dataset.id = iid;
         btn.textContent = ind.label;
         btn.addEventListener("click", () => drawIndicator(iid));
@@ -268,11 +272,16 @@
       const tab = document.createElement("button");
       tab.className = "exp-tab" + (idx === 0 ? " active" : "");
       tab.type = "button";
+      tab.setAttribute("aria-pressed", idx === 0 ? "true" : "false");
       tab.textContent = theme.name;
       tab.addEventListener("click", () => {
         currentTheme = theme;
-        themesEl.querySelectorAll(".exp-tab").forEach(t => t.classList.remove("active"));
+        themesEl.querySelectorAll(".exp-tab").forEach(t => {
+          t.classList.remove("active");
+          t.setAttribute("aria-pressed", "false");
+        });
         tab.classList.add("active");
+        tab.setAttribute("aria-pressed", "true");
         buildChips(theme);
       });
       themesEl.appendChild(tab);
@@ -435,18 +444,55 @@
   }
 
   /* ----------------------------------------------------------------------
-   * Re-rendu au redimensionnement (debounce) — les infobulles dépendent
-   * de la taille rendue.
+   * Rendu différé des graphiques (« lazy »).
+   * Construire les neuf graphiques SVG au chargement saturait le thread
+   * principal (Total Blocking Time) et enchaînait les reflows. On ne construit
+   * désormais chaque graphique qu'à l'approche du viewport : le chargement reste
+   * léger, et le reste du travail s'étale au fil du défilement.
    * -------------------------------------------------------------------- */
   let resizeTimer;
+  const CHARTS = [
+    { id: "chart-pib", draw: renderDepensesPib },
+    { id: "chart-solde", draw: renderSolde },
+    { id: "chart-ciseaux", draw: renderCiseaux },
+    { id: "chart-niveau", draw: renderNiveauVie },
+    { id: "chart-prod", draw: () => renderProductivite() },
+    { id: "chart-fecondite", draw: renderFecondite },
+    { id: "chart-prod-reel", draw: renderProductiviteReel },
+    { id: "chart-international", draw: () => renderInternational() }
+  ];
+  const chartsDrawn = new Set();
+
+  function idle(fn) {
+    if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2000 });
+    else setTimeout(fn, 300);
+  }
+
+  // Construit un graphique puis câble ses outils (agrandir / télécharger) et
+  // pré-génère son PNG en temps mort.
+  function drawChart(entry, animate) {
+    entry.draw(animate);
+    chartsDrawn.add(entry.id);
+    setupChartTools();
+    const host = document.getElementById(entry.id);
+    const card = host && host.closest(".chart-card");
+    if (card) idle(() => ensureChartPngCache(card));
+  }
+
+  // Re-rend les graphiques DÉJÀ construits (animation rejouée, redimensionnement).
   function renderAllCharts(animate) {
-    renderDepensesPib(animate);
-    renderSolde(animate);
-    renderCiseaux(animate);
-    renderNiveauVie(animate);
-    renderProductivite();
-    renderFecondite(animate);
-    renderProductiviteReel(animate);
+    CHARTS.forEach(entry => { if (chartsDrawn.has(entry.id)) entry.draw(animate); });
+  }
+
+  // Exécute `cb` quand l'élément approche du viewport (ou tout de suite si
+  // IntersectionObserver est indisponible).
+  function whenVisible(el, cb) {
+    if (!el) return;
+    if (!("IntersectionObserver" in window)) { cb(); return; }
+    const io = new IntersectionObserver((entries, obs) => {
+      entries.forEach(e => { if (e.isIntersecting) { obs.disconnect(); cb(); } });
+    }, { rootMargin: "300px 0px" });
+    io.observe(el);
   }
 
   /* ----------------------------------------------------------------------
@@ -825,9 +871,16 @@
   }
 
   function init() {
-    renderAllCharts();
-    renderExplorer();
-    renderInternational();
+    // Graphique phare construit tout de suite ; les autres graphiques et
+    // l'explorateur à l'approche du viewport (voir le bloc « rendu différé »).
+    renderDepensesPib(true);
+    chartsDrawn.add("chart-pib");
+    CHARTS.slice(1).forEach(entry =>
+      whenVisible(document.getElementById(entry.id), () => drawChart(entry, true)));
+    whenVisible(document.getElementById("chart-explorer"), () => {
+      renderExplorer();
+      setupChartTools();
+    });
     renderLeviers();
     renderTable();
     renderSources();
@@ -850,7 +903,6 @@
         lastWidth = window.innerWidth;
         renderAllCharts(false);
         if (explorerRedraw) explorerRedraw(false);
-        renderInternational();
         reserveTitleSpaceForTools();
         scheduleChartPngCache();
       }, 200);

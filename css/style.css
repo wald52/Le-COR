@@ -106,7 +106,9 @@ a { color: var(--bleu-clair); }
 .chart-title { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
 .chart-title strong { color: var(--bleu); font-size: 1.05rem; }
 .chart-title span { color: var(--gris); font-size: 0.88rem; }
-.chart-host { width: 100%; position: relative; }
+/* min-height : réserve la place du graphique avant son rendu différé (lazy),
+   pour éviter tout décalage de mise en page (CLS) et les sauts au défilement. */
+.chart-host { width: 100%; position: relative; min-height: 300px; }
 .chart-svg { width: 100%; height: auto; display: block; overflow: hidden; }
 .chart-source { font-size: 0.78rem; color: var(--gris); margin: 10px 0 0; font-style: italic; }
 

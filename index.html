@@ -298,8 +298,8 @@
           toutes leurs projections sont <strong>superposées</strong> (une couleur par millésime,
           du gris 2016 au violet 2026)&nbsp;: on voit ainsi l'hypothèse évoluer face au réalisé.
         </p>
-        <div id="explorer-themes" class="exp-tabs" role="tablist" aria-label="Thèmes"></div>
-        <div id="explorer-indicators" class="exp-chips" role="tablist" aria-label="Indicateurs"></div>
+        <div id="explorer-themes" class="exp-tabs" role="group" aria-label="Thèmes"></div>
+        <div id="explorer-indicators" class="exp-chips" role="group" aria-label="Indicateurs"></div>
         <figure class="chart-card">
           <figcaption class="chart-title">
             <strong id="exp-label">—</strong>
@@ -433,14 +433,14 @@
             visible cette chaîne d'hypothèses, pas à juger le COR.
           </p>
           <h3>Petit glossaire</h3>
-          <dl class="glossary">
+          <div class="glossary">
             <details><summary>Répartition</summary><p>Système où les cotisations des actifs d'aujourd'hui paient les pensions des retraités d'aujourd'hui (par opposition à la capitalisation, où chacun épargne pour sa propre retraite). La France est très majoritairement en répartition.</p></details>
             <details><summary>Solde du système</summary><p>Différence entre les <em>ressources</em> (cotisations, impôts affectés…) et les <em>dépenses</em> (pensions versées). Négatif = déficit.</p></details>
             <details><summary>Scénario de référence</summary><p>Le jeu d'hypothèses « central » que le COR met en avant chaque année (productivité, fécondité, chômage…). C'est lui qui sert de base au diagnostic.</p></details>
             <details><summary>Productivité du travail</summary><p>La richesse produite par heure travaillée. Sa croissance détermine celle des salaires, donc des cotisations. Le COR a abaissé son hypothèse de 1,3 % à 0,7 %.</p></details>
             <details><summary>Niveau de vie relatif des retraités</summary><p>Le niveau de vie moyen des retraités rapporté à celui de l'ensemble de la population. 100 % = parité.</p></details>
             <details><summary>Âge conjoncturel de départ</summary><p>Une mesure de l'âge moyen de départ à la retraite une année donnée, comparable dans le temps.</p></details>
-          </dl>
+          </div>
 
           <h3>À propos</h3>
           <p>
@@ -505,9 +505,9 @@
     <button id="toast-action" type="button"></button>
   </div>
 
-  <script src="./data/data.js"></script>
-  <script src="./data/cor-series.generated.js"></script>
-  <script src="./js/chart.js"></script>
-  <script src="./js/app.js"></script>
+  <script defer src="./data/data.js"></script>
+  <script defer src="./data/cor-series.generated.js"></script>
+  <script defer src="./js/chart.js"></script>
+  <script defer src="./js/app.js"></script>
 </body>
 </html>
