@@ -317,11 +317,14 @@
       const t = mk("text", { x: sx(v), y: top + cs.length * rowH + 20, class: "chart-axis-label", "text-anchor": "middle" });
       t.textContent = v + " %"; svg.appendChild(t);
     }
-    const fmt = v => String(v).replace(".", ",");
-    // Étiquette de part (publique/privée) centrée dans son segment — uniquement
-    // si celui-ci est assez large pour l'accueillir sans déborder.
+    const fmt = v => String(v).replace(".", ",") + " %";
+    // Contexte de mesure : on n'inscrit une étiquette que si elle tient dans son segment.
+    const meas = document.createElement("canvas").getContext("2d");
+    meas.font = "700 11px 'Segoe UI', system-ui, Arial, sans-serif";
+    // Étiquette de part (publique/privée) centrée dans son segment — seulement
+    // si le segment est assez large pour l'accueillir sans déborder.
     const segLabel = (xa, xb, y, text, fill) => {
-      if (xb - xa < text.length * 7 + 6) return;
+      if (meas.measureText(text).width + 8 > xb - xa) return;
       const t = mk("text", { x: (xa + xb) / 2, y: y + 4, "text-anchor": "middle",
         "font-size": 11, "font-weight": 700, fill });
       t.textContent = text; svg.appendChild(t);
@@ -343,7 +346,7 @@
       segLabel(sx(c.pub), sx(c.total), y, fmt(c.priv), "#1c2530");
       const val = mk("text", { x: sx(c.total) + 6, y: y + 4, class: "chart-endnote",
         fill: isFR ? "#c2185b" : "#5b6671", "text-anchor": "start" });
-      val.textContent = fmt(c.total) + " %"; svg.appendChild(val);
+      val.textContent = fmt(c.total); svg.appendChild(val);
     });
     host.appendChild(svg);
     const leg = document.createElement("p");
