@@ -643,11 +643,20 @@
       ctx.fillStyle = "#9aa7b4"; ctx.font = "10px " + EXPORT_FONT;
       ctx.fillText(credit, pad, y);
       c.toBlob(b => {
+        if (!b) return;
+        const url = URL.createObjectURL(b);
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(b); a.download = filename;
-        a.click(); URL.revokeObjectURL(a.href);
+        a.href = url; a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // Le clic déclenche le téléchargement de façon asynchrone : on diffère
+        // la révocation pour ne pas invalider l'URL avant que le navigateur
+        // ait saisi le blob (sinon le téléchargement échoue de façon aléatoire).
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       });
     };
+    img.onerror = () => console.warn("Export PNG : échec du rendu SVG");
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
   }
 
