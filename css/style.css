@@ -53,7 +53,8 @@ a { color: var(--bleu-clair); }
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--gris-clair);
 }
-.brand { display: flex; align-items: baseline; gap: 8px; text-decoration: none; margin-right: auto; }
+.brand { display: flex; align-items: center; gap: 8px; text-decoration: none; margin-right: auto; }
+.brand-logo { width: 40px; height: 40px; flex: none; display: block; }
 .brand-mark {
   font-weight: 800; letter-spacing: 1px; color: #fff; background: var(--bleu);
   padding: 4px 9px; border-radius: 8px; font-size: 0.95rem;
@@ -369,7 +370,8 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   }
   .nav-menu.open { display: flex; }
   .nav-link { padding: 10px; }
-  /* Logo partenaire : un peu plus compact pour tenir à côté du menu burger */
+  /* Logos un peu plus compacts pour tenir à côté du menu burger */
+  .brand-logo { width: 34px; height: 34px; }
   .ms-logo-img { width: 36px; height: 36px; }
   .ms-logo-tip { display: none; }            /* pas de survol sur mobile */
   .chart-grid-2 { grid-template-columns: 1fr; }

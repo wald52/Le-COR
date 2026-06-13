@@ -1,11 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Le COR sous l'œil des citoyens">
-  <rect width="512" height="512" rx="96" fill="#1f4e79"/>
-  <!-- courbes superposées stylisées -->
-  <g fill="none" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="80,360 180,330 280,300 380,250 432,150" stroke="#ffffff"/>
-    <polyline points="80,360 180,345 280,335 380,330 432,320" stroke="#7fd1a8" stroke-dasharray="6 26"/>
-    <polyline points="80,360 180,340 280,300 380,210 432,360" stroke="#ff9e4d" stroke-dasharray="6 26"/>
-  </g>
-  <circle cx="432" cy="150" r="16" fill="#ffffff"/>
-  <text x="256" y="448" font-family="Segoe UI, Arial, sans-serif" font-size="92" font-weight="800" fill="#ffffff" text-anchor="middle">COR</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ceci est mon COR">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="34%" r="78%">
+      <stop offset="0%" stop-color="#1d3565"/>
+      <stop offset="100%" stop-color="#101f3d"/>
+    </radialGradient>
+    <path id="titleArc" d="M 104 150 Q 256 78 408 150" fill="none"/>
+  </defs>
+  <rect width="512" height="512" rx="86" fill="url(#bg)"/>
+  <rect x="22" y="22" width="468" height="468" rx="64" fill="none" stroke="#c89b3e" stroke-width="6"/><rect x="33" y="33" width="446" height="446" rx="54" fill="none" stroke="#c89b3e" stroke-width="2" opacity="0.55"/>
+  
+    <!-- halo de rayons -->
+    <g fill="#c89b3e" opacity="0.92">
+      <polygon points="176.0,268.0 228.0,264.5 228.0,271.5"/>
+      <polygon points="168.1,244.4 229.9,257.4 228.0,264.1"/>
+      <polygon points="164.2,215.0 233.5,251.0 230.0,257.0"/>
+      <polygon points="170.6,182.6 238.7,245.7 233.7,250.7"/>
+      <polygon points="189.5,152.7 245.0,242.0 239.0,245.5"/>
+      <polygon points="219.5,131.6 252.1,240.0 245.4,241.9"/>
+      <polygon points="256.0,124.0 259.5,240.0 252.5,240.0"/>
+      <polygon points="292.5,131.6 266.6,241.9 259.9,240.0"/>
+      <polygon points="322.5,152.7 273.0,245.5 267.0,242.0"/>
+      <polygon points="341.4,182.6 278.3,250.7 273.3,245.7"/>
+      <polygon points="347.8,215.0 282.0,257.0 278.5,251.0"/>
+      <polygon points="343.9,244.4 284.0,264.1 282.1,257.4"/>
+      <polygon points="336.0,268.0 284.0,271.5 284.0,264.5"/>
+    </g>
+    <!-- titre courbé -->
+    <text font-family="Liberation Serif, Times New Roman, Georgia, serif" font-size="44" fill="#ffffff"
+          text-anchor="middle" letter-spacing="1.5">
+      <textPath href="#titleArc" startOffset="50%">Ceci est mon</textPath>
+    </text>
+    
+    <!-- couverture dorée (déborde sous les pages) -->
+    <g transform="translate(0,9)">
+      <path d="M 256 292 C 316 272 380 254 428 250 C 424 300 422 356 414 404 C 362 422 304 438 256 452 L 256 292 Z" fill="#c89b3e"/>
+      <path d="M 256 292 C 196 272 132 254 84 250 C 88 300 90 356 98 404 C 150 422 208 438 256 452 L 256 292 Z"  fill="#c89b3e"/>
+    </g>
+    <!-- tranches des pages -->
+    <g>
+      <path d="M 404 410 C 360 432 302 448 258 462" fill="none" stroke="#c89b3e" stroke-width="3" stroke-linecap="round" opacity="0.78"/>
+      <path d="M 404 419 C 360 441 302 457 258 471" fill="none" stroke="#c89b3e" stroke-width="3" stroke-linecap="round" opacity="0.59"/>
+      <path d="M 404 428 C 360 450 302 466 258 480" fill="none" stroke="#c89b3e" stroke-width="3" stroke-linecap="round" opacity="0.39"/>
+      <path d="M 108 410 C 152 432 210 448 254 462" fill="none" stroke="#c89b3e" stroke-width="3" stroke-linecap="round" opacity="0.78"/>
+      <path d="M 108 419 C 152 441 210 457 254 471" fill="none" stroke="#c89b3e" stroke-width="3" stroke-linecap="round" opacity="0.59"/>
+      <path d="M 108 428 C 152 450 210 466 254 480" fill="none" stroke="#c89b3e" stroke-width="3" stroke-linecap="round" opacity="0.39"/>
+    </g>
+    <!-- pages blanches -->
+    <path d="M 256 292 C 316 272 380 254 428 250 C 424 300 422 356 414 404 C 362 422 304 438 256 452 L 256 292 Z" fill="#ffffff" stroke="#16294d" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M 256 292 C 196 272 132 254 84 250 C 88 300 90 356 98 404 C 150 422 208 438 256 452 L 256 292 Z"  fill="#ffffff" stroke="#16294d" stroke-width="5" stroke-linejoin="round"/>
+    <!-- reliure centrale -->
+    <path d="M 256 292 L 256 452" stroke="#16294d" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="256" cy="452" rx="15" ry="9" fill="#c89b3e" stroke="#16294d" stroke-width="4"/>
+    <text x="150" y="400" font-family="Liberation Serif, Times New Roman, Georgia, serif" font-size="140" font-weight="700" text-anchor="middle" dominant-baseline="alphabetic" fill="#16294d">C</text><text x="256" y="400" font-family="Liberation Serif, Times New Roman, Georgia, serif" font-size="140" font-weight="700" text-anchor="middle" dominant-baseline="alphabetic" fill="#c89b3e">O</text><text x="362" y="400" font-family="Liberation Serif, Times New Roman, Georgia, serif" font-size="140" font-weight="700" text-anchor="middle" dominant-baseline="alphabetic" fill="#16294d">R</text>
+  
 </svg>

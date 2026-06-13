@@ -58,10 +58,14 @@ n'est nécessaire.
 > fine, brancher les fichiers Excel année par année (voir l'onglet
 > « Méthode & sources » du site).
 
-## Régénérer les icônes
+## Régénérer le logo et les icônes
+
+Le logo « Ceci est mon COR » est construit en SVG par le script, qui rastérise
+ensuite toutes les déclinaisons (favicon, icônes PWA, image de partage) :
 
 ```bash
-python3 icons/make_icons.py
+pip install cairosvg        # nécessite libcairo
+python3 icons/make_icons.py # écrit icon.svg, icon-192/512, maskable, og-image
 ```
 
 ## Sources principales
