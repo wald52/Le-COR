@@ -720,6 +720,11 @@
     return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
   }
 
+  // Sur mobile, l'image passe par la feuille de partage native (Web Share) :
+  // le bouton dit « Partager » (icône de partage) plutôt que « Télécharger ».
+  function saveActionLabel() { return isMobileDevice() ? "Partager" : "Télécharger"; }
+  function saveActionIcon() { return isMobileDevice() ? "share" : "download"; }
+
   function saveChartImage(blob, filename) {
     if (!blob) return;
     if (isMobileDevice() && navigator.canShare) {
@@ -799,8 +804,9 @@
       zoom.addEventListener("click", () => openZoom(card));
       const dl = document.createElement("button");
       dl.className = "chart-tool"; dl.type = "button";
-      dl.innerHTML = icon("download") + '<span class="tlabel">Télécharger</span>';
-      dl.title = "Télécharger ce graphique en image"; dl.setAttribute("aria-label", "Télécharger en PNG");
+      const label = saveActionLabel();
+      dl.innerHTML = icon(saveActionIcon()) + '<span class="tlabel">' + label + "</span>";
+      dl.title = label + " ce graphique en image"; dl.setAttribute("aria-label", label + " l'image (PNG)");
       dl.addEventListener("click", () => {
         downloadChartPng(card, card.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
       });
@@ -852,7 +858,9 @@
       clone.removeAttribute("height"); clone.style.width = "100%"; clone.style.height = "auto";
       body.appendChild(clone);
     }
-    document.getElementById("zoom-dl").onclick = () =>
+    const zdl = document.getElementById("zoom-dl");
+    zdl.innerHTML = icon(saveActionIcon()) + "<span>" + saveActionLabel() + " PNG</span>";
+    zdl.onclick = () =>
       downloadChartPng(card, body.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
   }
 
