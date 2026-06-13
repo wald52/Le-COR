@@ -150,7 +150,10 @@
       });
       // Point central (scénario de référence)
       svg.appendChild(mk("circle", { cx: x, cy: sy(r.central), r: 6, fill: color }));
-      const ct = mk("text", { x: x + 12, y: sy(r.central) - 8, class: "chart-endnote", fill: color });
+      const ctAttrs = narrow
+        ? { x: x, y: sy(r.central) - 12, class: "chart-endnote", fill: color, "text-anchor": "middle" }
+        : { x: x + 12, y: sy(r.central) - 8, class: "chart-endnote", fill: color };
+      const ct = mk("text", ctAttrs);
       ct.textContent = r.central.toFixed(1).replace(".", ",");
       svg.appendChild(ct);
       // Étiquette année (une sur deux quand l'écran est étroit)
