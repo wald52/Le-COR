@@ -4,7 +4,7 @@
  * dernière version (le navigateur revalide via ETag, donc 304 quasi gratuit
  * si rien n'a changé), avec repli sur le cache si le réseau est absent.
  */
-const CACHE = "le-cor-citoyen-v31";
+const CACHE = "le-cor-citoyen-v32";
 const NETWORK_TIMEOUT_MS = 5000;
 const ASSETS = [
   "./",
