@@ -60,10 +60,19 @@ def lines():
 
 
 def badge(maskable=False):
-    """SVG complet du badge (512×512). maskable : fond plein + contenu réduit."""
+    """SVG complet du badge (512×512). maskable : fond plein + zone de sécurité.
+
+    Hors maskable, le contenu est agrandi pour ne laisser qu'une marge minime
+    autour du livre (le carré était trop vide auparavant).
+    """
     radius = 0 if maskable else 100
-    wrap_open = '<g transform="translate(256,256) scale(0.82) translate(-256,-256)">' if maskable else ''
-    wrap_close = '</g>' if maskable else ''
+    if maskable:
+        # zone de sécurité : l'OS rogne les bords, on garde de la marge
+        wrap_open = '<g transform="translate(256,256) scale(0.82) translate(-256,-256)">'
+    else:
+        # agrandit le contenu autour de son centre pour combler la marge
+        wrap_open = '<g transform="translate(256,256) scale(1.24) translate(-254,-261)">'
+    wrap_close = '</g>'
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ceci est mon COR">
   <rect width="512" height="512" rx="{radius}" fill="{NAVY}"/>
   {wrap_open}
