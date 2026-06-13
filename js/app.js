@@ -607,9 +607,9 @@
 
   // Rendu PNG complet d'un graphique : titre, sous-titre, graphique, légende et
   // source — l'image se suffit à elle-même une fois partagée. Renvoie une
-  // Promise<Blob> (ou null en cas d'échec). Le déclenchement du téléchargement
-  // est volontairement séparé (triggerDownload) pour pouvoir se faire de façon
-  // synchrone dans le geste utilisateur (voir downloadChartPng).
+  // Promise<Blob> (ou null en cas d'échec). L'enregistrement est volontairement
+  // séparé (saveChartImage) pour se faire de façon synchrone dans le geste
+  // utilisateur, à partir du blob pré-généré (voir downloadChartPng).
   function renderChartPngBlob(card, svg) {
     return new Promise(resolve => {
     if (!svg) { resolve(null); return; }
@@ -706,38 +706,61 @@
     });
   }
 
-  // Déclenche le téléchargement d'un blob. Appelé de façon synchrone dans le
-  // gestionnaire de clic : Chrome n'autorise qu'UN seul téléchargement
-  // « automatique » (issu d'une callback asynchrone) par page ; un clic
-  // synchrone, lui, est toujours accepté. D'où la pré-génération en cache.
-  function triggerDownload(url, filename, revoke) {
+  // Enregistre l'image PNG (blob) d'un graphique. Appelé de façon synchrone dans
+  // le geste utilisateur (le blob est pré-généré en cache, cf. plus bas).
+  //
+  // Sur mobile (Android / iOS), un <a download> programmatique d'une URL blob:
+  // est très souvent IGNORÉ silencieusement par Chrome Android : le clic ne
+  // déclenche aucun téléchargement (constaté : bouton tapé, aucune notification).
+  // On passe donc par l'API Web Share, qui partage/enregistre un vrai fichier
+  // image de façon fiable (« Enregistrer l'image », « Télécharger », envoi vers
+  // une appli…). Sur desktop, où le téléchargement direct marche bien, on garde
+  // le <a download> classique pour ne pas changer l'expérience.
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+  }
+
+  function saveChartImage(blob, filename) {
+    if (!blob) return;
+    if (isMobileDevice() && navigator.canShare) {
+      try {
+        const file = new File([blob], filename, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          // Doit rester dans le geste utilisateur : OK car le blob vient du cache.
+          // .catch() : l'utilisateur peut annuler la feuille de partage → on ignore.
+          navigator.share({ files: [file], title: filename.replace(/\.png$/i, "") })
+            .catch(() => {});
+          return;
+        }
+      } catch (e) { /* repli sur le téléchargement classique ci-dessous */ }
+    }
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    // On diffère une éventuelle révocation pour ne pas invalider l'URL avant que
-    // le navigateur ait saisi le blob (URL de cache : on ne révoque pas ici).
-    if (revoke) setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // On diffère la révocation pour ne pas invalider l'URL avant que le
+    // navigateur ait saisi le blob.
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
-  // Cache du PNG par carte : { token, url, filename }. La pré-génération en
+  // Cache du PNG par carte : { token, filename, blob }. La pré-génération en
   // temps mort (scheduleChartPngCache) garantit qu'au clic le blob est prêt,
-  // donc téléchargeable de façon synchrone (cf. limite Chrome ci-dessus).
+  // donc partageable/téléchargeable de façon synchrone dans le geste utilisateur.
+  // On garde le blob (et non une URL objet) : Web Share et <a download> le
+  // consomment tous deux, et l'on évite toute course à la révocation d'URL.
   let pngCacheToken = 0;
   function ensureChartPngCache(card) {
     const svg = card.querySelector(".chart-svg");
     if (!svg) return;
     const filename = "cor-" + slug(cardTitle(card)) + ".png";
     const token = ++pngCacheToken;
-    const prev = card.__png;
-    card.__png = Object.assign({}, prev, { token, filename, pending: true });
+    card.__png = { token, filename, pending: true };
     renderChartPngBlob(card, svg).then(blob => {
       // Un rendu plus récent a été lancé entre-temps : on abandonne celui-ci.
       if (!card.__png || card.__png.token !== token) return;
-      if (!blob) { card.__png.pending = false; return; }
-      if (prev && prev.url) URL.revokeObjectURL(prev.url);
-      card.__png = { token, filename, url: URL.createObjectURL(blob), pending: false };
+      card.__png = { token, filename, blob: blob || null, pending: false };
     });
   }
 
@@ -750,17 +773,13 @@
     else setTimeout(run, 300);
   }
 
-  // Télécharge le PNG d'une carte. Privilégie le blob déjà en cache (clic
-  // synchrone → toujours autorisé) ; à défaut, génère à la volée (ce premier
-  // téléchargement asynchrone passe, les suivants étant servis par le cache).
+  // Enregistre le PNG d'une carte. Privilégie le blob déjà en cache (geste
+  // synchrone → Web Share / téléchargement toujours autorisés) ; à défaut, génère
+  // à la volée (premier appel, le cache servant les suivants).
   function downloadChartPng(card, svg, filename) {
     const c = card.__png;
-    if (c && c.url && c.filename === filename) { triggerDownload(c.url, filename); return; }
-    renderChartPngBlob(card, svg).then(blob => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      triggerDownload(url, filename, true);
-    });
+    if (c && c.blob && c.filename === filename) { saveChartImage(c.blob, filename); return; }
+    renderChartPngBlob(card, svg).then(blob => saveChartImage(blob, filename));
   }
 
   function cardTitle(card) {
