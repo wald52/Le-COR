@@ -240,6 +240,13 @@
         ariaLabel: ind.label,
         animate
       });
+      // Le contenu de la carte explorateur a changé : on régénère son cache PNG
+      // (en temps mort) pour que le téléchargement reflète l'indicateur courant.
+      const card = document.getElementById("chart-explorer").closest(".chart-card");
+      if (card) {
+        if (window.requestIdleCallback) window.requestIdleCallback(() => ensureChartPngCache(card), { timeout: 2000 });
+        else setTimeout(() => ensureChartPngCache(card), 300);
+      }
     }
 
     function buildChips(theme) {
@@ -552,10 +559,14 @@
     return entries.filter(e => e.label);
   }
 
-  // Export PNG complet : titre, sous-titre, graphique, légende et source —
-  // l'image se suffit à elle-même une fois partagée.
-  function exportChartPng(card, svg, filename) {
-    if (!svg) return;
+  // Rendu PNG complet d'un graphique : titre, sous-titre, graphique, légende et
+  // source — l'image se suffit à elle-même une fois partagée. Renvoie une
+  // Promise<Blob> (ou null en cas d'échec). Le déclenchement du téléchargement
+  // est volontairement séparé (triggerDownload) pour pouvoir se faire de façon
+  // synchrone dans le geste utilisateur (voir downloadChartPng).
+  function renderChartPngBlob(card, svg) {
+    return new Promise(resolve => {
+    if (!svg) { resolve(null); return; }
     const vb = svg.viewBox && svg.viewBox.baseVal;
     const cw = (vb && vb.width) || svg.clientWidth || 760;
     const ch = (vb && vb.height) || svg.clientHeight || 440;
@@ -642,22 +653,68 @@
       y += 6;
       ctx.fillStyle = "#9aa7b4"; ctx.font = "10px " + EXPORT_FONT;
       ctx.fillText(credit, pad, y);
-      c.toBlob(b => {
-        if (!b) return;
-        const url = URL.createObjectURL(b);
-        const a = document.createElement("a");
-        a.href = url; a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        // Le clic déclenche le téléchargement de façon asynchrone : on diffère
-        // la révocation pour ne pas invalider l'URL avant que le navigateur
-        // ait saisi le blob (sinon le téléchargement échoue de façon aléatoire).
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      });
+      c.toBlob(b => resolve(b || null));
     };
-    img.onerror = () => console.warn("Export PNG : échec du rendu SVG");
+    img.onerror = () => { console.warn("Export PNG : échec du rendu SVG"); resolve(null); };
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
+    });
+  }
+
+  // Déclenche le téléchargement d'un blob. Appelé de façon synchrone dans le
+  // gestionnaire de clic : Chrome n'autorise qu'UN seul téléchargement
+  // « automatique » (issu d'une callback asynchrone) par page ; un clic
+  // synchrone, lui, est toujours accepté. D'où la pré-génération en cache.
+  function triggerDownload(url, filename, revoke) {
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // On diffère une éventuelle révocation pour ne pas invalider l'URL avant que
+    // le navigateur ait saisi le blob (URL de cache : on ne révoque pas ici).
+    if (revoke) setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // Cache du PNG par carte : { token, url, filename }. La pré-génération en
+  // temps mort (scheduleChartPngCache) garantit qu'au clic le blob est prêt,
+  // donc téléchargeable de façon synchrone (cf. limite Chrome ci-dessus).
+  let pngCacheToken = 0;
+  function ensureChartPngCache(card) {
+    const svg = card.querySelector(".chart-svg");
+    if (!svg) return;
+    const filename = "cor-" + slug(cardTitle(card)) + ".png";
+    const token = ++pngCacheToken;
+    const prev = card.__png;
+    card.__png = Object.assign({}, prev, { token, filename, pending: true });
+    renderChartPngBlob(card, svg).then(blob => {
+      // Un rendu plus récent a été lancé entre-temps : on abandonne celui-ci.
+      if (!card.__png || card.__png.token !== token) return;
+      if (!blob) { card.__png.pending = false; return; }
+      if (prev && prev.url) URL.revokeObjectURL(prev.url);
+      card.__png = { token, filename, url: URL.createObjectURL(blob), pending: false };
+    });
+  }
+
+  // Régénère le cache PNG de toutes les cartes ayant un graphique, en temps mort.
+  function scheduleChartPngCache() {
+    const run = () => document.querySelectorAll(".chart-card").forEach(card => {
+      if (card.querySelector(".chart-svg")) ensureChartPngCache(card);
+    });
+    if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 2000 });
+    else setTimeout(run, 300);
+  }
+
+  // Télécharge le PNG d'une carte. Privilégie le blob déjà en cache (clic
+  // synchrone → toujours autorisé) ; à défaut, génère à la volée (ce premier
+  // téléchargement asynchrone passe, les suivants étant servis par le cache).
+  function downloadChartPng(card, svg, filename) {
+    const c = card.__png;
+    if (c && c.url && c.filename === filename) { triggerDownload(c.url, filename); return; }
+    renderChartPngBlob(card, svg).then(blob => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      triggerDownload(url, filename, true);
+    });
   }
 
   function cardTitle(card) {
@@ -680,7 +737,7 @@
       dl.innerHTML = icon("download") + '<span class="tlabel">PNG</span>';
       dl.title = "Télécharger ce graphique en image"; dl.setAttribute("aria-label", "Télécharger en PNG");
       dl.addEventListener("click", () => {
-        exportChartPng(card, card.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
+        downloadChartPng(card, card.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
       });
       bar.appendChild(zoom); bar.appendChild(dl);
       card.appendChild(bar);
@@ -717,7 +774,7 @@
       body.appendChild(clone);
     }
     document.getElementById("zoom-dl").onclick = () =>
-      exportChartPng(card, body.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
+      downloadChartPng(card, body.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
   }
 
   function setupZoom() {
@@ -748,6 +805,7 @@
         window.CORChart.setAnimate(true); label(true);
         renderAllCharts();
         if (explorerRedraw) explorerRedraw();
+        scheduleChartPngCache();
       }
     });
   }
@@ -765,6 +823,7 @@
     setupChartTools();
     setupZoom();
     setupAnim();
+    scheduleChartPngCache();
     // Sur mobile, le repli/déploiement de la barre d'adresse pendant le
     // défilement déclenche des « resize » qui ne changent que la hauteur :
     // on ne re-rend que si la largeur a réellement changé (rotation,
@@ -778,6 +837,7 @@
         renderAllCharts(false);
         if (explorerRedraw) explorerRedraw(false);
         renderInternational();
+        scheduleChartPngCache();
       }, 200);
     });
 
