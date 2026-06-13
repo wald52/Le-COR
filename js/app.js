@@ -18,8 +18,6 @@
     expand: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
     download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
     close: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
-    play: '<polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/>',
-    pause: '<rect x="5" y="4" width="5" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4" width="5" height="16" rx="1" fill="currentColor" stroke="none"/>',
     share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/>',
     link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
     phone: '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>'
@@ -319,6 +317,15 @@
       const t = mk("text", { x: sx(v), y: top + cs.length * rowH + 20, class: "chart-axis-label", "text-anchor": "middle" });
       t.textContent = v + " %"; svg.appendChild(t);
     }
+    const fmt = v => String(v).replace(".", ",");
+    // Étiquette de part (publique/privée) centrée dans son segment — uniquement
+    // si celui-ci est assez large pour l'accueillir sans déborder.
+    const segLabel = (xa, xb, y, text, fill) => {
+      if (xb - xa < text.length * 7 + 6) return;
+      const t = mk("text", { x: (xa + xb) / 2, y: y + 4, "text-anchor": "middle",
+        "font-size": 11, "font-weight": 700, fill });
+      t.textContent = text; svg.appendChild(t);
+    };
     cs.forEach((c, i) => {
       const y = top + i * rowH + rowH / 2;
       const isFR = c.name === "France";
@@ -331,14 +338,17 @@
         fill: isFR ? "#1f4e79" : "#5b7fa6", rx: 2 }));
       svg.appendChild(mk("rect", { x: sx(c.pub), y: y - h / 2, width: sx(c.total) - sx(c.pub), height: h,
         fill: isFR ? "#7fb0e0" : "#c2d4e8", rx: 2 }));
+      // Parts publique (sur fond foncé, en blanc) et privée (sur fond clair, en foncé).
+      segLabel(left, sx(c.pub), y, fmt(c.pub), "#ffffff");
+      segLabel(sx(c.pub), sx(c.total), y, fmt(c.priv), "#1c2530");
       const val = mk("text", { x: sx(c.total) + 6, y: y + 4, class: "chart-endnote",
         fill: isFR ? "#c2185b" : "#5b6671", "text-anchor": "start" });
-      val.textContent = String(c.total).replace(".", ",") + " %"; svg.appendChild(val);
+      val.textContent = fmt(c.total) + " %"; svg.appendChild(val);
     });
     host.appendChild(svg);
     const leg = document.createElement("p");
     leg.className = "chart-inline-legend";
-    leg.innerHTML = `${window.CORChart.swatch("#1f4e79")} Dépenses publiques &nbsp;·&nbsp; ${window.CORChart.swatch("#7fb0e0")} Dépenses privées &nbsp;·&nbsp; <strong style="color:#c2185b">France</strong> en surbrillance`;
+    leg.innerHTML = `${window.CORChart.swatch("#1f4e79")} Dépenses publiques &nbsp;·&nbsp; ${window.CORChart.swatch("#7fb0e0")} Dépenses privées`;
     host.appendChild(leg);
   }
 
@@ -878,28 +888,6 @@
     });
   }
 
-  function setupAnim() {
-    const btn = document.getElementById("btn-anim");
-    if (!btn) return;
-    const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) { btn.hidden = true; return; }
-    btn.hidden = false;
-    const label = on => {
-      btn.innerHTML = on ? icon("pause") + "<span>Animation</span>" : icon("play") + "<span>Rejouer</span>";
-    };
-    label(window.CORChart.isAnimating());
-    btn.addEventListener("click", () => {
-      if (window.CORChart.isAnimating()) {
-        window.CORChart.setAnimate(false); label(false);
-      } else {
-        window.CORChart.setAnimate(true); label(true);
-        renderAllCharts();
-        if (explorerRedraw) explorerRedraw();
-        scheduleChartPngCache();
-      }
-    });
-  }
-
   function init() {
     // Aucun graphique n'est au-dessus de la ligne de flottaison : on les
     // construit tous (y compris le graphique phare) à l'approche du viewport.
@@ -919,7 +907,6 @@
     setupToTop();
     setupChartTools();
     setupZoom();
-    setupAnim();
     scheduleChartPngCache();
     // Sur mobile, le repli/déploiement de la barre d'adresse pendant le
     // défilement déclenche des « resize » qui ne changent que la hauteur :
