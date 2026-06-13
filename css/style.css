@@ -16,6 +16,12 @@
   --rayon: 14px;
   --ombre: 0 6px 24px rgba(31, 78, 121, 0.08);
   --largeur: 920px;
+  /* Largeur de lecture : tout le texte courant (intros, encadrés, méthode,
+     listes, glossaire) s'arrête à la MÊME largeur, pour une lecture confortable
+     et homogène sur tout le site. En rem (≈ 70 caractères) pour respecter la
+     taille de police choisie par le lecteur. Les graphiques et tableaux, eux,
+     gardent toute la largeur (--largeur). */
+  --mesure: 38rem;
   --police: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
   /* Refuse l'assombrissement forcé (Chrome / Samsung Internet) : les couleurs
      des graphiques doivent rester fidèles. */
@@ -118,7 +124,7 @@ a { color: var(--bleu-clair); }
 .hero-inner { max-width: var(--largeur); margin: 0 auto; }
 .kicker { text-transform: uppercase; letter-spacing: 2px; font-size: 0.78rem; opacity: 0.85; margin: 0 0 10px; }
 .hero h1 { color: #fff; font-size: clamp(1.8rem, 4.5vw, 3rem); margin: 0 0 18px; max-width: 16ch; }
-.lede { font-size: 1.15rem; max-width: 60ch; opacity: 0.96; }
+.lede { font-size: 1.15rem; max-width: var(--mesure); opacity: 0.96; }
 .lede strong { color: #fff; }
 .cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -132,7 +138,7 @@ a { color: var(--bleu-clair); }
 .band { padding: 56px 0; }
 .band.alt { background: var(--fond-alt); }
 .band h2 { font-size: clamp(1.4rem, 3vw, 2rem); margin: 0 0 12px; }
-.section-intro { font-size: 1.05rem; color: var(--encre); max-width: 64ch; margin: 0 0 26px; }
+.section-intro { font-size: 1.05rem; color: var(--encre); max-width: var(--mesure); margin: 0 0 26px; }
 
 /* ---------- Cartes graphiques ---------- */
 .chart-card {
@@ -188,7 +194,7 @@ a { color: var(--bleu-clair); }
 /* ---------- Encadré « à retenir » ---------- */
 .takeaway {
   margin-top: 26px; background: var(--bleu-pale); border-left: 5px solid var(--bleu);
-  border-radius: 10px; padding: 18px 22px;
+  border-radius: 10px; padding: 18px 22px; max-width: var(--mesure);
 }
 .takeaway h3 { margin: 0 0 6px; font-size: 1.05rem; }
 .takeaway p { margin: 0; }
@@ -253,8 +259,8 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 
 /* ---------- Méthode / sources ---------- */
 .method h3 { margin: 22px 0 8px; font-size: 1.1rem; }
-.method ul { padding-left: 20px; }
-.method p { max-width: 68ch; }
+.method ul { padding-left: 20px; max-width: var(--mesure); }
+.method p { max-width: var(--mesure); }
 .sources li { margin-bottom: 6px; }
 
 /* ---------- Pied de page ---------- */
@@ -281,7 +287,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .key-figures strong { display: block; font-size: 1.7rem; line-height: 1.1; color: #fff; }
 .key-figures span { display: block; margin-top: 6px; font-size: 0.82rem; opacity: 0.9; }
 
-.glossary { margin: 6px 0 0; }
+.glossary { margin: 6px 0 0; max-width: var(--mesure); }
 .glossary details {
   border: 1px solid var(--gris-clair); border-radius: 10px; margin-bottom: 8px; background: #fff;
 }
