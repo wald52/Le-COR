@@ -734,7 +734,7 @@
       zoom.addEventListener("click", () => openZoom(card));
       const dl = document.createElement("button");
       dl.className = "chart-tool"; dl.type = "button";
-      dl.innerHTML = icon("download") + '<span class="tlabel">PNG</span>';
+      dl.innerHTML = icon("download") + '<span class="tlabel">Télécharger</span>';
       dl.title = "Télécharger ce graphique en image"; dl.setAttribute("aria-label", "Télécharger en PNG");
       dl.addEventListener("click", () => {
         downloadChartPng(card, card.querySelector(".chart-svg"), "cor-" + slug(cardTitle(card)) + ".png");
@@ -745,7 +745,7 @@
     reserveTitleSpaceForTools();
   }
 
-  // Sur grand écran, la barre d'outils (Agrandir / PNG) est en absolu en haut à
+  // Sur grand écran, la barre d'outils (Agrandir / Télécharger) est en absolu en haut à
   // droite : sans précaution, un titre long passe dessous et devient illisible.
   // On mesure sa largeur réelle (qui dépend de la police du système) et on
   // l'expose au CSS via --chart-tools-w, qui réserve d'autant la droite du titre.

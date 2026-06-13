@@ -262,7 +262,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .chart-tool:hover { border-color: var(--bleu-clair); color: var(--bleu); }
 /* Réserve à droite du titre la largeur réelle de la barre d'outils (mesurée en
    JS → --chart-tools-w) pour qu'un titre long ne passe pas sous les boutons
-   « Agrandir » / « PNG » positionnés en absolu en haut à droite de la carte. */
+   « Agrandir » / « Télécharger » positionnés en absolu en haut à droite de la carte. */
 .chart-title strong { padding-right: var(--chart-tools-w, 0); }
 
 /* Vue agrandie : élément <dialog> natif (focus piégé, Échap, fond géré). */
