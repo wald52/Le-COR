@@ -27,48 +27,48 @@ SANS  = "Liberation Sans, DejaVu Sans, Arial, sans-serif"
 
 def halo():
     """Auréole : anneau doré ouvert, légèrement incliné, au-dessus du livre."""
-    return (f'<ellipse cx="256" cy="82" rx="186" ry="35" fill="none" '
-            f'stroke="{GOLD}" stroke-width="17" transform="rotate(-4 256 82)"/>')
+    return (f'<ellipse cx="256" cy="62" rx="152" ry="30" fill="none" '
+            f'stroke="{GOLD}" stroke-width="15" transform="rotate(-4 256 62)"/>')
 
 
 def book():
-    """Livre fermé : couverture blanche, reliure marine, tranche basse, retroussé."""
+    """Livre fermé portrait : couverture blanche, reliure, tranche basse, retroussé."""
     return f'''
     <!-- tranche basse (pages) -->
-    <rect x="72" y="446" width="368" height="28" rx="13" fill="{WHITE}"/>
+    <rect x="100" y="452" width="312" height="26" rx="12" fill="{WHITE}"/>
     <!-- pied de reliure qui se retrousse en bas à gauche -->
-    <path d="M122 448 C88 446 68 470 82 489 C86 495 94 495 97 489"
-          fill="none" stroke="{WHITE}" stroke-width="18" stroke-linecap="round"/>
-    <!-- couverture -->
-    <rect x="56" y="140" width="400" height="302" rx="26" fill="{WHITE}"/>
+    <path d="M124 454 C92 452 74 474 88 490 C92 495 99 495 102 490"
+          fill="none" stroke="{WHITE}" stroke-width="16" stroke-linecap="round"/>
+    <!-- couverture (portrait) -->
+    <rect x="88" y="104" width="336" height="346" rx="24" fill="{WHITE}"/>
     <!-- reliure -->
-    <line x1="102" y1="164" x2="102" y2="432" stroke="{NAVY}" stroke-width="11" stroke-linecap="round"/>'''
+    <line x1="122" y1="128" x2="122" y2="448" stroke="{NAVY}" stroke-width="10" stroke-linecap="round"/>'''
 
 
 def cor():
     """« COR » en bâton gras, posé sur la couverture (à droite de la reliure)."""
-    return (f'<text x="280" y="320" font-family="{SANS}" font-size="128" '
+    return (f'<text x="276" y="298" font-family="{SANS}" font-size="116" '
             f'font-weight="700" text-anchor="middle" fill="{NAVY}">COR</text>')
 
 
 def lines():
     """Trois lignes dorées sous le « COR » (façon texte d'un ouvrage)."""
-    segs = [(358, 446), (394, 416), (430, 344)]   # (y, x de fin), gauche fixe
+    segs = [(340, 410), (376, 384), (412, 320)]   # (y, x de fin), gauche fixe
     return "\n    ".join(
-        f'<line x1="114" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
-        f'stroke-width="18" stroke-linecap="round"/>' for (y, x2) in segs)
+        f'<line x1="138" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
+        f'stroke-width="16" stroke-linecap="round"/>' for (y, x2) in segs)
 
 
 def badge(maskable=False):
     """SVG complet du badge (512×512). maskable : fond plein + zone de sécurité.
 
-    Le contenu (livre + auréole) occupe presque tout le carré ; hors maskable on
-    ne laisse qu'une marge minime. En maskable, l'OS rogne les bords : on réduit
-    le contenu dans la zone de sécurité.
+    Livre portrait agrandi au maximum (marge minime sur les côtés, qu'un format
+    vertical ne peut pas supprimer entièrement). En maskable, l'OS rogne les
+    bords : on réduit le contenu dans la zone de sécurité.
     """
     radius = 0 if maskable else 100
     if maskable:
-        wrap_open = '<g transform="translate(256,256) scale(0.66) translate(-256,-290)">'
+        wrap_open = '<g transform="translate(256,256) scale(0.68) translate(-256,-261)">'
         wrap_close = '</g>'
     else:
         wrap_open = ''
