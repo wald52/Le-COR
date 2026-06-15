@@ -500,6 +500,23 @@
     CHARTS.forEach(entry => { if (chartsDrawn.has(entry.id)) entry.draw(animate); });
   }
 
+  // Charge un script à la demande (une seule fois, résultat mémoïsé). Sert au
+  // chargement paresseux des données de l'explorateur, sorties du chargement
+  // initial pour alléger le téléchargement et le JSON.parse de la page.
+  const scriptCache = new Map();
+  function loadScript(src) {
+    if (scriptCache.has(src)) return scriptCache.get(src);
+    const p = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("Échec du chargement : " + src));
+      document.head.appendChild(s);
+    });
+    scriptCache.set(src, p);
+    return p;
+  }
+
   // Exécute `cb` quand l'élément approche du viewport (ou tout de suite si
   // IntersectionObserver est indisponible).
   function whenVisible(el, cb) {
@@ -905,8 +922,13 @@
     CHARTS.forEach(entry =>
       whenVisible(document.getElementById(entry.id), () => drawChart(entry, true)));
     whenVisible(document.getElementById("chart-explorer"), () => {
-      renderExplorer();
-      setupChartTools();
+      // Données de l'explorateur chargées paresseusement (gros bloc séparé).
+      loadScript("./data/cor-explorer.generated.js").then(() => {
+        if (window.COR_SERIES && window.COR_EXPLORER)
+          window.COR_SERIES.explorer = window.COR_EXPLORER.explorer;
+        renderExplorer();
+        setupChartTools();
+      }).catch(() => {});
     });
     renderLeviers();
     renderTable();

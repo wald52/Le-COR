@@ -4,7 +4,7 @@
  * dernière version (le navigateur revalide via ETag, donc 304 quasi gratuit
  * si rien n'a changé), avec repli sur le cache si le réseau est absent.
  */
-const CACHE = "le-cor-citoyen-v35";
+const CACHE = "le-cor-citoyen-v36";
 const NETWORK_TIMEOUT_MS = 5000;
 const ASSETS = [
   "./",
@@ -15,6 +15,10 @@ const ASSETS = [
   "./js/app.js",
   "./data/data.js",
   "./data/cor-series.generated.js",
+  // Données de l'explorateur : chargées paresseusement par la page, mais
+  // précachées ici (pendant l'install, hors chemin critique) pour rester
+  // disponibles hors-ligne même si l'explorateur n'a jamais été ouvert.
+  "./data/cor-explorer.generated.js",
   "./manifest.webmanifest",
   "./icons/icon.svg"
 ];

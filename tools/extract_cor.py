@@ -2,7 +2,11 @@
 """Extraction reproductible des séries du COR depuis les fichiers Excel.
 
 Lit les fichiers Excel officiels rangés sous `data/Données du COR/` et génère
-`data/cor-series.generated.js` (window.COR_SERIES), consommé par le site.
+deux fichiers consommés par le site :
+  - `data/cor-series.generated.js`   (window.COR_SERIES)  — graphiques essentiels
+  - `data/cor-explorer.generated.js` (window.COR_EXPLORER) — données de l'explorateur
+L'explorateur, de loin le plus gros bloc, est séparé pour être chargé
+paresseusement côté client (chargement initial allégé).
 
 But : remplacer les valeurs d'amorçage par les CHIFFRES OFFICIELS, de façon
 traçable (réexécuter ce script régénère les données).
@@ -26,6 +30,26 @@ def _safe_print_titles(cls, value):
 
 
 print_settings.PrintTitles.from_string = classmethod(_safe_print_titles)
+
+
+def write_js(dest, varname, obj):
+    """Émet `window.<varname> = JSON.parse("…")` minifié.
+
+    Le moteur JS analyse cette forme nettement plus vite qu'un littéral objet
+    équivalent (chemin JSON optimisé de V8), et le fichier est ~3× plus léger
+    qu'en indenté — ce qui réduit d'autant le temps de parsing au chargement
+    (Total Blocking Time). La double sérialisation produit un littéral de chaîne
+    JS sûr.
+    """
+    compact = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+    with open(dest, "w", encoding="utf-8") as f:
+        f.write("/* FICHIER GÉNÉRÉ — ne pas éditer à la main.\n")
+        f.write("   Source : fichiers Excel officiels du COR (data/Données du COR/).\n")
+        f.write("   Régénérer avec : python3 tools/extract_cor.py */\n")
+        f.write("window.%s = JSON.parse(" % varname)
+        f.write(json.dumps(compact, ensure_ascii=False))
+        f.write(");\n")
+
 
 BASE = os.path.join(os.path.dirname(__file__), "..", "data", "Données du COR")
 
@@ -1440,26 +1464,20 @@ def build():
         "niveauVie": niveau_block,
         "fecondite": fecondite_block,
         "productiviteReel": prod_block,
-        "explorer": build_explorer(multi),
         "international": extract_international(first_file(R26, "synthèse") or ""),
         "leviers": extract_leviers(first_file(R26, "partie 2") or ""),
     }
+    # L'explorateur (de loin le plus gros bloc) part dans un fichier séparé,
+    # chargé paresseusement côté client à l'approche de la section : le
+    # chargement initial (téléchargement + JSON.parse) en est d'autant allégé.
+    explorer = {"explorer": build_explorer(multi)}
 
-    dest = os.path.join(os.path.dirname(__file__), "..", "data", "cor-series.generated.js")
-    with open(dest, "w", encoding="utf-8") as f:
-        f.write("/* FICHIER GÉNÉRÉ — ne pas éditer à la main.\n")
-        f.write("   Source : fichiers Excel officiels du COR (data/Données du COR/).\n")
-        f.write("   Régénérer avec : python3 tools/extract_cor.py */\n")
-        # Émis sous forme JSON.parse("…") minifié : le moteur JS analyse cette
-        # forme nettement plus vite qu'un littéral objet équivalent (chemin JSON
-        # optimisé de V8), et le fichier est ~3× plus léger qu'en indenté — ce
-        # qui réduit d'autant le temps de parsing au chargement (Total Blocking
-        # Time). La double sérialisation produit un littéral de chaîne JS sûr.
-        f.write("window.COR_SERIES = JSON.parse(")
-        compact = json.dumps(out, ensure_ascii=False, separators=(",", ":"))
-        f.write(json.dumps(compact, ensure_ascii=False))
-        f.write(");\n")
-    print("\nÉcrit :", os.path.relpath(dest))
+    data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    series_dest = os.path.join(data_dir, "cor-series.generated.js")
+    explorer_dest = os.path.join(data_dir, "cor-explorer.generated.js")
+    write_js(series_dest, "COR_SERIES", out)
+    write_js(explorer_dest, "COR_EXPLORER", explorer)
+    print("\nÉcrit :", os.path.relpath(series_dest), "+", os.path.relpath(explorer_dest))
     print("Millésimes :", ", ".join(k for k in extracted))
 
 
