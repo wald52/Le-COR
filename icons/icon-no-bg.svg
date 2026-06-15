@@ -3,18 +3,21 @@
   
     <ellipse cx="252" cy="68" rx="160" ry="30" fill="none" stroke="#f0a92a" stroke-width="20"/>
     
-    <!-- plat arrière (dos), trait fin + pied retroussé ; le blanc = les pages -->
-    <path d="M96 150 L96 440 C96 462 112 470 126 461"
-          fill="none" stroke="#52638c" stroke-width="7.5" stroke-linecap="round"/>
+    <!-- pages du FOND : plus éloignées, plus claires + pied retroussé -->
+    <path d="M98 162 L98 444 C98 470 116 478 131 468"
+          fill="none" stroke="#6f7ea1" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- pages de DEVANT : plus proches de la couverture -->
+    <path d="M114 156 L114 440 C114 460 126 466 137 459"
+          fill="none" stroke="#52638c" stroke-width="4.5" stroke-linecap="round"/>
     <!-- tranche basse (pages) -->
-    <rect x="112" y="442" width="302" height="24" rx="6" fill="#ffffff" stroke="#52638c" stroke-width="4.5" stroke-linejoin="round"/>
+    <rect x="120" y="442" width="294" height="22" rx="6" fill="#ffffff" stroke="#52638c" stroke-width="4.5" stroke-linejoin="round"/>
     <!-- couverture : bords fins -->
-    <rect x="130" y="120" width="284" height="324" rx="10" fill="#ffffff" stroke="#52638c" stroke-width="4.5" stroke-linejoin="round"/>
-    <!-- RELIURE : trait large et plus foncé sur le bord gauche -->
-    <line x1="131" y1="130" x2="131" y2="434" stroke="#33497c" stroke-width="11" stroke-linecap="round"/>
-    <text x="280" y="292" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="112" font-weight="700" text-anchor="middle" fill="#16294d">COR</text>
-    <line x1="174" y1="346" x2="386" y2="346" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
-    <line x1="174" y1="376" x2="350" y2="376" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
-    <line x1="174" y1="406" x2="306" y2="406" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
+    <rect x="130" y="120" width="284" height="324" rx="12" fill="#ffffff" stroke="#52638c" stroke-width="4.5" stroke-linejoin="round"/>
+    <!-- RELIURE : dos fermé, subtilement arrondi (barre pleine, bord gauche) -->
+    <rect x="126" y="128" width="11" height="312" rx="5.5" fill="#33497c"/>
+    <text x="282" y="292" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="112" font-weight="700" text-anchor="middle" fill="#16294d">COR</text>
+    <line x1="176" y1="346" x2="388" y2="346" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
+    <line x1="176" y1="376" x2="352" y2="376" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
+    <line x1="176" y1="406" x2="308" y2="406" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
   
 </svg>

@@ -20,11 +20,12 @@ import os
 import sys
 
 # ---------------------------------------------------------------- palette ----
-NAVY    = "#16294d"   # bleu marine du fond et du « COR »
-SLATE   = "#52638c"   # bleu adouci, traits fins : plat arrière, bords, tranche
-RELIURE = "#33497c"   # bleu un peu plus foncé : la reliure (trait large)
-GOLD    = "#f0a92a"   # doré chaud (auréole, lignes)
-WHITE   = "#ffffff"
+NAVY     = "#16294d"   # bleu marine du fond et du « COR »
+PAGEFOND = "#6f7ea1"   # pages du FOND : plus claires (plus éloignées)
+SLATE    = "#52638c"   # pages de DEVANT, bords de couverture, tranche
+RELIURE  = "#33497c"   # la reliure (dos fermé) : un peu plus foncé
+GOLD     = "#f0a92a"   # doré chaud (auréole, lignes)
+WHITE    = "#ffffff"
 SANS  = "Liberation Sans, DejaVu Sans, Arial, sans-serif"
 
 
@@ -38,41 +39,48 @@ def halo():
 
 
 def book(outline=False):
-    """Livre en traits fins : couverture, dos à gauche, tranche, pied retroussé.
+    """Livre en traits fins avec profondeur de pages et dos fermé.
 
-    Le dos se lit comme DEUX traits : un plat arrière FIN, le blanc des pages,
-    puis la RELIURE — un trait nettement plus LARGE et un peu plus foncé (proportions
-    relevées sur l'original : reliure ≈ 1,5× la largeur du plat arrière).
+    De l'extérieur vers la couverture :
+      - pages du FOND : trait plus clair, plus ÉLOIGNÉ de la couverture ;
+      - pages de DEVANT : trait un peu plus foncé, plus PROCHE ;
+      - RELIURE : un dos plein FERMÉ et subtilement ARRONDI (barre verticale
+        à coins doux) le long du bord gauche.
+    Effet volontairement subtil mais lisible. Les deux traits de pages se
+    retroussent en pied en bas à gauche.
 
-    outline=False (favicon, fond plein) : pas de contour, les aplats blancs
-    portent la forme ; la reliure reste tracée sur la couverture blanche.
+    outline=False (favicon, fond plein) : pas de contour ; les aplats blancs
+    portent la forme, la reliure reste tracée sur la couverture blanche.
     """
     edge = (f' stroke="{SLATE}" stroke-width="4.5" stroke-linejoin="round"'
             if outline else '')
     return f'''
-    <!-- plat arrière (dos), trait fin + pied retroussé ; le blanc = les pages -->
-    <path d="M96 150 L96 440 C96 462 112 470 126 461"
-          fill="none" stroke="{SLATE if outline else WHITE}" stroke-width="7.5" stroke-linecap="round"/>
+    <!-- pages du FOND : plus éloignées, plus claires + pied retroussé -->
+    <path d="M98 162 L98 444 C98 470 116 478 131 468"
+          fill="none" stroke="{PAGEFOND if outline else WHITE}" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- pages de DEVANT : plus proches de la couverture -->
+    <path d="M114 156 L114 440 C114 460 126 466 137 459"
+          fill="none" stroke="{SLATE if outline else WHITE}" stroke-width="4.5" stroke-linecap="round"/>
     <!-- tranche basse (pages) -->
-    <rect x="112" y="442" width="302" height="24" rx="6" fill="{WHITE}"{edge}/>
+    <rect x="120" y="442" width="294" height="22" rx="6" fill="{WHITE}"{edge}/>
     <!-- couverture : bords fins -->
-    <rect x="130" y="120" width="284" height="324" rx="10" fill="{WHITE}"{edge}/>
-    <!-- RELIURE : trait large et plus foncé sur le bord gauche -->
-    <line x1="131" y1="130" x2="131" y2="434" stroke="{RELIURE}" stroke-width="11" stroke-linecap="round"/>'''
+    <rect x="130" y="120" width="284" height="324" rx="12" fill="{WHITE}"{edge}/>
+    <!-- RELIURE : dos fermé, subtilement arrondi (barre pleine, bord gauche) -->
+    <rect x="126" y="128" width="11" height="312" rx="5.5" fill="{RELIURE}"/>'''
 
 
 def cor():
     """« COR » en bâton gras, occupant la couverture (à droite de la reliure)."""
-    return (f'<text x="280" y="292" font-family="{SANS}" font-size="112" '
+    return (f'<text x="282" y="292" font-family="{SANS}" font-size="112" '
             f'font-weight="700" text-anchor="middle" fill="{NAVY}">COR</text>')
 
 
 def lines():
     """Trois lignes dorées sous le « COR », flottantes (ne touchent ni le dos
     ni le bord de la couverture)."""
-    segs = [(346, 386), (376, 350), (406, 306)]   # (y, x de fin), gauche fixe
+    segs = [(346, 388), (376, 352), (406, 308)]   # (y, x de fin), gauche fixe
     return "\n    ".join(
-        f'<line x1="174" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
+        f'<line x1="176" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
         f'stroke-width="15" stroke-linecap="round"/>' for (y, x2) in segs)
 
 
