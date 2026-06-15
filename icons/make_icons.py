@@ -6,7 +6,8 @@ dorée, livre fermé avec reliure, « COR » en bâton gras et trois lignes dor�
 puis le rastérise en PNG via cairosvg.
 
 Produit :
-  - icon.svg            (favicon + bandeau du site)
+  - icon.svg            (favicon, fond bleu marine)
+  - icon-no-bg.svg      (logo du bandeau : vecteur, fond transparent)
   - icon-192.png        (apple-touch-icon, PWA)
   - icon-512.png        (PWA)
   - icon-maskable.png   (PWA maskable, fond plein + zone de sécurité)
@@ -31,16 +32,27 @@ def halo():
             f'stroke="{GOLD}" stroke-width="15" transform="rotate(-4 256 62)"/>')
 
 
-def book():
-    """Livre fermé portrait : couverture blanche, reliure, tranche basse, retroussé."""
+def book(outline=False):
+    """Livre fermé portrait : couverture blanche, reliure, tranche basse, retroussé.
+
+    outline : ajoute un contour bleu marine (fond transparent) afin que la
+    couverture blanche reste lisible sur un bandeau clair.
+    """
+    edge = (f' stroke="{NAVY}" stroke-width="9" stroke-linejoin="round"'
+            if outline else '')
+    back = (f'    <!-- cahier de pages décalé (profondeur) -->\n'
+            f'    <rect x="74" y="120" width="336" height="346" rx="24" '
+            f'fill="{WHITE}" stroke="{NAVY}" stroke-width="9" '
+            f'stroke-linejoin="round"/>\n'
+            if outline else '')
     return f'''
-    <!-- tranche basse (pages) -->
-    <rect x="100" y="452" width="312" height="26" rx="12" fill="{WHITE}"/>
+{back}    <!-- tranche basse (pages) -->
+    <rect x="100" y="452" width="312" height="26" rx="12" fill="{WHITE}"{edge}/>
     <!-- pied de reliure qui se retrousse en bas à gauche -->
     <path d="M124 454 C92 452 74 474 88 490 C92 495 99 495 102 490"
-          fill="none" stroke="{WHITE}" stroke-width="16" stroke-linecap="round"/>
+          fill="none" stroke="{NAVY if outline else WHITE}" stroke-width="16" stroke-linecap="round"/>
     <!-- couverture (portrait) -->
-    <rect x="88" y="104" width="336" height="346" rx="24" fill="{WHITE}"/>
+    <rect x="88" y="104" width="336" height="346" rx="24" fill="{WHITE}"{edge}/>
     <!-- reliure -->
     <line x1="122" y1="128" x2="122" y2="448" stroke="{NAVY}" stroke-width="10" stroke-linecap="round"/>'''
 
@@ -59,12 +71,16 @@ def lines():
         f'stroke-width="16" stroke-linecap="round"/>' for (y, x2) in segs)
 
 
-def badge(maskable=False):
+def badge(maskable=False, bg=True):
     """SVG complet du badge (512×512). maskable : fond plein + zone de sécurité.
 
     Livre portrait agrandi au maximum (marge minime sur les côtés, qu'un format
     vertical ne peut pas supprimer entièrement). En maskable, l'OS rogne les
     bords : on réduit le contenu dans la zone de sécurité.
+
+    bg=False : fond transparent (logo du bandeau). Le livre reçoit un contour
+    bleu marine pour rester lisible sur fond clair ; l'auréole reste un simple
+    anneau doré, sans aucun aplat bleu.
     """
     radius = 0 if maskable else 100
     if maskable:
@@ -73,11 +89,13 @@ def badge(maskable=False):
     else:
         wrap_open = ''
         wrap_close = ''
+    background = (f'<rect width="512" height="512" rx="{radius}" fill="{NAVY}"/>'
+                 if bg else '')
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ceci est mon COR">
-  <rect width="512" height="512" rx="{radius}" fill="{NAVY}"/>
+  {background}
   {wrap_open}
     {halo()}
-    {book()}
+    {book(outline=not bg)}
     {cor()}
     {lines()}
   {wrap_close}
@@ -151,6 +169,11 @@ def main():
     with open(os.path.join(out_dir, "icon.svg"), "w", encoding="utf-8") as f:
         f.write(svg)
     print("écrit icon.svg")
+
+    # logo du bandeau : vrai vecteur, fond transparent, sans aplat bleu
+    with open(os.path.join(out_dir, "icon-no-bg.svg"), "w", encoding="utf-8") as f:
+        f.write(badge(maskable=False, bg=False))
+    print("écrit icon-no-bg.svg")
 
     try:
         import cairosvg
