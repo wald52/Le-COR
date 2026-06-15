@@ -445,9 +445,9 @@
     const obs = new IntersectionObserver(entries => {
       entries.forEach(e => {
         if (e.isIntersecting) {
-          links.forEach(l => l.classList.remove("active"));
+          links.forEach(l => { l.classList.remove("active"); l.removeAttribute("aria-current"); });
           const link = map.get(e.target.id);
-          if (link) link.classList.add("active");
+          if (link) { link.classList.add("active"); link.setAttribute("aria-current", "page"); }
         }
       });
     }, { rootMargin: "-45% 0px -50% 0px" });
@@ -855,6 +855,9 @@
     const body = document.getElementById("zoom-body");
     document.getElementById("zoom-title").textContent = cardTitle(card);
     body.innerHTML = "";
+    // Mémorise le déclencheur (bouton « Agrandir ») pour lui rendre le focus à
+    // la fermeture : sans cela, l'utilisateur clavier perd sa place.
+    modal.__opener = document.activeElement;
     modal.showModal();                 // <dialog> natif : focus piégé, Échap géré
     document.body.style.overflow = "hidden";
 
@@ -888,6 +891,9 @@
     modal.addEventListener("close", () => {
       document.body.style.overflow = "";
       document.getElementById("zoom-body").innerHTML = "";
+      // Rend le focus au bouton qui a ouvert la vue agrandie.
+      if (modal.__opener && modal.__opener.focus) modal.__opener.focus();
+      modal.__opener = null;
     });
   }
 

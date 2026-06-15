@@ -39,6 +39,16 @@ body {
 h1, h2, h3 { color: var(--bleu); line-height: 1.2; }
 a { color: var(--bleu-clair); }
 
+/* Focus clavier : anneau net et visible sur tout élément interactif (liens,
+   boutons, curseurs, légende, fermeture de la modale…). `:focus-visible`
+   n'apparaît qu'au clavier — un clic souris ne déclenche pas l'anneau. */
+:focus-visible {
+  outline: 3px solid var(--bleu);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
 /* Icônes SVG inline : suivent la taille et la couleur du texte. */
 .icon { width: 1.1em; height: 1.1em; flex: none; }
 
