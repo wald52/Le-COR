@@ -63,9 +63,9 @@ a { color: var(--bleu-clair); }
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--gris-clair);
 }
-.brand { display: flex; align-items: center; gap: 7px; text-decoration: none; margin-right: auto; }
-.brand-logo { width: 58px; height: 58px; flex: none; display: block; }
-.brand-text { color: var(--encre); font-size: 1.25rem; font-weight: 600; white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 4px; text-decoration: none; margin-right: auto; }
+.brand-logo { height: 60px; width: auto; flex: none; display: block; }
+.brand-text { color: var(--encre); font-size: 1.3rem; font-weight: 600; white-space: nowrap; }
 /* Nav resserrée (gap/padding) : compense la largeur prise par le titre+logo
    agrandis, pour garder les 9 liens sur une seule ligne en grand écran. */
 .nav-menu { display: flex; gap: 2px; flex-wrap: wrap; }
@@ -378,8 +378,8 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   }
   .nav-menu.open { display: flex; }
   .nav-link { padding: 10px; }
-  /* Logos un peu plus compacts pour tenir à côté du menu burger */
-  .brand-logo { width: 48px; height: 48px; }
+  /* Logo un peu plus compact pour tenir à côté du menu burger */
+  .brand-logo { height: 50px; width: auto; }
   .ms-logo-img { width: 36px; height: 36px; }
   .ms-logo-tip { display: none; }            /* pas de survol sur mobile */
   .chart-grid-2 { grid-template-columns: 1fr; }
