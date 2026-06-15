@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wald52.github.io/Le-COR/sitemap.xml

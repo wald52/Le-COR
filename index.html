@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Sécurité : CSP en défense en profondeur (site statique, sans backend).
+       `img-src … data:` est requis par l'export PNG des graphiques (SVG rendu
+       via une image data:). `frame-ancestors`/`report-uri` ne sont pas posables
+       en <meta> (nécessitent des en-têtes HTTP, indisponibles sur GitHub Pages). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Ceci est mon COR — l'évolution des hypothèses sur les retraites</title>
   <meta name="description" content="Un outil citoyen pour visualiser comment les hypothèses du Conseil d'orientation des retraites (COR) évoluent dans le temps, et si ses prévisions se sont réalisées." />
   <meta name="theme-color" content="#1f4e79" />
@@ -22,10 +28,12 @@
   <meta property="og:image" content="https://wald52.github.io/Le-COR/icons/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Ceci est mon COR — graphique de l'évolution des hypothèses du Conseil d'orientation des retraites." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Ceci est mon COR — le COR change-t-il d'avis sur nos retraites ?" />
   <meta name="twitter:description" content="L'évolution des hypothèses du COR (2001–2026) en données officielles : graphiques, explorateur, simulateur." />
   <meta name="twitter:image" content="https://wald52.github.io/Le-COR/icons/og-image.png" />
+  <meta name="twitter:image:alt" content="Ceci est mon COR — graphique de l'évolution des hypothèses du Conseil d'orientation des retraites." />
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
@@ -39,6 +47,37 @@
   <link rel="preload" as="script" href="./data/cor-series.generated.js" />
   <link rel="preload" as="script" href="./js/chart.js" />
   <link rel="preload" as="script" href="./js/app.js" />
+
+  <!-- Données structurées (schema.org) pour les moteurs de recherche. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://wald52.github.io/Le-COR/#website",
+        "url": "https://wald52.github.io/Le-COR/",
+        "name": "Le COR sous l'œil des citoyens",
+        "description": "Un outil citoyen pour visualiser comment les hypothèses du Conseil d'orientation des retraites (COR) évoluent dans le temps, et si ses prévisions se sont réalisées.",
+        "inLanguage": "fr-FR"
+      },
+      {
+        "@type": "WebApplication",
+        "name": "Ceci est mon COR",
+        "url": "https://wald52.github.io/Le-COR/",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "browserRequirements": "Requires JavaScript",
+        "inLanguage": "fr-FR",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "about": { "@type": "Thing", "name": "Conseil d'orientation des retraites (COR)" },
+        "image": "https://wald52.github.io/Le-COR/icons/og-image.png",
+        "screenshot": "https://wald52.github.io/Le-COR/icons/og-image.png"
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 

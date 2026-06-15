@@ -9,10 +9,20 @@
   "orientation": "portrait-primary",
   "background_color": "#1f4e79",
   "theme_color": "#1f4e79",
+  "categories": ["education", "finance", "news"],
   "icons": [
     { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "./icons/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "./icons/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Aperçu de « Ceci est mon COR » : l'évolution des hypothèses du COR en graphiques."
+    }
   ]
 }
