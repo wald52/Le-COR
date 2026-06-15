@@ -3,16 +3,18 @@
   
     <ellipse cx="252" cy="68" rx="160" ry="30" fill="none" stroke="#f0a92a" stroke-width="20"/>
     
-    <!-- plat arrière (dos) + pied retroussé ; l'espace blanc = les pages -->
-    <path d="M100 150 L100 440 C100 462 116 470 130 461"
-          fill="none" stroke="#3a5183" stroke-width="5" stroke-linecap="round"/>
+    <!-- plat arrière (dos), trait fin + pied retroussé ; le blanc = les pages -->
+    <path d="M96 150 L96 440 C96 462 112 470 126 461"
+          fill="none" stroke="#52638c" stroke-width="7.5" stroke-linecap="round"/>
     <!-- tranche basse (pages) -->
-    <rect x="112" y="442" width="302" height="24" rx="6" fill="#ffffff" stroke="#3a5183" stroke-width="5" stroke-linejoin="round"/>
-    <!-- couverture : bord gauche = reliure -->
-    <rect x="130" y="120" width="284" height="324" rx="10" fill="#ffffff" stroke="#3a5183" stroke-width="5" stroke-linejoin="round"/>
-    <text x="278" y="292" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="112" font-weight="700" text-anchor="middle" fill="#16294d">COR</text>
-    <line x1="172" y1="346" x2="384" y2="346" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
-    <line x1="172" y1="376" x2="348" y2="376" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
-    <line x1="172" y1="406" x2="304" y2="406" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
+    <rect x="112" y="442" width="302" height="24" rx="6" fill="#ffffff" stroke="#52638c" stroke-width="4.5" stroke-linejoin="round"/>
+    <!-- couverture : bords fins -->
+    <rect x="130" y="120" width="284" height="324" rx="10" fill="#ffffff" stroke="#52638c" stroke-width="4.5" stroke-linejoin="round"/>
+    <!-- RELIURE : trait large et plus foncé sur le bord gauche -->
+    <line x1="131" y1="130" x2="131" y2="434" stroke="#33497c" stroke-width="11" stroke-linecap="round"/>
+    <text x="280" y="292" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="112" font-weight="700" text-anchor="middle" fill="#16294d">COR</text>
+    <line x1="174" y1="346" x2="386" y2="346" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
+    <line x1="174" y1="376" x2="350" y2="376" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
+    <line x1="174" y1="406" x2="306" y2="406" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
   
 </svg>

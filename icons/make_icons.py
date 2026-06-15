@@ -20,10 +20,11 @@ import os
 import sys
 
 # ---------------------------------------------------------------- palette ----
-NAVY  = "#16294d"   # bleu marine du fond et du « COR »
-SLATE = "#3a5183"   # bleu ardoise adouci : contour fin du livre (dos, bords)
-GOLD  = "#f0a92a"   # doré chaud (auréole, lignes)
-WHITE = "#ffffff"
+NAVY    = "#16294d"   # bleu marine du fond et du « COR »
+SLATE   = "#52638c"   # bleu adouci, traits fins : plat arrière, bords, tranche
+RELIURE = "#33497c"   # bleu un peu plus foncé : la reliure (trait large)
+GOLD    = "#f0a92a"   # doré chaud (auréole, lignes)
+WHITE   = "#ffffff"
 SANS  = "Liberation Sans, DejaVu Sans, Arial, sans-serif"
 
 
@@ -37,39 +38,41 @@ def halo():
 
 
 def book(outline=False):
-    """Livre en traits fins : couverture, dos à gauche (deux traits + pages),
-    tranche basse, pied retroussé.
+    """Livre en traits fins : couverture, dos à gauche, tranche, pied retroussé.
 
-    Le contour est en bleu ardoise adouci (plus clair que le « COR »). Le dos se
-    lit comme deux traits fins parallèles séparés par le blanc des pages.
+    Le dos se lit comme DEUX traits : un plat arrière FIN, le blanc des pages,
+    puis la RELIURE — un trait nettement plus LARGE et un peu plus foncé (proportions
+    relevées sur l'original : reliure ≈ 1,5× la largeur du plat arrière).
 
     outline=False (favicon, fond plein) : pas de contour, les aplats blancs
-    portent la forme sur le fond marine.
+    portent la forme ; la reliure reste tracée sur la couverture blanche.
     """
-    edge = (f' stroke="{SLATE}" stroke-width="5" stroke-linejoin="round"'
+    edge = (f' stroke="{SLATE}" stroke-width="4.5" stroke-linejoin="round"'
             if outline else '')
     return f'''
-    <!-- plat arrière (dos) + pied retroussé ; l'espace blanc = les pages -->
-    <path d="M100 150 L100 440 C100 462 116 470 130 461"
-          fill="none" stroke="{SLATE if outline else WHITE}" stroke-width="5" stroke-linecap="round"/>
+    <!-- plat arrière (dos), trait fin + pied retroussé ; le blanc = les pages -->
+    <path d="M96 150 L96 440 C96 462 112 470 126 461"
+          fill="none" stroke="{SLATE if outline else WHITE}" stroke-width="7.5" stroke-linecap="round"/>
     <!-- tranche basse (pages) -->
     <rect x="112" y="442" width="302" height="24" rx="6" fill="{WHITE}"{edge}/>
-    <!-- couverture : bord gauche = reliure -->
-    <rect x="130" y="120" width="284" height="324" rx="10" fill="{WHITE}"{edge}/>'''
+    <!-- couverture : bords fins -->
+    <rect x="130" y="120" width="284" height="324" rx="10" fill="{WHITE}"{edge}/>
+    <!-- RELIURE : trait large et plus foncé sur le bord gauche -->
+    <line x1="131" y1="130" x2="131" y2="434" stroke="{RELIURE}" stroke-width="11" stroke-linecap="round"/>'''
 
 
 def cor():
     """« COR » en bâton gras, occupant la couverture (à droite de la reliure)."""
-    return (f'<text x="278" y="292" font-family="{SANS}" font-size="112" '
+    return (f'<text x="280" y="292" font-family="{SANS}" font-size="112" '
             f'font-weight="700" text-anchor="middle" fill="{NAVY}">COR</text>')
 
 
 def lines():
     """Trois lignes dorées sous le « COR », flottantes (ne touchent ni le dos
     ni le bord de la couverture)."""
-    segs = [(346, 384), (376, 348), (406, 304)]   # (y, x de fin), gauche fixe
+    segs = [(346, 386), (376, 350), (406, 306)]   # (y, x de fin), gauche fixe
     return "\n    ".join(
-        f'<line x1="172" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
+        f'<line x1="174" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
         f'stroke-width="15" stroke-linecap="round"/>' for (y, x2) in segs)
 
 
