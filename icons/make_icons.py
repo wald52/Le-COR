@@ -27,48 +27,47 @@ SANS  = "Liberation Sans, DejaVu Sans, Arial, sans-serif"
 
 
 def halo():
-    """Auréole : anneau doré ouvert, légèrement incliné, au-dessus du livre."""
-    return (f'<ellipse cx="256" cy="62" rx="152" ry="30" fill="none" '
-            f'stroke="{GOLD}" stroke-width="15" transform="rotate(-4 256 62)"/>')
+    """Auréole : anneau doré ouvert, légèrement incliné, au-dessus du livre.
+
+    Volontairement sans remplissage : aucun aplat bleu au centre.
+    """
+    return (f'<ellipse cx="244" cy="62" rx="156" ry="28" fill="none" '
+            f'stroke="{GOLD}" stroke-width="22" transform="rotate(-3 244 62)"/>')
 
 
 def book(outline=False):
-    """Livre fermé portrait : couverture blanche, reliure, tranche basse, retroussé.
+    """Livre fermé : couverture, dos à gauche (pages), reliure, tranche basse.
 
-    outline : ajoute un contour bleu marine (fond transparent) afin que la
-    couverture blanche reste lisible sur un bandeau clair.
+    outline : contour bleu marine (fond transparent) pour rester lisible sur un
+    bandeau clair. Sur fond plein (favicon), les traits bleus se fondent et ce
+    sont les aplats blancs qui portent la forme.
     """
-    edge = (f' stroke="{NAVY}" stroke-width="9" stroke-linejoin="round"'
-            if outline else '')
-    back = (f'    <!-- cahier de pages décalé (profondeur) -->\n'
-            f'    <rect x="74" y="120" width="336" height="346" rx="24" '
-            f'fill="{WHITE}" stroke="{NAVY}" stroke-width="9" '
-            f'stroke-linejoin="round"/>\n'
+    edge = (f' stroke="{NAVY}" stroke-width="7" stroke-linejoin="round"'
             if outline else '')
     return f'''
-{back}    <!-- tranche basse (pages) -->
-    <rect x="100" y="452" width="312" height="26" rx="12" fill="{WHITE}"{edge}/>
-    <!-- pied de reliure qui se retrousse en bas à gauche -->
-    <path d="M124 454 C92 452 74 474 88 490 C92 495 99 495 102 490"
-          fill="none" stroke="{NAVY if outline else WHITE}" stroke-width="16" stroke-linecap="round"/>
-    <!-- couverture (portrait) -->
-    <rect x="88" y="104" width="336" height="346" rx="24" fill="{WHITE}"{edge}/>
-    <!-- reliure -->
-    <line x1="122" y1="128" x2="122" y2="448" stroke="{NAVY}" stroke-width="10" stroke-linecap="round"/>'''
+    <!-- dos / pages (gauche) avec pied de reliure retroussé -->
+    <path d="M92 150 L92 452 C92 470 108 476 122 468"
+          fill="none" stroke="{NAVY if outline else WHITE}" stroke-width="7" stroke-linecap="round"/>
+    <!-- tranche basse (pages) sur toute la largeur -->
+    <rect x="104" y="448" width="312" height="28" rx="8" fill="{WHITE}"{edge}/>
+    <!-- couverture -->
+    <rect x="112" y="120" width="300" height="330" rx="10" fill="{WHITE}"{edge}/>
+    <!-- reliure (ligne du dos) -->
+    <line x1="128" y1="140" x2="128" y2="430" stroke="{NAVY}" stroke-width="7" stroke-linecap="round"/>'''
 
 
 def cor():
-    """« COR » en bâton gras, posé sur la couverture (à droite de la reliure)."""
-    return (f'<text x="276" y="298" font-family="{SANS}" font-size="116" '
+    """« COR » en bâton gras, occupant la couverture (à droite de la reliure)."""
+    return (f'<text x="270" y="294" font-family="{SANS}" font-size="116" '
             f'font-weight="700" text-anchor="middle" fill="{NAVY}">COR</text>')
 
 
 def lines():
     """Trois lignes dorées sous le « COR » (façon texte d'un ouvrage)."""
-    segs = [(340, 410), (376, 384), (412, 320)]   # (y, x de fin), gauche fixe
+    segs = [(342, 404), (372, 368), (402, 320)]   # (y, x de fin), gauche fixe
     return "\n    ".join(
-        f'<line x1="138" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
-        f'stroke-width="16" stroke-linecap="round"/>' for (y, x2) in segs)
+        f'<line x1="142" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
+        f'stroke-width="15" stroke-linecap="round"/>' for (y, x2) in segs)
 
 
 def badge(maskable=False, bg=True):

@@ -1,20 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ceci est mon COR">
   <rect width="512" height="512" rx="100" fill="#16294d"/>
   
-    <ellipse cx="256" cy="62" rx="152" ry="30" fill="none" stroke="#f0a92a" stroke-width="15" transform="rotate(-4 256 62)"/>
+    <ellipse cx="244" cy="62" rx="156" ry="28" fill="none" stroke="#f0a92a" stroke-width="22" transform="rotate(-3 244 62)"/>
     
-    <!-- tranche basse (pages) -->
-    <rect x="100" y="452" width="312" height="26" rx="12" fill="#ffffff"/>
-    <!-- pied de reliure qui se retrousse en bas à gauche -->
-    <path d="M124 454 C92 452 74 474 88 490 C92 495 99 495 102 490"
-          fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
-    <!-- couverture (portrait) -->
-    <rect x="88" y="104" width="336" height="346" rx="24" fill="#ffffff"/>
-    <!-- reliure -->
-    <line x1="122" y1="128" x2="122" y2="448" stroke="#16294d" stroke-width="10" stroke-linecap="round"/>
-    <text x="276" y="298" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="116" font-weight="700" text-anchor="middle" fill="#16294d">COR</text>
-    <line x1="138" y1="340" x2="410" y2="340" stroke="#f0a92a" stroke-width="16" stroke-linecap="round"/>
-    <line x1="138" y1="376" x2="384" y2="376" stroke="#f0a92a" stroke-width="16" stroke-linecap="round"/>
-    <line x1="138" y1="412" x2="320" y2="412" stroke="#f0a92a" stroke-width="16" stroke-linecap="round"/>
+    <!-- dos / pages (gauche) avec pied de reliure retroussé -->
+    <path d="M92 150 L92 452 C92 470 108 476 122 468"
+          fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+    <!-- tranche basse (pages) sur toute la largeur -->
+    <rect x="104" y="448" width="312" height="28" rx="8" fill="#ffffff"/>
+    <!-- couverture -->
+    <rect x="112" y="120" width="300" height="330" rx="10" fill="#ffffff"/>
+    <!-- reliure (ligne du dos) -->
+    <line x1="128" y1="140" x2="128" y2="430" stroke="#16294d" stroke-width="7" stroke-linecap="round"/>
+    <text x="270" y="294" font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif" font-size="116" font-weight="700" text-anchor="middle" fill="#16294d">COR</text>
+    <line x1="142" y1="342" x2="404" y2="342" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
+    <line x1="142" y1="372" x2="368" y2="372" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
+    <line x1="142" y1="402" x2="320" y2="402" stroke="#f0a92a" stroke-width="15" stroke-linecap="round"/>
   
 </svg>
