@@ -20,7 +20,8 @@ import os
 import sys
 
 # ---------------------------------------------------------------- palette ----
-NAVY  = "#16294d"   # bleu marine du fond, de la reliure et du « COR »
+NAVY  = "#16294d"   # bleu marine du fond et du « COR »
+SLATE = "#3a5183"   # bleu ardoise adouci : contour fin du livre (dos, bords)
 GOLD  = "#f0a92a"   # doré chaud (auréole, lignes)
 WHITE = "#ffffff"
 SANS  = "Liberation Sans, DejaVu Sans, Arial, sans-serif"
@@ -31,34 +32,35 @@ def halo():
 
     Volontairement sans remplissage : aucun aplat bleu au centre.
     """
-    return (f'<ellipse cx="252" cy="64" rx="158" ry="29" fill="none" '
-            f'stroke="{GOLD}" stroke-width="23"/>')
+    return (f'<ellipse cx="252" cy="68" rx="160" ry="30" fill="none" '
+            f'stroke="{GOLD}" stroke-width="20"/>')
 
 
 def book(outline=False):
-    """Livre : couverture, dos en couches à gauche, reliure, tranche, pied retroussé.
+    """Livre en traits fins : couverture, dos à gauche (deux traits + pages),
+    tranche basse, pied retroussé.
 
-    outline : contour bleu marine (fond transparent) pour rester lisible sur un
-    bandeau clair. Sur fond plein (favicon), les traits bleus se fondent et ce
-    sont les aplats blancs qui portent la forme.
+    Le contour est en bleu ardoise adouci (plus clair que le « COR »). Le dos se
+    lit comme deux traits fins parallèles séparés par le blanc des pages.
+
+    outline=False (favicon, fond plein) : pas de contour, les aplats blancs
+    portent la forme sur le fond marine.
     """
-    edge = (f' stroke="{NAVY}" stroke-width="7" stroke-linejoin="round"'
+    edge = (f' stroke="{SLATE}" stroke-width="5" stroke-linejoin="round"'
             if outline else '')
     return f'''
-    <!-- dos arrière (trait fin) + pied retroussé ; l'espace blanc = les pages -->
-    <path d="M106 156 L106 442 C106 465 122 472 136 463"
-          fill="none" stroke="{NAVY if outline else WHITE}" stroke-width="5" stroke-linecap="round"/>
-    <!-- tranche basse (pages) sur toute la largeur -->
-    <rect x="112" y="444" width="300" height="26" rx="6" fill="{WHITE}"{edge}/>
-    <!-- couverture -->
-    <rect x="130" y="120" width="282" height="326" rx="10" fill="{WHITE}"{edge}/>
-    <!-- reliure (le dos, bord gauche un peu plus marqué) -->
-    <line x1="132" y1="132" x2="132" y2="434" stroke="{NAVY}" stroke-width="9" stroke-linecap="round"/>'''
+    <!-- plat arrière (dos) + pied retroussé ; l'espace blanc = les pages -->
+    <path d="M100 150 L100 440 C100 462 116 470 130 461"
+          fill="none" stroke="{SLATE if outline else WHITE}" stroke-width="5" stroke-linecap="round"/>
+    <!-- tranche basse (pages) -->
+    <rect x="112" y="442" width="302" height="24" rx="6" fill="{WHITE}"{edge}/>
+    <!-- couverture : bord gauche = reliure -->
+    <rect x="130" y="120" width="284" height="324" rx="10" fill="{WHITE}"{edge}/>'''
 
 
 def cor():
     """« COR » en bâton gras, occupant la couverture (à droite de la reliure)."""
-    return (f'<text x="278" y="296" font-family="{SANS}" font-size="116" '
+    return (f'<text x="278" y="292" font-family="{SANS}" font-size="112" '
             f'font-weight="700" text-anchor="middle" fill="{NAVY}">COR</text>')
 
 
