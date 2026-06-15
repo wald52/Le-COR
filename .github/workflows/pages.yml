@@ -52,3 +52,51 @@ jobs:
       - name: Déployer sur Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # Audit qualité du site RÉELLEMENT déployé (vrai chemin /Le-COR/, CSP, URLs
+  # absolues du JSON-LD/sitemap). S'exécute après « deploy » ; informatif au
+  # début (continue-on-error) — il ne bloque jamais la mise en ligne.
+  audit:
+    needs: deploy
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+    env:
+      SITE_URL: https://wald52.github.io/Le-COR/
+    steps:
+      - name: Récupérer le dépôt (config Lighthouse + lychee)
+        uses: actions/checkout@v4
+
+      - name: Attendre la propagation du déploiement
+        run: |
+          echo "Attente d'un HTTP 200 sur $SITE_URL …"
+          for i in $(seq 1 18); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE_URL" || echo 000)
+            echo "Tentative $i : HTTP $code"
+            if [ "$code" = "200" ]; then echo "Site en ligne."; exit 0; fi
+            sleep 10
+          done
+          echo "::warning::Le site n'a pas répondu 200 après ~3 min ; audit lancé quand même."
+
+      - name: Lighthouse CI (perf, a11y, best-practices, SEO)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./.github/lighthouse/lighthouserc.json
+          uploadArtifacts: true
+          artifactName: lighthouse-rapport
+
+      - name: Contrôle des liens cassés (lychee)
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # On crawle la page d'accueil et la page légale déployées. Le préfixe
+          # « Données du COR » est exclu : ces fichiers-preuve ne sont
+          # volontairement pas servis (404 attendu), seuls de VRAIS liens morts
+          # doivent faire échouer l'étape.
+          args: >-
+            --no-progress
+            --exclude 'Donn%C3%A9es%20du%20COR'
+            --exclude 'Données du COR'
+            https://wald52.github.io/Le-COR/
+            https://wald52.github.io/Le-COR/legal.html
+          fail: true
