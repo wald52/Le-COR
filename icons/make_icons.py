@@ -45,29 +45,29 @@ def book(outline=False):
     edge = (f' stroke="{NAVY}" stroke-width="7" stroke-linejoin="round"'
             if outline else '')
     return f'''
-    <!-- feuillet arrière (gauche) avec pied de reliure retroussé -->
-    <path d="M90 156 L90 444 C90 467 108 473 122 465"
-          fill="none" stroke="{NAVY if outline else WHITE}" stroke-width="7" stroke-linecap="round"/>
+    <!-- dos arrière (trait fin) + pied retroussé ; l'espace blanc = les pages -->
+    <path d="M106 156 L106 442 C106 465 122 472 136 463"
+          fill="none" stroke="{NAVY if outline else WHITE}" stroke-width="5" stroke-linecap="round"/>
     <!-- tranche basse (pages) sur toute la largeur -->
-    <rect x="104" y="446" width="308" height="26" rx="6" fill="{WHITE}"{edge}/>
+    <rect x="112" y="444" width="300" height="26" rx="6" fill="{WHITE}"{edge}/>
     <!-- couverture -->
-    <rect x="118" y="120" width="294" height="326" rx="10" fill="{WHITE}"{edge}/>
-    <!-- reliure (ligne du dos, à l'intérieur) -->
-    <line x1="134" y1="140" x2="134" y2="426" stroke="{NAVY}" stroke-width="7" stroke-linecap="round"/>'''
+    <rect x="130" y="120" width="282" height="326" rx="10" fill="{WHITE}"{edge}/>
+    <!-- reliure (le dos, bord gauche un peu plus marqué) -->
+    <line x1="132" y1="132" x2="132" y2="434" stroke="{NAVY}" stroke-width="9" stroke-linecap="round"/>'''
 
 
 def cor():
     """« COR » en bâton gras, occupant la couverture (à droite de la reliure)."""
-    return (f'<text x="276" y="296" font-family="{SANS}" font-size="116" '
+    return (f'<text x="278" y="296" font-family="{SANS}" font-size="116" '
             f'font-weight="700" text-anchor="middle" fill="{NAVY}">COR</text>')
 
 
 def lines():
     """Trois lignes dorées sous le « COR », flottantes (ne touchent ni le dos
     ni le bord de la couverture)."""
-    segs = [(346, 378), (376, 344), (406, 300)]   # (y, x de fin), gauche fixe
+    segs = [(346, 384), (376, 348), (406, 304)]   # (y, x de fin), gauche fixe
     return "\n    ".join(
-        f'<line x1="162" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
+        f'<line x1="172" y1="{y}" x2="{x2}" y2="{y}" stroke="{GOLD}" '
         f'stroke-width="15" stroke-linecap="round"/>' for (y, x2) in segs)
 
 
