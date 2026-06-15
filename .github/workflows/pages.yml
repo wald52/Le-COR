@@ -1,0 +1,54 @@
+name: Déploiement GitHub Pages
+
+# Publie le site sur GitHub Pages en EXCLUANT les fichiers-source du COR
+# (data/Données du COR/) : ces 225 Mo restent dans le dépôt comme preuve, mais
+# n'alourdissent pas le site déployé. La suppression n'a lieu que dans le
+# checkout éphémère du job — la branche main n'est jamais modifiée.
+#
+# ⚠️ Prérequis (une fois) : Settings › Pages › Build and deployment › Source
+#    doit être réglé sur « GitHub Actions ».
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Permissions minimales nécessaires au déploiement Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un seul déploiement Pages à la fois ; on laisse finir celui en cours.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Préparer le site (exclure les fichiers-preuve lourds du COR)
+        run: rm -rf "data/Données du COR"
+
+      - name: Configurer Pages
+        uses: actions/configure-pages@v5
+
+      - name: Téléverser l'artefact du site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Déployer sur Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
