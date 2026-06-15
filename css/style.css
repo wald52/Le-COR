@@ -63,7 +63,7 @@ a { color: var(--bleu-clair); }
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--gris-clair);
 }
-.brand { display: flex; align-items: center; gap: 2px; text-decoration: none; margin-right: auto; }
+.brand { display: flex; align-items: center; gap: 4px; text-decoration: none; margin-right: auto; }
 .brand-logo { height: 66px; width: auto; flex: none; display: block; }
 .brand-text { color: var(--encre); font-size: 1.3rem; font-weight: 600; white-space: nowrap; }
 /* Nav resserrée (gap/padding) : compense la largeur prise par le titre+logo
@@ -378,6 +378,8 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   }
   .nav-menu.open { display: flex; }
   .nav-link { padding: 10px; }
+  /* Sur mobile : espacement titre↔logo gardé plus serré qu'en grand écran. */
+  .brand { gap: 2px; }
   /* Logo un peu plus compact pour tenir à côté du menu burger */
   .brand-logo { height: 54px; width: auto; }
   .ms-logo-img { width: 36px; height: 36px; }
