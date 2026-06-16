@@ -1,0 +1,49 @@
+name: Qualité (lint + tests e2e)
+
+# Contrôle qualité indépendant du déploiement Pages : vérifie le code à chaque
+# push et pull request. Le lint est bloquant ; les tests e2e (Playwright)
+# démarrent en mode informatif (continue-on-error) le temps d'être éprouvés, et
+# pourront être durcis ensuite.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: ESLint
+        run: npm run lint
+
+  e2e:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Installer le navigateur Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Tests de bout en bout
+        run: npm test
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

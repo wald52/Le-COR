@@ -10,3 +10,9 @@ Thumbs.db
 # Python (génération d'icônes)
 __pycache__/
 *.pyc
+
+# Node / outillage de développement (lint, tests e2e)
+node_modules/
+playwright-report/
+test-results/
+.playwright/

@@ -1,0 +1,5 @@
+# Données générées automatiquement depuis les fichiers Excel du COR.
+data/*.generated.js
+node_modules/
+playwright-report/
+test-results/
