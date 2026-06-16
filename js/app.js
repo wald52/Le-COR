@@ -167,7 +167,7 @@
 
     const cap = document.createElement("p");
     cap.className = "chart-inline-legend";
-    cap.innerHTML = `${window.CORChart.swatch("#1f4e79")} éventail des scénarios &nbsp;·&nbsp; le point = scénario de référence &nbsp;·&nbsp; ${window.CORChart.swatch("#d62728")} à partir de 2022, tout l'éventail glisse vers le bas`;
+    cap.innerHTML = `${window.CORChart.swatch("#1f4e79")} éventail des scénarios<br>le point = scénario de référence<br>${window.CORChart.swatch("#d62728")} à partir de 2022, tout l'éventail glisse vers le bas`;
     container.appendChild(cap);
   }
 
@@ -351,7 +351,7 @@
     host.appendChild(svg);
     const leg = document.createElement("p");
     leg.className = "chart-inline-legend";
-    leg.innerHTML = `${window.CORChart.swatch("#1f4e79")} Dépenses publiques &nbsp;·&nbsp; ${window.CORChart.swatch("#7fb0e0")} Dépenses privées`;
+    leg.innerHTML = `${window.CORChart.swatch("#1f4e79")} Dépenses publiques<br>${window.CORChart.swatch("#7fb0e0")} Dépenses privées`;
     host.appendChild(leg);
   }
 

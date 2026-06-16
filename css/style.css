@@ -183,7 +183,7 @@ a { color: var(--bleu-clair); }
 .legend-item:hover { background: var(--bleu-pale); }
 .legend-swatch { display: inline-block; flex: none; }
 .legend-group { width: 100%; font-size: 0.78rem; font-style: italic; color: var(--gris); margin-top: 4px; }
-.chart-inline-legend { font-size: 0.82rem; color: var(--gris); margin-top: 12px; }
+.chart-inline-legend { font-size: 0.82rem; color: var(--gris); margin-top: 12px; line-height: 1.6; }
 .chart-inline-legend .legend-swatch { vertical-align: middle; margin: 0 2px; }
 
 /* ---------- Infobulle ---------- */
