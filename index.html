@@ -40,13 +40,13 @@
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./css/style.css" />
 
-  <!-- Préchargement des scripts critiques (téléchargement parallélisé tôt ;
-       l'ordre d'exécution reste géré par `defer`). Les données de l'explorateur
-       ne sont PAS préchargées : elles se chargent paresseusement au défilement. -->
-  <link rel="preload" as="script" href="./data/data.js" />
-  <link rel="preload" as="script" href="./data/cor-series.generated.js" />
-  <link rel="preload" as="script" href="./js/chart.js" />
-  <link rel="preload" as="script" href="./js/app.js" />
+  <!-- Les scripts sont chargés en fin de page avec `defer` (voir avant
+       </body>). On NE les précharge PAS : un `rel="preload" as="script"` les
+       téléchargerait en priorité haute, en concurrence de bande passante avec
+       le document et la feuille de style sur connexion mobile lente, ce qui
+       retarde le premier rendu (First Contentful Paint). Le contenu au-dessus
+       de la ligne de flottaison est du HTML statique : il s'affiche sans
+       attendre le JavaScript. -->
 
   <!-- Données structurées (schema.org) pour les moteurs de recherche. -->
   <script type="application/ld+json">
