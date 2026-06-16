@@ -738,6 +738,9 @@
     container.__zoomRender = target =>
       lineChart(target, Object.assign({}, cfg, { animate: false, table: false }));
 
+    // Config conservée pour l'export CSV des données (cf. app.js).
+    container.__cfg = cfg;
+
     return svg;
   }
 
