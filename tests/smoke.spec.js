@@ -30,12 +30,15 @@ test("le graphique phare se construit au défilement", async ({ page }) => {
   await expect(page.locator("#chart-pib .chart-svg")).toHaveAttribute("role", "img");
 });
 
-test("chaque graphique propose un export des données (CSV)", async ({ page }) => {
+test("le tableau de données propose le téléchargement CSV", async ({ page }) => {
   await page.goto("/");
   const card = page.locator("#depenses .chart-card");
   await card.scrollIntoViewIfNeeded();
   await expect(card.locator(".chart-svg")).toBeVisible();
-  const csvBtn = card.getByRole("button", { name: /données du graphique au format CSV/i });
+
+  // Le bouton CSV vit dans le tableau replié : on ouvre d'abord « Voir les données ».
+  await card.locator("summary.data-toggle").click();
+  const csvBtn = card.getByRole("button", { name: /télécharger les données/i });
   await expect(csvBtn).toBeVisible();
 
   const [download] = await Promise.all([

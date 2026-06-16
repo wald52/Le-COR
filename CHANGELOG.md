@@ -11,8 +11,9 @@ Toutes les évolutions notables du site. Format inspiré de
   sur l'accueil et la page légale, pour la navigation au clavier.
 - **Repli `<noscript>`** : message expliquant que les graphiques nécessitent
   JavaScript, avec lien vers les sources officielles du COR.
-- **Export CSV** des données par graphique (bouton « Données » de la barre
-  d'outils), en plus de l'export image PNG existant.
+- **Export CSV** des données par graphique : bouton « Télécharger les données
+  (CSV) » placé dans le tableau de données repliable (« Voir les données »), en
+  plus de l'export image PNG de la barre d'outils.
 - **Partage par section** : bouton « copier le lien » à côté de chaque titre de
   section, copiant l'URL avec l'ancre correspondante.
 - **Outillage de développement** (dev-only, non livré) : ESLint (flat config),

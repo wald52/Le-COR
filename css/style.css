@@ -338,6 +338,14 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .data-table-wrap { margin-top: 10px; overflow-x: auto; }
 .data-table-wrap table { font-size: 0.8rem; }
 .data-table-wrap th, .data-table-wrap td { padding: 5px 8px; }
+/* Bouton de téléchargement CSV, sous le tableau de données déplié. */
+.data-csv {
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-top: 12px; padding: 8px 14px; font: inherit; font-size: 0.82rem;
+  color: var(--bleu); background: var(--bleu-pale);
+  border: 1px solid var(--gris-clair); border-radius: 8px; cursor: pointer;
+}
+.data-csv:hover { border-color: var(--bleu-clair); color: var(--bleu-clair); }
 .visually-hidden {
   position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;

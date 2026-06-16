@@ -141,7 +141,15 @@
       cfg.series.forEach(s => { html += `<td>${at(s, y)}</td>`; });
       html += "</tr>";
     });
-    html += "</tbody></table></div></details>";
+    html += "</tbody></table></div>";
+    // Bouton de téléchargement CSV, rattaché au tableau (apparaît une fois le
+    // <details> ouvert). Pas de gestionnaire ici : le clic est traité par
+    // délégation dans app.js (setupDataExports), ce qui le rend résistant aux
+    // re-rendus du graphique (redimensionnement) qui reconstruisent ce markup.
+    html += `<button type="button" class="data-csv">` +
+      `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
+      `<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>` +
+      `Télécharger les données (CSV)</button></details>`;
     container.insertAdjacentHTML("beforeend", html);
   }
 
