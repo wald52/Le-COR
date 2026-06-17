@@ -162,9 +162,18 @@ reconstitue via la convention **POV B** (« avant concours publics ») :
   soit ~½ du déficit public annuel (~170 Md€, **Insee — extérieur au COR**).
 
 **Travaux qui partagent ce diagnostic :**
+- **Institut économique Molinari** (2023-2024) — le plus quantitatif : déficit
+  « correctement calculé » ≈ **53 Md€ en 2023** (~2 % du PIB) vs +3,8 Md€ au COR ;
+  ≈ **943 Md€ de déficits « occultés » depuis 2002** ; étude intitulée
+  « *les retraites expliquent la moitié des déficits publics* » ; subventions au
+  public ≈ 62 Md€ en 2023 (+8 Md€ régimes spéciaux). Le mot « occulté » est le
+  leur (think tank libéral) et est **contesté**.
 - J.‑P. Beaufret, « Retraites obligatoires et déficits publics » (document présenté
-  au COR, 2023) — source directe du chiffrage POV B.
+  au COR, 2023) — source directe du chiffrage POV B (~87 Md€).
 - Fondapol, notes sur le financement des retraites (2025).
+- La Grande Conversation — angle **équité intergénérationnelle** (niveau de vie des
+  retraités ≈ +30 % vs leurs parents, +20 % vs leurs enfants).
+- Débats au Sénat (séance du 8 oct. 2024 ; question écrite qSEQ241001070).
 
 **Critiques (la phrase serait trompeuse) :**
 - M. Zemmour : le calcul « ne repose sur rien ».
