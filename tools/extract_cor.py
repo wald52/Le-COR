@@ -706,6 +706,91 @@ def _bounds(series, xpad=0, ypad=0.06):
             "yMin": round(min(ys) - yr * ypad, 2), "yMax": round(max(ys) + yr * ypad, 2)}
 
 
+def _popact(rows, own_year=None):
+    """(obs, proj) du taux de croissance de la population active, en %.
+
+    La figure superpose une ligne observée et une (ou plusieurs) ligne(s)
+    projetée(s), chacune annotée du rapport dont elle provient (« (Rapport
+    COR 2026) »). `own_year` : si fourni, on retient la projection de ce
+    rapport précis ; sinon la première projection rencontrée."""
+    ym = _ymap(rows)
+    if not ym:
+        return {}, {}
+
+    def vals(r):
+        return {ym[i]: round(r[i] * 100, 3) for i in ym
+                if i < len(r) and isinstance(r[i], (int, float))}
+
+    obs, proj, proj_rows = {}, {}, []
+    for r in rows:
+        lab = next((str(c) for c in r[1:3] if isinstance(c, str) and len(c) > 3), "")
+        low = lab.lower()
+        if "population active" not in low and "pop act" not in low:
+            continue
+        if "observ" in low and not obs:
+            obs = vals(r)
+        elif "projet" in low:
+            proj_rows.append((low, vals(r)))
+    if own_year:
+        proj = next((v for lab, v in proj_rows
+                     if f"rapport cor {own_year}" in lab or f"rapport {own_year}" in lab), {})
+    if not proj and proj_rows:
+        proj = proj_rows[0][1]
+    return obs, proj
+
+
+def extract_pop_active(path, own_year=None):
+    """(obs, proj) du taux de croissance de la population active d'un rapport."""
+    if not path:
+        return {}, {}
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = sheet_by_title(wb, ["taux de croissance", "population active"])
+    if ws is None:
+        wb.close()
+        return {}, {}
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    return _popact(rows, own_year)
+
+
+# Couleurs des grands groupes de régimes (Fig 2.6). On apparie par sous-chaîne
+# du libellé pour rester robuste aux variations d'orthographe d'un rapport à
+# l'autre (« Régimes spéciaux » avec ou sans espace final, etc.).
+REGIME_COLORS = [
+    ("complémentaires", "#9c27b0"),
+    ("spéciaux", "#c2185b"),
+    ("non-salariés", "#e8731c"),
+    ("cnracl", "#6aa84f"),
+    ("fpe", "#2f6fb0"),
+    ("lura", "#1f4e79"),
+]
+
+
+def extract_dep_regimes(rows):
+    """Une série par groupe de régimes (% du PIB), bloc « Hors transferts
+    internes » de la figure des dépenses par groupe de régimes."""
+    ym = _ymap(rows)
+    if not ym:
+        return []
+    series, started = [], False
+    for r in rows:
+        c1 = str(r[1]).strip() if len(r) > 1 and isinstance(r[1], str) else ""
+        if not c1:
+            continue
+        if c1.lower().startswith("hors transferts"):
+            started = True
+            continue
+        if started and c1.lower().startswith("y compris"):
+            break
+        if started:
+            pts = [{"x": ym[i], "y": round(r[i] * 100, 3)} for i in ym
+                   if i < len(r) and isinstance(r[i], (int, float))]
+            if pts:
+                col = next((c for k, c in REGIME_COLORS if k in c1.lower()), "#888888")
+                series.append({"label": c1, "color": col, "kind": "solid", "points": pts})
+    return series
+
+
 def build_explorer(multi=None):
     """`multi` : séries multi-millésimes calculées dans build() —
     {indicateur: ({vy: {année: val}} projections, obs {année: val})}."""
@@ -835,6 +920,18 @@ def build_explorer(multi=None):
             "Part des 15-64 ans qui ont un emploi. Plus il est élevé, plus il y a de "
             "cotisants.",
             "COR, rapports 2024-2026 (taux d'emploi observé puis projeté).")
+    r = _rows("partie 1", "Fig 1.6")
+    if r:
+        obs, _p = _popact(r)
+        series = _series(obs, _p, ECO)
+        if multi.get("pop_active"):
+            series = vintage_series(obs, multi["pop_active"])
+        add("pop_active", "Croissance de la population active", "%/an", " %", series,
+            "Le rythme d'évolution de la population active (personnes en emploi ou qui en "
+            "cherchent) : c'est la base des cotisants qui s'élargit ou se resserre. Chaque "
+            "rapport projette un net ralentissement, révisé d'une édition à l'autre.",
+            "COR / INSEE, rapports 2023-2026 (taux de croissance de la population active, "
+            "scénario de référence de chaque rapport).")
     pr = _rows("partie 1", "Fig 1.10")
     if pr:
         annual = {}
@@ -926,6 +1023,18 @@ def build_explorer(multi=None):
                        "EPR ensuite).")
             add(iid, label, "% du PIB", " %", series, desc, src)
 
+    r = _rows("partie 2", "Fig 2.6")
+    if r:
+        series = extract_dep_regimes(r)
+        add("dep_regimes", "Dépenses de retraite par groupe de régimes", "% du PIB", " %",
+            series,
+            "Comment se répartissent les dépenses de retraite (en % du PIB) entre les grands "
+            "groupes de régimes : régime général et alignés (LURA), fonction publique (FPE, "
+            "CNRACL), non-salariés, régimes spéciaux et régimes complémentaires. Vue du "
+            "scénario de référence du rapport le plus récent.",
+            "COR, rapport 2026 (dépenses par groupe de régimes, hors transferts internes, "
+            "scénario de référence).")
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -1000,9 +1109,9 @@ def build_explorer(multi=None):
 
     themes = [
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
-        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite"]},
+        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie"]},
-        {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde"]},
+        {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "dep_regimes"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits
@@ -1421,6 +1530,17 @@ def build():
             cotret_projs[vy] = {y: round(v, 3) for y, v in s.items() if y >= int(vy)}
     print(f"✓ cotisants/retraité : {len(cotret_projs)} millésimes")
 
+    # ---- Taux de croissance de la population active : scénario de référence
+    #      par rapport (la figure isole un taux observé puis projeté à partir
+    #      de 2023 ; avant, les rapports ne publient que des moyennes de période)
+    popact_projs = {}
+    for vy, dpat in [("2023", "2023-06"), ("2024", "2024-06"),
+                     ("2025", "2025-06"), ("2026", "2026-06")]:
+        _o, p = extract_pop_active(first_file(dpat, "partie 1"), vy)
+        if p:
+            popact_projs[vy] = {y: v for y, v in p.items() if y >= int(vy)}
+    print(f"✓ population active : {len(popact_projs)} millésimes")
+
     # Séries multi-millésimes mises à disposition de l'explorateur : pour
     # chaque indicateur, les projections de tous les rapports qui publient
     # le même jeu de données, à superposer au réalisé.
@@ -1439,6 +1559,7 @@ def build():
         "ratio_demo": ratio_hyps,
         "pension_rel": pension_projs,
         "cot_ret": cotret_projs,
+        "pop_active": popact_projs,
         "_notes": {"chomage": cho_notes, "emploi": emp_notes, "prod_path": prod_notes},
     }
 
