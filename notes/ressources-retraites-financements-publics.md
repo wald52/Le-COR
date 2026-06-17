@@ -146,30 +146,39 @@ l'existence d'un « trou caché ».
 
 ## 4 bis. « La moitié de la dette part dans les retraites » (la phrase de Bayrou)
 
-François Bayrou a affirmé, en substance, qu'une large part (≈ la moitié) de la
-dette française récente « partait dans les retraites ». **On ne peut pas lire cela
-directement dans le COR** : le COR ne mesure pas la dette publique, seulement le
-*solde du système de retraites*. La phrase se reconstitue ainsi :
+**Citation exacte.** Déclaration de politique générale du **14 janvier 2025** :
+« *sur plus de 1 000 milliards d'euros de dette supplémentaire accumulés par notre
+pays au cours des dix dernières années, les retraites représentent 50 % de ce
+total* ». Mécanisme avancé : le système réclamerait **40 à 45 Md€ par an** à
+l'État, empruntés chaque année.
 
-- Lecture **POV B** (hors concours publics) : solde retraites ≈ **−87 Md€ en 2025**
-  (~2,9 % du PIB ; cf. §4).
-- **Déficit public total** de la France ≈ **170 Md€/an** (5,8 % du PIB en 2024,
-  source **Insee — extérieure au COR**).
-- Rapport : **87 / ~170 ≈ ½** → c'est très probablement l'arithmétique de Bayrou.
+**On ne peut pas lire cela directement dans le COR** : le COR ne mesure pas la
+dette publique, seulement le *solde du système de retraites*. La phrase se
+reconstitue via la convention **POV B** (« avant concours publics ») :
 
-**Réserves identiques au §5 :**
-1. En **convention COR** (POV A), le système est quasi à l'équilibre en 2025 : la
-   phrase **n'apparaît pas**.
-2. Le −87 Md€ additionne des natures différentes (vrais déficits structurels ≠
-   coût normal d'État-employeur ≠ transferts non contributifs assumés).
-3. **Retirer ces flux ne supprime pas le besoin de financement, il le déplace** :
-   le déficit public global est inchangé (cf. §2). Dire « ça part dans les
-   retraites » ou « ça part dans la masse salariale publique » décrit la même
-   dépense sous deux étiquettes.
+- Version Bayrou : ≈ **40‑45 Md€/an** de concours de l'État ; cumulés sur 10 ans
+  ≈ ~450‑500 Md€ ≈ **la moitié** des ~1 000 Md€ de dette nouvelle.
+- Version maximale (Beaufret, POV B du §4) : ≈ **−87 Md€ en 2025** (~2,9 % du PIB),
+  soit ~½ du déficit public annuel (~170 Md€, **Insee — extérieur au COR**).
 
-→ La phrase n'est ni vraie ni fausse « dans l'absolu » : son ordre de grandeur est
-**plausible** sous la convention critique, mais c'est un **choix de présentation
-politique**, pas un fait comptable. Le COR seul ne permet pas de trancher.
+**Travaux qui partagent ce diagnostic :**
+- J.‑P. Beaufret, « Retraites obligatoires et déficits publics » (document présenté
+  au COR, 2023) — source directe du chiffrage POV B.
+- Fondapol, notes sur le financement des retraites (2025).
+
+**Critiques (la phrase serait trompeuse) :**
+- M. Zemmour : le calcul « ne repose sur rien ».
+- Basta! : « la dette publique serait due aux retraites : c'est faux ».
+- Argument de fond (identique au §2 et au §5) : la contribution d'équilibre de
+  l'État est le **coût normal d'un employeur** ; **retirer ce flux ne supprime pas
+  le besoin de financement, il le déplace** — le déficit public global est
+  inchangé.
+
+→ Bilan : l'**ordre de grandeur** de Bayrou est défendable sous la convention
+critique, mais en convention COR (POV A) le système est quasi équilibré et la
+phrase n'apparaît pas. Le désaccord porte sur l'**interprétation** (cotisation
+légitime vs subvention comblant un déficit), pas sur les nombres. Choix
+**politique**, pas purement comptable ; le COR seul ne tranche pas.
 
 ---
 
