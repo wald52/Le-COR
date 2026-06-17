@@ -241,6 +241,15 @@
     const outsideEndLen = Math.max(0, ...cfg.series.map((s, i) =>
       labelMode[i] === "outside" ? String(s.endNote || s.endLabel || "").length : 0
     ));
+    // Marge gauche : doit contenir la PLUS LONGUE étiquette de l'axe Y, suffixe
+    // compris. Les valeurs avec une unité large (ex. « 70 Md€ ») débordaient
+    // sinon le bord gauche du cadre et étaient rognées. On dimensionne donc la
+    // marge sur la longueur réelle des libellés plutôt que sur une valeur fixe.
+    const yTicksPre = niceTicks(yMin_pre, yMax_pre, 5);
+    const ySuffixPre = cfg.y?.suffix ?? "";
+    const yLabelLen = Math.max(...yTicksPre.map(t =>
+      (String(Math.round(t * 10) / 10).replace(".", ",") + ySuffixPre).length));
+    const leftForLabels = Math.ceil(yLabelLen * CHAR_W) + (narrow ? 12 : 14);
     const M = {
       top: 16 + bandTop,
       right: outsideEndLen > 0
@@ -249,7 +258,7 @@
       bottom: (narrow ? 34 : 46) + bandBot,
       // Marge gauche élargie en présence de coupures d'axe : les étiquettes Y
       // sont repoussées à gauche des zigzags posés sur l'axe.
-      left: (narrow ? 42 : 46) + (bandTop || bandBot ? 10 : 0)
+      left: Math.max(narrow ? 42 : 46, leftForLabels) + (bandTop || bandBot ? 10 : 0)
     };
     const plotW = W - M.left - M.right;
     const plotH = H - M.top - M.bottom;
