@@ -408,7 +408,7 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 760px) {
-  .site-header { padding: 6px 8px; gap: 8px; }
+  .site-header { padding: 6px 14px 6px 8px; gap: 8px; }
   .nav-toggle { display: flex; }
   .nav-menu {
     position: absolute; top: 100%; right: 0; left: 0; flex-direction: column;
