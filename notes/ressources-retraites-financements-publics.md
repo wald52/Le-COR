@@ -144,6 +144,35 @@ l'existence d'un « trou caché ».
 
 ---
 
+## 4 bis. « La moitié de la dette part dans les retraites » (la phrase de Bayrou)
+
+François Bayrou a affirmé, en substance, qu'une large part (≈ la moitié) de la
+dette française récente « partait dans les retraites ». **On ne peut pas lire cela
+directement dans le COR** : le COR ne mesure pas la dette publique, seulement le
+*solde du système de retraites*. La phrase se reconstitue ainsi :
+
+- Lecture **POV B** (hors concours publics) : solde retraites ≈ **−87 Md€ en 2025**
+  (~2,9 % du PIB ; cf. §4).
+- **Déficit public total** de la France ≈ **170 Md€/an** (5,8 % du PIB en 2024,
+  source **Insee — extérieure au COR**).
+- Rapport : **87 / ~170 ≈ ½** → c'est très probablement l'arithmétique de Bayrou.
+
+**Réserves identiques au §5 :**
+1. En **convention COR** (POV A), le système est quasi à l'équilibre en 2025 : la
+   phrase **n'apparaît pas**.
+2. Le −87 Md€ additionne des natures différentes (vrais déficits structurels ≠
+   coût normal d'État-employeur ≠ transferts non contributifs assumés).
+3. **Retirer ces flux ne supprime pas le besoin de financement, il le déplace** :
+   le déficit public global est inchangé (cf. §2). Dire « ça part dans les
+   retraites » ou « ça part dans la masse salariale publique » décrit la même
+   dépense sous deux étiquettes.
+
+→ La phrase n'est ni vraie ni fausse « dans l'absolu » : son ordre de grandeur est
+**plausible** sous la convention critique, mais c'est un **choix de présentation
+politique**, pas un fait comptable. Le COR seul ne permet pas de trancher.
+
+---
+
 ## 5. Mon verdict (explicite)
 
 - **POV A** est **juste sur le plan du droit comptable** : une cotisation
