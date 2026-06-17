@@ -791,6 +791,40 @@ def extract_dep_regimes(rows):
     return series
 
 
+# Composantes des ressources du système (Fig 2.11), appariées par sous-chaîne.
+RESSOURCE_COLORS = [
+    ("cotisations", "#1f4e79"),
+    ("contribution d'équilibre", "#2f6fb0"),
+    ("itaf", "#c2185b"),
+    ("subventions", "#e8731c"),
+    ("transferts", "#6aa84f"),
+    ("autres", "#9c27b0"),
+]
+
+_COMPO_STOP = ("lecture", "champ", "source", "note")
+
+
+def extract_composition(rows, scale=100, colors=None):
+    """Une série par ligne libellée d'une figure de composition (chaque ligne
+    une part qui, sommée aux autres, fait 100 %). On garde les lignes dont le
+    libellé n'est pas une mention de bas de figure et qui portent ≥5 points."""
+    ym = _ymap(rows)
+    if not ym:
+        return []
+    colors = colors or []
+    series = []
+    for r in rows:
+        c1 = str(r[1]).strip() if len(r) > 1 and isinstance(r[1], str) else ""
+        if not c1 or c1.lower().startswith(_COMPO_STOP):
+            continue
+        pts = [{"x": ym[i], "y": round(r[i] * scale, 3)} for i in ym
+               if i < len(r) and isinstance(r[i], (int, float))]
+        if len(pts) >= 5:
+            col = next((c for k, c in colors if k in c1.lower()), "#888888")
+            series.append({"label": c1, "color": col, "kind": "solid", "points": pts})
+    return series
+
+
 def build_explorer(multi=None):
     """`multi` : séries multi-millésimes calculées dans build() —
     {indicateur: ({vy: {année: val}} projections, obs {année: val})}."""
@@ -1035,6 +1069,26 @@ def build_explorer(multi=None):
             "COR, rapport 2026 (dépenses par groupe de régimes, hors transferts internes, "
             "scénario de référence).")
 
+    r = _rows("partie 2", "Fig 2.1")
+    if r:
+        obs = _row_label(r, "dépense publique", 100)
+        series = [{"label": "Observé", "color": "#1f2d3d", "kind": "solid",
+                   "points": [{"x": y, "y": obs[y]} for y in sorted(obs)]}] if obs else []
+        add("dep_pub", "Part des retraites dans la dépense publique", "%", " %", series,
+            "La part des dépenses de retraite dans l'ensemble de la dépense publique : "
+            "près d'un quart. C'est ce que pèse le système rapporté à tout ce que dépense "
+            "la puissance publique (et non au seul PIB).",
+            "COR, rapports à la CCSS 2002-2025 ; comptabilité nationale Insee base 2020.")
+
+    r = _rows("partie 2", "Fig 2.11")
+    if r:
+        series = extract_composition(r, 100, RESSOURCE_COLORS)
+        add("struct_ressources", "Structure des ressources du système", "%", " %", series,
+            "D'où vient l'argent du système de retraite : cotisations sociales (les deux "
+            "tiers), impôts et taxes affectés (ITAF, en hausse), contributions et "
+            "subventions d'équilibre de l'État, transferts. Les parts somment à 100 %.",
+            "COR, rapport 2026 (structure des ressources de 2004 à 2025).")
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -1111,7 +1165,7 @@ def build_explorer(multi=None):
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
         {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie"]},
-        {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "dep_regimes"]},
+        {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "dep_regimes", "dep_pub", "struct_ressources"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits
