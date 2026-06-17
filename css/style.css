@@ -204,6 +204,54 @@ a { color: var(--bleu-clair); }
 .takeaway h3 { margin: 0 0 6px; font-size: 1.05rem; }
 .takeaway p { margin: 0; }
 
+/* ---------- Structure des ressources (barre 100 % + cartes) ---------- */
+/* Visuel statique (pur HTML/CSS) : s'affiche sans attendre le JavaScript et
+   reste léger. Une barre empilée à 100 % vaut mieux qu'un long tableau pour
+   faire saisir d'un coup d'où vient l'argent des retraites. */
+.struct {
+  background: var(--fond); border: 1px solid var(--gris-clair);
+  border-radius: var(--rayon); box-shadow: var(--ombre); padding: 20px; margin: 0;
+}
+.struct-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 14px; }
+.struct-head strong { color: var(--bleu); font-size: 1.05rem; }
+.struct-head span { color: var(--gris); font-size: 0.88rem; }
+.struct-bar {
+  display: flex; width: 100%; height: 46px; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--gris-clair);
+}
+.struct-seg {
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 0.9rem; min-width: 0;
+  white-space: nowrap; overflow: hidden;
+}
+.struct-legend {
+  list-style: none; margin: 14px 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px;
+}
+.struct-legend li { display: flex; align-items: baseline; gap: 8px; font-size: 0.9rem; }
+.struct-legend .sw {
+  flex: none; width: 14px; height: 14px; border-radius: 4px; transform: translateY(2px);
+}
+.struct-legend b { color: var(--encre); font-weight: 800; }
+.struct-legend small { color: var(--gris); }
+
+/* Cartes « chiffres-clés » sur fond clair (la grille `.key-figures` du hero est,
+   elle, pensée pour le fond bleu foncé). */
+.facts-grid {
+  list-style: none; padding: 0; margin: 22px 0 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+}
+.fact-card {
+  background: var(--fond); border: 1px solid var(--gris-clair);
+  border-radius: var(--rayon); box-shadow: var(--ombre); padding: 16px 18px;
+}
+.fact-card .fact-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.fact-card .fact-emo { font-size: 1.15rem; }
+.fact-card .fact-name { font-weight: 700; color: var(--encre); }
+.fact-card strong { display: block; font-size: 1.6rem; line-height: 1.1; color: var(--bleu); margin: 6px 0 4px; }
+.fact-card span { display: block; font-size: 0.84rem; color: var(--gris); }
+.facts-note { margin: 14px 0 0; font-size: 0.92rem; color: var(--gris); }
+
 /* ---------- Explorateur d'indicateurs ---------- */
 .exp-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .exp-tab {
@@ -425,6 +473,14 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
   .chart-grid-2 { grid-template-columns: 1fr; }
   .key-figures { grid-template-columns: 1fr 1fr; }
   .key-figures strong { font-size: 1.4rem; }
+
+  /* Structure des ressources : légende et cartes sur une colonne. La barre
+     garde ses segments, mais on masque les libellés trop étroits (cf. seuil
+     géré dans le HTML) ; la légende dessous porte le détail. */
+  .struct { padding: 14px; }
+  .struct-legend { grid-template-columns: 1fr; gap: 6px; }
+  .facts-grid { grid-template-columns: 1fr; }
+  .fact-card strong { font-size: 1.45rem; }
 
   /* Sections plus compactes */
   .band { padding: 40px 0; }

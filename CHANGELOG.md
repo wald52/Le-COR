@@ -7,6 +7,10 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Ajouté
 
+- **Section « D'où vient vraiment l'argent des retraites ? »** : structure des
+  ressources 2025 (barre 100 %), financements croisés (famille, chômage,
+  fiscalisation), mini-graphe de la fiscalisation 2022→2025, et trois lectures du
+  même constat présentées à parité (accordéon). Source : COR, feuille « Tab 2.2 ».
 - **Lien d'évitement** « Aller au contenu » (visible à la première tabulation)
   sur l'accueil et la page légale, pour la navigation au clavier.
 - **Repli `<noscript>`** : message expliquant que les graphiques nécessitent
@@ -25,4 +29,4 @@ Toutes les évolutions notables du site. Format inspiré de
 
 - `js/chart.js` expose désormais la configuration du graphique
   (`container.__cfg`) pour permettre l'export CSV.
-- Cache du service worker porté à `v38` (rafraîchissement des assets modifiés).
+- Cache du service worker porté à `v40` (rafraîchissement des assets modifiés).

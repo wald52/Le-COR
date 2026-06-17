@@ -208,6 +208,22 @@
   }
 
   /* ----------------------------------------------------------------------
+   * Fiscalisation des retraites : le financement par l'impôt (ITAF + CSG)
+   * qui monte, 2022 → 2025. Une seule courbe (montant en Md€).
+   * -------------------------------------------------------------------- */
+  function renderFiscalisation(animate) {
+    const d = (window.COR_SERIES && window.COR_SERIES.fiscalisation) || D.fiscalisation;
+    const series = [{ ...d.realise, kind: "solid", markers: true }];
+    lineChart(document.getElementById("chart-fiscalisation"), {
+      series,
+      x: { min: d.xMin, max: d.xMax },
+      y: { min: d.yMin, max: d.yMax, suffix: " Md€" },
+      ariaLabel: d.subtitle,
+      animate
+    });
+  }
+
+  /* ----------------------------------------------------------------------
    * Explorateur d'indicateurs : un thème + un indicateur = un graphique.
    * -------------------------------------------------------------------- */
   function renderExplorer() {
@@ -475,6 +491,7 @@
     { id: "chart-prod", draw: () => renderProductivite() },
     { id: "chart-fecondite", draw: renderFecondite },
     { id: "chart-prod-reel", draw: renderProductiviteReel },
+    { id: "chart-fiscalisation", draw: renderFiscalisation },
     { id: "chart-international", draw: () => renderInternational() }
   ];
   const chartsDrawn = new Set();

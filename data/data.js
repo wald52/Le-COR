@@ -275,6 +275,37 @@ window.COR_DATA = {
   },
 
   /* =========================================================================
+   * 4 bis. FISCALISATION DES RETRAITES — la part « impôts » qui monte
+   *    Impôts et taxes affectés + CSG (ITAF) finançant les retraites, en Md€.
+   *    Sert à illustrer la bascule progressive des cotisations vers l'impôt.
+   *    Valeurs : feuille « Tab 2.2 » des rapports COR 2023 à 2026 (millésimes
+   *    de données 2022 → 2025).
+   * ====================================================================== */
+  fiscalisation: {
+    title: "La fiscalisation des retraites monte",
+    subtitle: "Financement fiscal (impôts, taxes affectés et CSG), en Md€",
+    yLabel: "Md€",
+    yMin: 45,
+    yMax: 70,
+    xMin: 2022,
+    xMax: 2025,
+    source:
+      "COR, rapports annuels 2023 à 2026 — feuille « Tab 2.2 » (ITAF et CSG, millésimes de données 2022 à 2025).",
+    realise: {
+      label: "Impôts et taxes affectés + CSG",
+      color: "#7b1fa2",
+      kind: "solid",
+      endNote: "≈65 Md€",
+      points: [
+        { x: 2022, y: 52.2 },
+        { x: 2023, y: 54.5 },
+        { x: 2024, y: 62.2 },
+        { x: 2025, y: 64.7 }
+      ]
+    }
+  },
+
+  /* =========================================================================
    * 5. TABLEAU SYNTHÈSE DES HYPOTHÈSES DU SCÉNARIO DE RÉFÉRENCE
    * ====================================================================== */
   hypothesesTable: {

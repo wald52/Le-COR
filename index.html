@@ -94,6 +94,7 @@
     <nav id="nav-menu" class="nav-menu" aria-label="Navigation principale">
       <a class="nav-link" href="#depenses">Le graphique clé</a>
       <a class="nav-link" href="#deficit">Le déficit</a>
+      <a class="nav-link" href="#financement">Financement</a>
       <a class="nav-link" href="#productivite">Le revirement</a>
       <a class="nav-link" href="#niveau">Niveau de vie</a>
       <a class="nav-link" href="#realite">Réalité</a>
@@ -233,10 +234,146 @@
       </div>
     </section>
 
-    <!-- 3. LE REVIREMENT (PRODUCTIVITÉ) -->
-    <section id="productivite" class="band">
+    <!-- 3. FINANCEMENT : D'OÙ VIENT L'ARGENT -->
+    <section id="financement" class="band">
       <div class="container">
-        <h2>3 · L'hypothèse qui fait tout basculer&nbsp;: la productivité</h2>
+        <h2>3 · D'où vient vraiment l'argent des retraites&nbsp;?</h2>
+        <p class="section-intro">
+          On imagine souvent que les pensions sont payées par les seules
+          <strong>cotisations</strong> prélevées sur les salaires. La réalité, lisible dans les
+          tableaux du COR&nbsp;: à peine <strong>2&nbsp;€ sur 3</strong> viennent des cotisations
+          directes. Le reste — environ <strong>145&nbsp;Md€</strong> — vient d'ailleurs.
+        </p>
+
+        <div class="struct">
+          <div class="struct-head">
+            <strong>À peine 2&nbsp;€ sur 3 viennent des cotisations directes</strong>
+            <span>Ressources du système de retraite en 2025 — 422&nbsp;Md€ au total</span>
+          </div>
+          <div class="struct-bar" role="img"
+               aria-label="Répartition des ressources des retraites en 2025 : cotisations directes 65,6 %, financement fiscal 15,3 %, contributions et subventions d'équilibre 13,5 %, transferts d'autres branches et produits financiers 5,6 %.">
+            <div class="struct-seg" style="width:65.6%;background:#1f4e79">66&nbsp;%</div>
+            <div class="struct-seg" style="width:15.3%;background:#7b1fa2">15&nbsp;%</div>
+            <div class="struct-seg" style="width:13.5%;background:#2f6fb0">13&nbsp;%</div>
+            <div class="struct-seg" style="width:5.6%;background:#ff7f0e"></div>
+          </div>
+          <ul class="struct-legend">
+            <li><span class="sw" style="background:#1f4e79"></span><span><b>Cotisations directes</b> — 65,6&nbsp;% <small>(277&nbsp;Md€)</small></span></li>
+            <li><span class="sw" style="background:#7b1fa2"></span><span><b>Financement fiscal</b> (impôts, taxes, CSG) — 15,3&nbsp;% <small>(65&nbsp;Md€)</small></span></li>
+            <li><span class="sw" style="background:#2f6fb0"></span><span><b>Contributions &amp; subventions d'équilibre</b> (État‑employeur, régimes spéciaux) — 13,5&nbsp;% <small>(57&nbsp;Md€)</small></span></li>
+            <li><span class="sw" style="background:#ff7f0e"></span><span><b>Transferts d'autres branches</b> (famille, chômage) + produits financiers — 5,6&nbsp;% <small>(23&nbsp;Md€)</small></span></li>
+          </ul>
+          <p class="chart-source">Source&nbsp;: COR, rapport annuel juin 2026 — feuille « Tab 2.2 » (structure des ressources, données 2025). Regroupements opérés pour la lisibilité.</p>
+        </div>
+
+        <p class="section-intro" style="margin-top:32px">
+          Ces financements « croisés » surprennent souvent. Trois exemples concrets&nbsp;:
+        </p>
+        <ul class="facts-grid">
+          <li class="fact-card">
+            <div class="fact-top"><span class="fact-emo">👪</span><span class="fact-name">Famille (CNAF)</span></div>
+            <strong>11,2&nbsp;Md€</strong>
+            <span>Trimestres validés pour les parents au foyer et majoration de pension pour 3 enfants et plus.</span>
+          </li>
+          <li class="fact-card">
+            <div class="fact-top"><span class="fact-emo">🧑‍💼</span><span class="fact-name">Chômage (Unédic)</span></div>
+            <strong>3,9&nbsp;Md€</strong>
+            <span>Un chômeur indemnisé continue d'acquérir des points de retraite complémentaire&nbsp;: l'assurance chômage en paie le coût.</span>
+          </li>
+          <li class="fact-card">
+            <div class="fact-top"><span class="fact-emo">🧾</span><span class="fact-name">Fiscalisation</span></div>
+            <strong>64,7&nbsp;Md€</strong>
+            <span>Impôts et taxes affectés + CSG&nbsp;: TVA, forfait social, taxe sur les salaires, compensations d'allègements…</span>
+          </li>
+        </ul>
+        <p class="facts-note">
+          À garder en tête&nbsp;: <strong>retirer ces flux ne supprime pas le besoin de
+          financement, il le déplace.</strong> Sans eux, les retraites seraient plus
+          déficitaires, mais la branche famille ou l'Unédic seraient d'autant moins dans le
+          rouge&nbsp;: le déficit public global, lui, est inchangé.
+        </p>
+
+        <figure class="chart-card" style="margin-top:32px">
+          <figcaption class="chart-title">
+            <strong>Une tendance de fond&nbsp;: la part de l'impôt augmente</strong>
+            <span>Financement fiscal des retraites (impôts, taxes affectés et CSG), en Md€</span>
+          </figcaption>
+          <div id="chart-fiscalisation" class="chart-host"></div>
+          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2023–2026 — feuille « Tab 2.2 » (ITAF et CSG, données 2022 à 2025).</p>
+        </figure>
+
+        <p class="section-intro" style="margin-top:32px">
+          Que conclure de ces chiffres&nbsp;? Les <strong>mêmes données officielles</strong>
+          autorisent des lectures opposées. Voici les trois principales, présentées
+          <strong>sans trancher</strong> — dépliez celle qui vous intéresse.
+        </p>
+        <div class="glossary">
+          <details>
+            <summary>A · Lecture comptable et légale (celle du COR)</summary>
+            <p>
+              Une cotisation d'employeur public est une <strong>ressource normale</strong> (un
+              salaire différé des fonctionnaires)&nbsp;; les transferts financent des droits
+              créés ailleurs (famille, chômage). Sous cette convention, le système est
+              <strong>quasi à l'équilibre</strong> en 2025 (de l'ordre de −1 à −5&nbsp;Md€)&nbsp;:
+              le vrai enjeu est le <strong>long terme</strong> (solde projeté à −2,4&nbsp;% du PIB
+              en 2070).
+            </p>
+          </details>
+          <details>
+            <summary>B · Lecture « avant subventions d'équilibre » (voix critiques)</summary>
+            <p>
+              On reclasse en <strong>« comblement de déficit »</strong> tout ce qui n'est pas une
+              cotisation au taux de droit commun. La « contribution réelle des retraites aux
+              déficits publics » atteindrait alors ≈ <strong>−87&nbsp;Md€ en 2025 (~2,9&nbsp;% du
+              PIB)</strong>&nbsp;; l'équilibre affiché ne serait qu'un effet de présentation.
+              Ordres de grandeur&nbsp;:
+            </p>
+            <div class="table-wrap" style="margin:0 14px 14px">
+              <table>
+                <thead><tr><th scope="col">Élément reclassé (2025)</th><th scope="col" style="text-align:right">Md€</th></tr></thead>
+                <tbody>
+                  <tr><td>Contributions d'équilibre de l'État (fonctionnaires)</td><td style="text-align:right">~41</td></tr>
+                  <tr><td>CNRACL (collectivités, hôpitaux)</td><td style="text-align:right">~10</td></tr>
+                  <tr><td>Régimes spéciaux</td><td style="text-align:right">~8</td></tr>
+                  <tr><td>Opérateurs de l'État (universités, recherche)</td><td style="text-align:right">~5</td></tr>
+                  <tr><td>Exonérations « ciblées » compensées</td><td style="text-align:right">~5</td></tr>
+                  <tr><td>Prélèvements sur les autres caisses (famille, chômage, maladie)</td><td style="text-align:right">~17</td></tr>
+                  <tr><th scope="row">≈ Total</th><td style="text-align:right"><strong>≈ 87</strong></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+          <details>
+            <summary>C · Lecture « fiscalisation / soutenabilité » (médiane)</summary>
+            <p>
+              Peu importe l'étiquette « déficit »&nbsp;: le système est équilibré <em>grâce à</em>
+              un <strong>appui public massif et croissant</strong> (~28‑29&nbsp;% des ressources hors
+              cotisations directes, de plus en plus fiscal). L'enjeu central est alors la
+              <strong>transparence</strong> et la <strong>soutenabilité</strong> de ce mode de
+              financement, plutôt que l'existence d'un « trou caché ».
+            </p>
+          </details>
+        </div>
+
+        <div class="takeaway">
+          <h3>Ce qu'il faut retenir</h3>
+          <p>
+            <strong>Oui</strong>, les retraites reposent largement sur des financements publics
+            et croisés&nbsp;: c'est écrit dans les tableaux du COR. <strong>Non</strong>, cela ne
+            prouve pas mécaniquement un « déficit caché de 87&nbsp;Md€ ». Tout dépend de ce qu'on
+            décide d'appeler <em>cotisation légitime</em> plutôt que <em>subvention</em> — et ce
+            choix est <strong>politique</strong>, pas seulement comptable. Le fait incontestable,
+            lui, est la <strong>dépendance forte et croissante</strong> du système aux
+            financements publics, et sa <strong>fiscalisation</strong>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. LE REVIREMENT (PRODUCTIVITÉ) -->
+    <section id="productivite" class="band alt">
+      <div class="container">
+        <h2>4 · L'hypothèse qui fait tout basculer&nbsp;: la productivité</h2>
         <p class="section-intro">
           La <strong>croissance de la productivité</strong> détermine la croissance des salaires,
           donc des cotisations qui financent les retraites. Le COR a longtemps testé
@@ -264,10 +401,10 @@
       </div>
     </section>
 
-    <!-- 4. NIVEAU DE VIE -->
-    <section id="niveau" class="band alt">
+    <!-- 5. NIVEAU DE VIE -->
+    <section id="niveau" class="band">
       <div class="container">
-        <h2>4 · Les retraités vont-ils décrocher&nbsp;?</h2>
+        <h2>5 · Les retraités vont-ils décrocher&nbsp;?</h2>
         <p class="section-intro">
           Un chiffre clé et peu connu&nbsp;: le <strong>niveau de vie moyen des retraités</strong>
           comparé à celui de l'ensemble de la population. À <strong>100 %</strong>, les retraités
@@ -296,10 +433,10 @@
       </div>
     </section>
 
-    <!-- 5. RÉALITÉ -->
-    <section id="realite" class="band">
+    <!-- 6. RÉALITÉ -->
+    <section id="realite" class="band alt">
       <div class="container">
-        <h2>5 · Les prévisions se sont-elles réalisées&nbsp;?</h2>
+        <h2>6 · Les prévisions se sont-elles réalisées&nbsp;?</h2>
         <p class="section-intro">
           Comparons les hypothèses du COR à ce qui s'est <strong>vraiment</strong> passé. Deux
           exemples parlants&nbsp;: la fécondité et la productivité.
@@ -341,10 +478,10 @@
       </div>
     </section>
 
-    <!-- 4. TABLEAU HYPOTHÈSES -->
-    <section id="hypotheses" class="band alt">
+    <!-- 7. TABLEAU HYPOTHÈSES -->
+    <section id="hypotheses" class="band">
       <div class="container">
-        <h2>6 · Le tableau de bord des hypothèses</h2>
+        <h2>7 · Le tableau de bord des hypothèses</h2>
         <p class="section-intro">
           Les principales hypothèses du <strong>scénario de référence</strong>, rapport après rapport.
         </p>
@@ -353,10 +490,10 @@
       </div>
     </section>
 
-    <!-- 7. EXPLORATEUR D'INDICATEURS -->
-    <section id="explorer" class="band">
+    <!-- 8. EXPLORATEUR D'INDICATEURS -->
+    <section id="explorer" class="band alt">
       <div class="container">
-        <h2>7 · Explorez tous les indicateurs</h2>
+        <h2>8 · Explorez tous les indicateurs</h2>
         <p class="section-intro">
           Plutôt qu'une longue liste de graphiques, choisissez un <strong>thème</strong> puis un
           <strong>indicateur</strong>&nbsp;: le graphique se met à jour. Tous viennent des fichiers
@@ -377,10 +514,10 @@
       </div>
     </section>
 
-    <!-- 8. COMPARAISON INTERNATIONALE -->
-    <section id="monde" class="band alt">
+    <!-- 9. COMPARAISON INTERNATIONALE -->
+    <section id="monde" class="band">
       <div class="container">
-        <h2>8 · La France dans le monde</h2>
+        <h2>9 · La France dans le monde</h2>
         <p class="section-intro">
           La France dépense-t-elle « trop » pour ses retraites&nbsp;? Voici la part des
           dépenses de retraite dans le PIB en 2021, pays par pays — en distinguant ce qui
@@ -408,10 +545,10 @@
       </div>
     </section>
 
-    <!-- 9. SIMULATEUR DES 3 LEVIERS -->
-    <section id="simulateur" class="band">
+    <!-- 10. SIMULATEUR DES 3 LEVIERS -->
+    <section id="simulateur" class="band alt">
       <div class="container">
-        <h2>9 · À vous de jouer&nbsp;: équilibrez le système</h2>
+        <h2>10 · À vous de jouer&nbsp;: équilibrez le système</h2>
         <p class="section-intro">
           Pour combler le déficit projeté en <strong>2070</strong>, il existe trois leviers. Le COR
           calcule combien il faudrait de <em>chacun, utilisé seul</em>. À vous de choisir
@@ -452,10 +589,10 @@
       </div>
     </section>
 
-    <!-- 10. MÉTHODE & SOURCES -->
+    <!-- 11. MÉTHODE & SOURCES -->
     <section id="methode" class="band">
       <div class="container">
-        <h2>10 · Méthode &amp; sources</h2>
+        <h2>11 · Méthode &amp; sources</h2>
         <div class="method">
           <h3>Comment lire ces graphiques&nbsp;?</h3>
           <ul>
