@@ -269,6 +269,7 @@
           }),
           x: { min: ind.xMin, max: ind.xMax, label: ind.xLabel || "Année" },
           y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
+          categories: ind.categories,
           ariaLabel: ind.label,
           animate
         });

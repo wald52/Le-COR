@@ -1071,6 +1071,55 @@ def extract_country_grouped(rows, scale=1.0, colors=None):
     return cats, series
 
 
+# Profil par âge (Fig 1.8) : courbe catégorielle. Catégories = tranches d'âge,
+# une série par (sexe × année). Couleur par année, plein = femmes, tireté = hommes.
+PROFILE_YEAR_COLORS = {1975: "#9aa7b4", 2024: "#2f6fb0", 2025: "#2f6fb0",
+                       2050: "#e8731c", 2070: "#c2185b"}
+
+
+def _age_key(s):
+    """Normalise un libellé de tranche d'âge (« 15-19 ans », « 15-19 » → « 15-19 »)."""
+    return str(s).replace("ans", "").replace("\xa0", " ").strip()
+
+
+def extract_age_profile(rows, scale=1.0):
+    ycols = {}
+    for r in rows[:6]:
+        ic = [(i, c) for i, c in enumerate(r) if isinstance(c, int) and 1900 <= c <= 2100]
+        if len(ic) >= 2:
+            ycols = {i: c for i, c in ic}
+            break
+    if not ycols:
+        return [], []
+    cats, catidx, data, gender = [], {}, {}, None
+    for r in rows:
+        g = str(r[0]).strip() if len(r) > 0 and isinstance(r[0], str) else ""
+        if g in ("Femmes", "Hommes"):
+            gender = g
+        b = str(r[1]).strip() if len(r) > 1 and isinstance(r[1], str) else ""
+        if not gender or not b or b.lower().startswith(("année", "champ", "source", "note", "lecture")):
+            continue
+        vals = {yr: r[i] for i, yr in ycols.items() if i < len(r) and isinstance(r[i], (int, float))}
+        if not vals:
+            continue
+        key = _age_key(b)
+        if key not in catidx:
+            catidx[key] = len(cats)
+            cats.append(key)
+        ci = catidx[key]
+        for yr, v in vals.items():
+            data.setdefault((gender, yr), {})[ci] = round(v * scale, 3)
+    series = []
+    for yr in sorted({yr for (_, yr) in data}):
+        for gender, kind in (("Femmes", "solid"), ("Hommes", "dash")):
+            d = data.get((gender, yr))
+            if not d:
+                continue
+            series.append({"label": f"{gender} {yr}", "color": PROFILE_YEAR_COLORS.get(yr, "#888888"),
+                           "kind": kind, "points": [{"x": i, "y": d[i]} for i in sorted(d)]})
+    return cats, series
+
+
 # Taux d'emploi des seniors (Fig 4.1) : trois tranches quinquennales, chacune
 # ventilée Ensemble/Femmes/Hommes. Une teinte par tranche, intensité par sexe.
 AGE_BAND_COLORS = {
@@ -1158,12 +1207,13 @@ def build_explorer(multi=None):
             return None
         rec = {"label": label, "unit": unit, "suffix": suffix, "xLabel": xLabel,
                "desc": desc, "source": source, "series": series}
+        if categories is not None:
+            rec["categories"] = categories
         if chartType == "bar":
             # Axe catégoriel : pas de bornes x ; les bornes y sont laissées au
             # moteur (qui inclut les cumuls empilés) sauf si on les force.
             rec["chartType"] = "bar"
             rec["barMode"] = barMode or "grouped"
-            rec["categories"] = categories or []
             if waterfall:
                 rec["waterfall"] = True
             if yMin is not None:
@@ -1171,6 +1221,7 @@ def build_explorer(multi=None):
             if yMax is not None:
                 rec["yMax"] = yMax
         else:
+            # Courbe : bornes x/y. En catégoriel, x = index 0..n−1.
             rec.update(_bounds(series))
         ind[iid] = rec
         return iid
@@ -1571,6 +1622,17 @@ def build_explorer(multi=None):
             "COR, rapport 2026 (taux d'emploi par âge, comparaison internationale).",
             chartType="bar", barMode="grouped", categories=cats)
 
+    r = _rows("partie 1", "Fig 1.8")
+    if r:
+        cats, series = extract_age_profile(r, 1.0)
+        add("profil_age", "Taux d'activité par âge et sexe", "%", " %", series,
+            "Le profil du taux d'activité selon l'âge, par sexe, à différentes dates "
+            "(1975 → 2070). On lit la déformation des carrières : entrée plus tardive, "
+            "et surtout activité bien plus forte après 55 ans dans les projections. "
+            "Trait plein = femmes, tireté = hommes.",
+            "COR, rapport 2026 (taux d'activité par âge en 1975, 2024, 2050 et 2070).",
+            xLabel="Tranche d'âge", categories=cats)
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -1645,7 +1707,7 @@ def build_explorer(multi=None):
 
     themes = [
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
-        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active", "emploi_seniors", "duree_carriere", "age_moyen_depart"]},
+        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active", "emploi_seniors", "profil_age", "duree_carriere", "age_moyen_depart"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie", "taux_rempl", "taux_cotisation", "tri", "duree_retraite", "ecart_genre", "assurance_genre", "age_depart_genre", "pauvrete", "intensite_pauvrete"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "solde_regimes", "dep_regimes", "dep_pub", "struct_ressources"]},
         {"name": "Comparaisons & structures", "indicators": ["composition_revenu", "emploi_pays"]},

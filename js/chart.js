@@ -183,6 +183,9 @@
     const cw = Math.round(container.getBoundingClientRect().width) || 760;
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
+    // Axe x catégoriel (profils par âge…) : les graduations sont les libellés
+    // de `categories` et non des années ; le tooltip indexe par catégorie.
+    const cats = cfg.categories || null;
 
     // Calcul anticipé des bornes Y et de la hauteur de tracé (ne dépendent pas
     // de la marge droite) pour décider si chaque étiquette peut tenir à
@@ -329,14 +332,16 @@
     // extrême reste ainsi au-dessus de l'abscisse) ; la borne basse de
     // l'échelle principale reste matérialisée par sa ligne de grille.
     const xAxisY = M.top + plotH + bandBot;
-    const xTicks = niceTicks(xMin, xMax, narrow ? 4 : 6).filter(t => t >= xMin && t <= xMax);
+    const xTicks = cats
+      ? cats.map((_, i) => i)
+      : niceTicks(xMin, xMax, narrow ? 4 : 6).filter(t => t >= xMin && t <= xMax);
     xTicks.forEach(t => {
       const x = sx(t);
       svg.appendChild(el("line", {
         x1: x, y1: xAxisY, x2: x, y2: xAxisY + 5, class: "chart-tick"
       }));
       const lbl = el("text", { x: x, y: xAxisY + 22, class: "chart-axis-label", "text-anchor": "middle" });
-      lbl.textContent = String(t).replace(/\s/g, "");
+      lbl.textContent = cats ? String(cats[t]) : String(t).replace(/\s/g, "");
       svg.appendChild(lbl);
     });
 
@@ -679,12 +684,13 @@
       const rect = svg.getBoundingClientRect();
       const px = (evt.clientX - rect.left) / rect.width * W;
       const xv = xMin + ((px - M.left) / plotW) * (xMax - xMin);
-      const xr = Math.round(xv);
+      let xr = Math.round(xv);
+      if (cats) xr = Math.max(0, Math.min(cats.length - 1, xr));
       focusLine.setAttribute("x1", sx(xr));
       focusLine.setAttribute("x2", sx(xr));
       focusLine.setAttribute("opacity", 1);
 
-      let rows = `<div class="tt-year">${xr}</div>`;
+      let rows = `<div class="tt-year">${cats ? cats[xr] : xr}</div>`;
       let any = false;
       cfg.series.forEach(s => {
         const v = valueAt(s, xr);
