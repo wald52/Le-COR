@@ -379,10 +379,10 @@
     });
 
     // --- Axe Y secondaire (à droite) ---
-    // Graduations et étiquettes à droite du cadre, teintées de la couleur de
-    // la série concernée pour signaler visuellement « cette courbe se lit sur
-    // l'échelle de droite ». Pas de lignes de grille (l'échelle gauche les
-    // porte déjà) pour éviter d'encombrer le tracé.
+    // Graduations (crans) et étiquettes à droite du cadre, teintées de la
+    // couleur de la série concernée pour signaler « cette courbe se lit sur
+    // l'échelle de droite ». Pas de ligne d'axe verticale ni de grille (l'axe
+    // gauche n'en a pas non plus) : on garde une lecture homogène, légère.
     if (hasY2) {
       const y2Color = (rightSeries[0] && rightSeries[0].color) || "#5b6f93";
       niceTicks(y2Min, y2Max, 5).forEach(t => {
@@ -398,10 +398,6 @@
         lbl.textContent = String(Math.round(t * 10) / 10).replace(".", ",") + y2Suffix;
         svg.appendChild(lbl);
       });
-      svg.appendChild(el("line", {
-        x1: M.left + plotW, y1: M.top, x2: M.left + plotW, y2: M.top + plotH,
-        class: "chart-axis", style: `stroke:${y2Color}`
-      }));
     }
 
     // --- Axe X ---
