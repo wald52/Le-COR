@@ -1046,7 +1046,7 @@
       seriesNodes.forEach(sn => {
         const item = document.createElement("button");
         item.type = "button";
-        item.className = "legend-item is-long";
+        item.className = "legend-item" + (sn.cfg.label.length > 16 ? " is-long" : "");
         item.title = sn.cfg.label;
         item.innerHTML = swatchHTML(sn.cfg.color, "bar") + `<span>${sn.cfg.label}</span>`;
         const dim = on => { seriesNodes.forEach(o => { o.node.style.opacity = on && o !== sn ? 0.18 : 1; }); };
