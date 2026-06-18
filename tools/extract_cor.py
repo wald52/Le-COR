@@ -994,6 +994,78 @@ def extract_composition(rows, scale=100, colors=None):
     return series
 
 
+# Taux d'emploi des seniors (Fig 4.1) : trois tranches quinquennales, chacune
+# ventilée Ensemble/Femmes/Hommes. Une teinte par tranche, intensité par sexe.
+AGE_BAND_COLORS = {
+    "55-59": {"Ensemble": "#1f4e79", "Femmes": "#3d7bbf", "Hommes": "#8fb8e0"},
+    "60-64": {"Ensemble": "#b34700", "Femmes": "#e8731c", "Hommes": "#f4a96b"},
+    "65-69": {"Ensemble": "#2e6b1f", "Femmes": "#6aa84f", "Hommes": "#a6c98f"},
+}
+
+
+def extract_age_bands(rows, scale=100):
+    """Une série continue par couple (tranche d'âge × sexe) d'une figure en blocs.
+
+    Chaque tranche apparaît en deux blocs (observé puis projeté), chacun introduit
+    par une ligne d'en-tête de tranche (libellé contenant « ans », ex. « 55-59 ans »)
+    et sa propre ligne d'années, suivies des lignes Ensemble / Femmes / Hommes. On
+    fusionne les deux blocs en une seule courbe par couple (l'observé l'emporte sur
+    les années en recouvrement). La ligne de titre (qui contient aussi « ans ») est
+    sans effet : elle est écrasée avant la première ligne de données."""
+    if rows is None:
+        return []
+    acc, order, band, ym = {}, [], None, None
+    for r in rows:
+        bh = next((c.strip() for c in r if isinstance(c, str)
+                   and "ans" in c.lower() and any(ch.isdigit() for ch in c)), None)
+        if bh:
+            band, ym = bh.split()[0], None  # « 55-59 ans » → « 55-59 »
+            continue
+        yc = [(i, c) for i, c in enumerate(r) if isinstance(c, int) and 1950 <= c <= 2100]
+        if len(yc) >= 3:
+            ym = {i: c for i, c in yc}
+            continue
+        if not (band and ym):
+            continue
+        lab = str(r[1]).strip() if len(r) > 1 and isinstance(r[1], str) else ""
+        if lab in ("Ensemble", "Femmes", "Hommes"):
+            key = (band, lab)
+            d = acc.get(key)
+            if d is None:
+                d = {}
+                acc[key], _ = d, order.append(key)
+            for i, y in ym.items():
+                if i < len(r) and isinstance(r[i], (int, float)) and y not in d:
+                    d[y] = round(r[i] * scale, 3)
+    series = []
+    for band, lab in order:
+        d = acc[(band, lab)]
+        if d:
+            col = AGE_BAND_COLORS.get(band, {}).get(lab, "#888888")
+            series.append({"label": f"{band} ans — {lab}", "color": col, "kind": "solid",
+                           "points": [{"x": x, "y": d[x]} for x in sorted(d)]})
+    return series
+
+
+def gendered_cohort(path, sheet_keys, pairs, scale=1.0, lo=None, hi=None,
+                    floor=1900, exclude=()):
+    """Deux courbes (Femmes/Hommes) d'une figure à en-tête d'années horizontal.
+
+    `pairs` = [(label, couleur, [clés-de-ligne…]), …] ; les clés d'un même couple
+    sont fusionnées (observé + projeté). Filtre de plausibilité optionnel."""
+    out = []
+    for label, color, keys in pairs:
+        s = {}
+        for k in keys:
+            s.update(pick_cohort_row(path, sheet_keys, (k,), scale, floor, exclude=exclude))
+        if lo is not None:
+            s = _plausible(s, lo, hi)
+        if s:
+            out.append({"label": label, "color": color, "kind": "solid",
+                        "points": [{"x": x, "y": s[x]} for x in sorted(s)]})
+    return out
+
+
 def build_explorer(multi=None):
     """`multi` : séries multi-millésimes calculées dans build() —
     {indicateur: ({vy: {année: val}} projections, obs {année: val})}."""
@@ -1291,13 +1363,15 @@ def build_explorer(multi=None):
             "projeté). Il remonte sous l'effet des réformes successives.",
             "COR, rapports 2023-2026 (âge moyen de départ par génération).",
             xLabel="Génération")
-    if multi.get("emploi_seniors"):
-        add("emploi_seniors", "Taux d'emploi des 55-59 ans", "%", " %",
-            overlay_vintages(multi["emploi_seniors"]),
-            "Part des 55-59 ans en emploi : un déterminant majeur de l'équilibre du système "
-            "(plus de seniors en emploi = plus de cotisants, moins de retraités précoces). "
-            "Il progresse fortement depuis les années 2000.",
-            "COR, rapports 2020-2026 (taux d'emploi des 55-59 ans, ensemble).")
+    r = _rows("partie 4", "Fig 4.1")
+    if r:
+        add("emploi_seniors", "Taux d'emploi des seniors par tranche d'âge", "%", " %",
+            extract_age_bands(r, 100),
+            "Part des seniors en emploi, par tranche quinquennale (55-59, 60-64, 65-69) et "
+            "par sexe, depuis 1975. Un déterminant majeur de l'équilibre du système : plus "
+            "de seniors en emploi, c'est plus de cotisants et moins de retraités précoces. "
+            "Le taux progresse fortement depuis les années 2000, surtout chez les 55-59 ans.",
+            "COR, rapport 2026 (taux d'emploi des 55-64 ans par tranche d'âge quinquennal).")
     if multi.get("pauvrete"):
         add("pauvrete", "Taux de pauvreté des retraités", "%", " %",
             overlay_vintages(multi["pauvrete"]),
@@ -1320,6 +1394,65 @@ def build_explorer(multi=None):
             "plus de 85 % attendu — sans jamais se refermer.",
             "COR, rapport 2026 (montant brut moyen de pension totale y compris majorations, "
             "femmes rapporté aux hommes, observé puis projeté).")
+
+    # --- Parties 3 & 4 (suite) : nouveaux indicateurs récurrents
+    if multi.get("tri"):
+        add("tri", "Taux de rendement interne du système", "%", " %",
+            overlay_vintages(multi["tri"]),
+            "Ce que « rapporte » une carrière de cotisations : le taux qui égalise cotisations "
+            "versées et pensions perçues, cas-type du salarié non-cadre du privé. Un indicateur "
+            "officiel de suivi du COR, qui décline de génération en génération.",
+            "COR, rapports 2016-2026 (taux de rendement interne net, cas-type non-cadre du "
+            "privé, scénario de référence).", xLabel="Génération")
+    if multi.get("taux_cotisation"):
+        add("taux_cotisation", "Taux de cotisation retraite (cas-type)", "%", " %",
+            overlay_vintages(multi["taux_cotisation"]),
+            "Taux de cotisation retraite (tous régimes) appliqué au cas-type du salarié "
+            "non-cadre du privé, par génération. Il mesure l'effort contributif qui finance "
+            "les pensions.",
+            "COR, rapports 2016-2026 (taux de cotisation retraite, tous régimes, cas-type "
+            "non-cadre du privé).", xLabel="Génération")
+    if multi.get("intensite_pauvrete"):
+        add("intensite_pauvrete", "Intensité de la pauvreté des retraités", "%", " %",
+            overlay_vintages(multi["intensite_pauvrete"]),
+            "Quand un retraité est pauvre, à quel point l'est-il : écart relatif entre son "
+            "niveau de vie et le seuil de pauvreté. Complète le taux de pauvreté, qui n'en "
+            "compte que la fréquence.",
+            "COR / INSEE-ERFS, rapports 2016-2026 (intensité de la pauvreté, ensemble des "
+            "retraités).")
+
+    p3 = first_file(R26, "partie 3")
+    series = gendered_cohort(p3, ("durée moyenne d'assurance", "femmes"),
+                             [("Femmes", "#c2185b", ["femmes"]),
+                              ("Hommes", "#1f4e79", ["hommes"])],
+                             scale=1, lo=100, hi=200)
+    add("assurance_genre", "Durée d'assurance validée femmes / hommes", "trimestres",
+        " trim.", series,
+        "Nombre de trimestres validés en moyenne, par sexe et par génération. L'écart se "
+        "comble peu à peu — carrières féminines plus longues — mais reste sensible.",
+        "COR, rapport 2026 (durée moyenne d'assurance des femmes et des hommes, par "
+        "génération).", xLabel="Génération")
+
+    series = gendered_cohort(p3, ("âge moyen de départ", "femmes"),
+                             [("Femmes", "#c2185b", ["femmes (observé)", "femmes (projeté)"]),
+                              ("Hommes", "#1f4e79", ["hommes (observé)", "hommes (projeté)"])],
+                             scale=1, lo=55, hi=70)
+    add("age_depart_genre", "Âge moyen de départ femmes / hommes", "ans", " ans", series,
+        "Âge moyen effectif de départ à la retraite, par sexe et par génération (observé puis "
+        "projeté). Les femmes partent en moyenne un peu plus tard, l'écart se resserrant avec "
+        "les réformes.",
+        "COR, rapport 2026 (âge moyen de départ des femmes et des hommes, par génération).",
+        xLabel="Génération")
+
+    r = _rows("partie 2", "Fig 2.15")
+    if r:
+        add("solde_regimes", "Solde projeté par groupe de régimes", "% du PIB", " %",
+            extract_dep_regimes(r),
+            "Le solde (ressources − dépenses) projeté, décomposé par groupe de régimes, hors "
+            "transferts internes. Montre lesquels sont à l'équilibre et lesquels pèsent sur le "
+            "déficit d'ensemble.",
+            "COR, rapport 2026 (solde projeté par groupe de régimes, hors transferts internes, "
+            "scénario de référence).")
 
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
@@ -1396,8 +1529,8 @@ def build_explorer(multi=None):
     themes = [
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
         {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active", "emploi_seniors", "duree_carriere", "age_moyen_depart"]},
-        {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie", "taux_rempl", "duree_retraite", "ecart_genre", "pauvrete"]},
-        {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "dep_regimes", "dep_pub", "struct_ressources"]},
+        {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie", "taux_rempl", "taux_cotisation", "tri", "duree_retraite", "ecart_genre", "assurance_genre", "age_depart_genre", "pauvrete", "intensite_pauvrete"]},
+        {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "solde_regimes", "dep_regimes", "dep_pub", "struct_ressources"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits
@@ -1841,6 +1974,7 @@ def build():
 
     taux_rempl_projs, duree_ret_projs, duree_car_projs = {}, {}, {}
     age_dep_projs, pauvrete_projs = {}, {}
+    tri_projs, taux_cot_projs, intensite_projs = {}, {}, {}
     for vy, dpat in ALL_VINT:
         keys = ("taux de remplacement", "non-cadre")
         s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
@@ -1880,22 +2014,35 @@ def build():
         if s:
             pauvrete_projs[vy] = s
 
-    emploi_sen_projs = {}
-    for vy, dpat in ALL_VINT[4:]:  # taux d'emploi des seniors publié depuis 2020
-        # série chrono. par tranche quinquennale (≠ coupes par année, ≠ ventilation F/H)
-        keys, exc = ("taux d'emploi", "55-64 ans", "quinquennal"), ("femmes",)
-        s = pick_cohort_row(file_with_sheet(dpat, keys, exc), keys, ("ensemble",),
-                            100, 1970, exclude=exc)
-        s = _plausible(s, 20, 90)
+        keys = ("taux de rendement interne", "non-cadre")
+        s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
+                            ("sc. réf", "sc. ref", "scénario de référence", "référence"),
+                            100, 1900)
+        s = _plausible(s, 0, 10)
         if s:
-            emploi_sen_projs[vy] = s
+            tri_projs[vy] = s
+
+        keys = ("taux de cotisation", "retraite")
+        s = pick_cohort_row(file_with_sheet(dpat, keys), keys, ("tous régimes",), 100, 1900)
+        s = _plausible(s, 10, 40)
+        if s:
+            taux_cot_projs[vy] = s
+
+        keys = ("intensité de la pauvreté",)
+        s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
+                            ("ensemble des retraités",), 100, 1990)
+        s = _plausible(s, 5, 25)
+        if s:
+            intensite_projs[vy] = s
 
     print(f"✓ taux de remplacement : {len(taux_rempl_projs)} millésimes")
     print(f"✓ durée de retraite : {len(duree_ret_projs)} millésimes")
     print(f"✓ durée de carrière : {len(duree_car_projs)} millésimes")
     print(f"✓ âge moyen de départ : {len(age_dep_projs)} millésimes")
-    print(f"✓ taux d'emploi seniors : {len(emploi_sen_projs)} millésimes")
     print(f"✓ pauvreté retraités : {len(pauvrete_projs)} millésimes")
+    print(f"✓ TRI cas-type : {len(tri_projs)} millésimes")
+    print(f"✓ taux de cotisation : {len(taux_cot_projs)} millésimes")
+    print(f"✓ intensité pauvreté : {len(intensite_projs)} millésimes")
 
     # Séries multi-millésimes mises à disposition de l'explorateur : pour
     # chaque indicateur, les projections de tous les rapports qui publient
@@ -1920,8 +2067,10 @@ def build():
         "duree_retraite": duree_ret_projs,
         "duree_carriere": duree_car_projs,
         "age_moyen_depart": age_dep_projs,
-        "emploi_seniors": emploi_sen_projs,
         "pauvrete": pauvrete_projs,
+        "tri": tri_projs,
+        "taux_cotisation": taux_cot_projs,
+        "intensite_pauvrete": intensite_projs,
         "_notes": {"chomage": cho_notes, "emploi": emp_notes, "prod_path": prod_notes},
     }
 
