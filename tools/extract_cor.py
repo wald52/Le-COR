@@ -2055,6 +2055,32 @@ def build_explorer(multi=None):
             "Solde élargi (intégrant contributions et subventions d'équilibre) de chaque régime, "
             "en part de PIB (scénario central 1,3 %).")
 
+    # --- Restes des rapports annuels : fonction publique (rapport 2026) ---
+    r = _rows("partie 1", "Fig 1.13")
+    if r:
+        add("fp_effectifs", "Effectifs cotisants de la fonction publique", "base 100 en 2025",
+            "", extract_rows_timeseries(r, 1, 2018, label_col=2),
+            "Évolution des effectifs cotisants aux régimes de la fonction publique (base 100 "
+            "en 2025), par versant. Le nombre de cotisants conditionne les ressources de ces "
+            "régimes.",
+            "COR, rapport 2026 (Fig 1.13).")
+    r = _rows("partie 1", "Fig 1.14")
+    if r:
+        add("fp_remunerations", "Rémunérations moyennes dans la fonction publique",
+            "base 100 en 2025", "", extract_rows_timeseries(r, 1, 2018, label_col=3),
+            "Évolution des rémunérations moyennes des cotisants de la fonction publique (base "
+            "100 en 2025) : traitement indiciaire, salaire moyen y compris primes. Elles "
+            "déterminent l'assiette de cotisation et les pensions futures.",
+            "COR, rapport 2026 (Fig 1.14).")
+    r = _rows("partie 1", "Fig 1.15")
+    if r:
+        series = [s for s in extract_rows_timeseries(r, 100, 2018) if "vari" not in s["label"].lower()]
+        add("fp_primes", "Part des primes dans la rémunération publique", "%", " %", series,
+            "Part des primes (hors traitement indiciaire) dans la rémunération des "
+            "fonctionnaires, par versant. Les primes ne cotisent que faiblement à la retraite, "
+            "ce qui pèse sur les pensions de la fonction publique.",
+            "COR, rapport 2026 (Fig 1.15).")
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -2129,7 +2155,7 @@ def build_explorer(multi=None):
 
     themes = [
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
-        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active", "emploi_seniors", "profil_age", "duree_carriere", "age_moyen_depart"]},
+        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active", "emploi_seniors", "profil_age", "duree_carriere", "age_moyen_depart", "fp_effectifs", "fp_remunerations", "fp_primes"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie", "taux_rempl", "taux_cotisation", "tri", "duree_retraite", "ecart_genre", "assurance_genre", "age_depart_genre", "pauvrete", "intensite_pauvrete"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "solde_regimes", "dep_regimes", "dep_pub", "struct_ressources"]},
         {"name": "Comparaisons & structures", "indicators": ["composition_revenu", "emploi_pays", "determinants_depenses"]},
