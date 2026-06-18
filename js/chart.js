@@ -133,7 +133,7 @@
     };
     let html = `<details class="data-details"><summary class="data-toggle">Voir les données (tableau)</summary>` +
       `<div class="data-table-wrap"><table><caption class="visually-hidden">${cfg.ariaLabel || "Données du graphique"}</caption>` +
-      `<thead><tr><th scope="col">Année</th>`;
+      `<thead><tr><th scope="col">${cfg.x?.label || "Année"}</th>`;
     cfg.series.forEach(s => { html += `<th scope="col">${s.label}</th>`; });
     html += "</tr></thead><tbody>";
     kept.forEach(y => {

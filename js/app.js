@@ -255,7 +255,7 @@
           const m = /^Rapport (\d{4})/.exec(s.label);
           return m && !s.endNote ? { ...s, endNote: m[1] } : s;
         }),
-        x: { min: ind.xMin, max: ind.xMax },
+        x: { min: ind.xMin, max: ind.xMax, label: ind.xLabel || "Année" },
         y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
         ariaLabel: ind.label,
         animate
@@ -850,7 +850,7 @@
     const years = [...new Set(series.flatMap(s => s.points.map(p => p.x)))].sort((a, b) => a - b);
     const esc = v => { v = String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     const num = v => String(Math.round(v * 100) / 100).replace(".", ",");
-    const lines = [["Année", ...series.map(s => s.label)].map(esc).join(";")];
+    const lines = [[cfg.x?.label || "Année", ...series.map(s => s.label)].map(esc).join(";")];
     years.forEach(y => {
       const cells = [String(y)];
       series.forEach(s => { const p = s.points.find(p => p.x === y); cells.push(p ? num(p.y) : ""); });

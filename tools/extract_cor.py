@@ -213,14 +213,17 @@ def extract_sdr(path, sheet):
 
 
 def _norm(s):
-    return " ".join(str(s).split()).lower()
+    # Apostrophe typographique → droite : les titres du COR mêlent « d'emploi »
+    # et « d'emploi » d'une édition à l'autre, ce qui cassait l'appariement.
+    return " ".join(str(s).replace("’", "'").split()).lower()
 
 
-def sheet_by_title(wb, keys):
-    """Première feuille dont le titre (A1) contient tous les mots-clés."""
+def sheet_by_title(wb, keys, exclude=()):
+    """Première feuille dont le titre (A1) contient tous les mots-clés `keys`
+    et aucun des mots-clés `exclude`."""
     for ws in wb.worksheets:
         a1 = _norm(ws.cell(1, 1).value or "")
-        if all(k in a1 for k in keys):
+        if all(k in a1 for k in keys) and not any(x in a1 for x in exclude):
             return ws
     return None
 
@@ -641,6 +644,172 @@ def _row_label(rows, key, scale=1.0):
     return {}
 
 
+# --------------------------------------------------------------------------
+# Indicateurs « par génération » (parties 3 & 4) — superposition multi-rapports.
+#
+# Ces figures ont un en-tête d'années/générations horizontal, mais : (a) les
+# cohortes descendent sous 1950 (jusqu'à 1906), hors plancher de `_ymap` ; (b)
+# l'en-tête est parfois stocké en texte ('1906') ; (c) le numéro de figure
+# change d'un rapport à l'autre (repérage par titre, pas par feuille). D'où des
+# helpers dédiés, sans toucher à ceux des parties 1 & 2.
+# --------------------------------------------------------------------------
+def _xmap(rows, floor=1900):
+    """Comme `_ymap`, mais plancher paramétrable et en-têtes d'année en texte."""
+    for r in rows[:8]:
+        ic = []
+        for i, c in enumerate(r):
+            y = None
+            if isinstance(c, int) and floor <= c <= 2100:
+                y = c
+            elif isinstance(c, str) and c.strip().isdigit() and floor <= int(c) <= 2100:
+                y = int(c)
+            if y is not None:
+                ic.append((i, y))
+        if len(ic) >= 3:
+            out, last = {}, None
+            for i, c in ic:
+                if last is not None and c < last:
+                    break
+                out[i] = c
+                last = c
+            return out
+    return {}
+
+
+def _plausible(serie, lo, hi):
+    """Garde la série seulement si sa médiane tombe dans [lo, hi], sinon {}.
+
+    Filet de sécurité quand le titre d'une figure matche, dans un vieux rapport,
+    une variante hors sujet (ex. « écart d'âge » au lieu de « âge moyen »)."""
+    if not serie:
+        return {}
+    v = sorted(serie.values())
+    return serie if lo <= v[len(v) // 2] <= hi else {}
+
+
+def file_with_sheet(vpfx, sheet_keys, exclude=()):
+    """Premier .xlsx du dossier `vpfx*` contenant une feuille au titre matchant."""
+    folders = glob.glob(os.path.join(BASE, vpfx + "*"))
+    if not folders:
+        return None
+    for p in sorted(glob.glob(os.path.join(folders[0], "*.xlsx"))):
+        try:
+            wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
+        except Exception:
+            continue
+        hit = sheet_by_title(wb, sheet_keys, exclude) is not None
+        wb.close()
+        if hit:
+            return p
+    return None
+
+
+def pick_cohort_row(path, sheet_keys, row_keys=(), scale=1.0, floor=1900,
+                    prod_ref=None, block_key=None, exclude=()):
+    """Série {x: val} d'une figure à en-tête d'années/générations horizontal.
+
+    Retient la 1re ligne selon, dans l'ordre : une des `row_keys` (texte, col 0-2) ;
+    un nombre ≈ `prod_ref` (col 1-2, sélection du scénario de référence dans les
+    rapports qui empilent les scénarios de productivité) ; à défaut la 1re ligne
+    portant ≥5 points qui ne soit pas la ligne d'en-tête. `block_key` borne la
+    recherche au bloc suivant ce libellé."""
+    if not path:
+        return {}
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = sheet_by_title(wb, sheet_keys, exclude)
+    if ws is None:
+        wb.close()
+        return {}
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    ym = _xmap(rows, floor)
+    if not ym:
+        return {}
+    start = 0
+    if block_key:
+        start = next((i for i, r in enumerate(rows)
+                      if any(isinstance(r[j], str) and _norm(block_key) in _norm(r[j])
+                             for j in range(min(3, len(r))))), None)
+        if start is None:
+            return {}
+    scope = rows[start:]
+
+    def extract(r):
+        return {ym[i]: round(r[i] * scale, 3) for i in ym
+                if i < len(r) and isinstance(r[i], (int, float))}
+
+    def ok(s):  # écarte la ligne d'en-tête (valeurs ≈ années) et les lignes courtes
+        return len(s) >= 5 and not all(abs(v - x) < 0.5 for x, v in s.items())
+
+    for key in row_keys:
+        if not key:
+            continue
+        for r in scope:
+            for j in (0, 1, 2):
+                v = r[j] if len(r) > j else None
+                if isinstance(v, str) and key.lower() in _norm(v):
+                    s = extract(r)
+                    if ok(s):
+                        return s
+    if prod_ref is not None:
+        for r in scope:
+            for j in (1, 2):
+                v = r[j] if len(r) > j else None
+                if isinstance(v, (int, float)) and abs(float(v) - prod_ref) < 1e-4:
+                    s = extract(r)
+                    if ok(s):
+                        return s
+    for r in scope:
+        s = extract(r)
+        if ok(s):
+            return s
+    return {}
+
+
+def vertical_ratio(path, sheet_keys, scale=100, floor=1990, hi=2070):
+    """Série {année: ratio×scale} d'une figure en colonnes (une année par ligne).
+
+    Pour l'écart de pension F/H (Fig 3.24) : on retient la *dernière* valeur
+    fractionnaire (0<v<2) de la ligne après l'année. C'est la colonne la plus à
+    droite — le ratio « pension totale y compris majorations », renseigné en
+    observé puis en projeté, donc cohérent sur tout l'horizon (contrairement à la
+    1re colonne, « droit direct », qui s'arrête à l'observé)."""
+    if not path:
+        return {}
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = sheet_by_title(wb, sheet_keys)
+    if ws is None:
+        wb.close()
+        return {}
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    out = {}
+    for r in rows:
+        yr = val = None
+        for c in r:
+            if yr is None and isinstance(c, int) and floor <= c <= hi:
+                yr = c
+            elif yr is not None and isinstance(c, (int, float)) and 0 < c < 2:
+                val = c  # garde la dernière (colonne la plus à droite)
+        if yr is not None and val is not None:
+            out[yr] = round(val * scale, 3)
+    return out
+
+
+def overlay_vintages(by_vy):
+    """Une ligne par rapport à partir de {millésime: {x: val}} : rapport récent
+    en trait plein saillant, les autres en pointillé (dégradé `COLORS`). Aucun
+    filtrage calendaire (l'axe x peut être une génération)."""
+    out = []
+    for vy in sorted(by_vy):
+        s = by_vy[vy]
+        pts = [{"x": x, "y": s[x]} for x in sorted(s)]
+        if pts:
+            out.append({"label": f"Rapport {vy}", "color": COLORS.get(vy, "#888888"),
+                        "kind": "solid" if vy == LATEST else "dash", "points": pts})
+    return out
+
+
 _PROJ_KEYS = ("central", "référence", "reference", "tous scénarios", "sc. ref", "projection")
 
 
@@ -831,13 +1000,14 @@ def build_explorer(multi=None):
     multi = multi or {}
     ind = {}
 
-    def add(iid, label, unit, suffix, series, desc, source, obs_from=2000):
+    def add(iid, label, unit, suffix, series, desc, source, obs_from=2000,
+            xLabel="Année"):
         series = [s for s in series if s["points"]]
         if not series:
             print("✗ explorateur:", iid, "(vide)")
             return None
         b = _bounds(series)
-        ind[iid] = {"label": label, "unit": unit, "suffix": suffix,
+        ind[iid] = {"label": label, "unit": unit, "suffix": suffix, "xLabel": xLabel,
                     "desc": desc, "source": source, "series": series, **b}
         return iid
 
@@ -1089,6 +1259,68 @@ def build_explorer(multi=None):
             "subventions d'équilibre de l'État, transferts. Les parts somment à 100 %.",
             "COR, rapport 2026 (structure des ressources de 2004 à 2025).")
 
+    # --- Parties 3 & 4 : séries par génération / par année, superposées par rapport
+    if multi.get("taux_rempl"):
+        add("taux_rempl", "Taux de remplacement net à la liquidation", "%", " %",
+            overlay_vintages(multi["taux_rempl"]),
+            "Pension à la liquidation rapportée au dernier salaire, cas-type du salarié "
+            "non-cadre du privé partant au taux plein, scénario de référence. Il baisse "
+            "de génération en génération — et chaque rapport en redessine la pente.",
+            "COR, rapports 2016-2026 (taux de remplacement net, cas-type non-cadre du "
+            "privé, scénario de référence de chaque rapport).", xLabel="Génération")
+    if multi.get("duree_retraite"):
+        add("duree_retraite", "Durée de retraite par génération", "ans", " ans",
+            overlay_vintages(multi["duree_retraite"]),
+            "Nombre d'années passées à la retraite, en moyenne par génération (scénario "
+            "central de mortalité). Elle s'allonge avec l'espérance de vie ; les révisions "
+            "démographiques d'un rapport à l'autre la déplacent.",
+            "COR, rapports 2016-2026 (durée de retraite, moyenne par génération, scénario "
+            "central de mortalité).", xLabel="Génération")
+    if multi.get("duree_carriere"):
+        add("duree_carriere", "Durée de carrière par génération", "ans", " ans",
+            overlay_vintages(multi["duree_carriere"]),
+            "Nombre d'années de carrière validées, en moyenne par génération. C'est l'autre "
+            "bout de l'équation : plus la carrière est longue, plus la retraite est tardive "
+            "ou élevée.",
+            "COR, rapports 2016-2026 (durée de carrière, moyenne par génération).",
+            xLabel="Génération")
+    if multi.get("age_moyen_depart"):
+        add("age_moyen_depart", "Âge moyen de départ par génération", "ans", " ans",
+            overlay_vintages(multi["age_moyen_depart"]),
+            "Âge moyen effectif de départ à la retraite, par génération (observé puis "
+            "projeté). Il remonte sous l'effet des réformes successives.",
+            "COR, rapports 2023-2026 (âge moyen de départ par génération).",
+            xLabel="Génération")
+    if multi.get("emploi_seniors"):
+        add("emploi_seniors", "Taux d'emploi des 55-59 ans", "%", " %",
+            overlay_vintages(multi["emploi_seniors"]),
+            "Part des 55-59 ans en emploi : un déterminant majeur de l'équilibre du système "
+            "(plus de seniors en emploi = plus de cotisants, moins de retraités précoces). "
+            "Il progresse fortement depuis les années 2000.",
+            "COR, rapports 2020-2026 (taux d'emploi des 55-59 ans, ensemble).")
+    if multi.get("pauvrete"):
+        add("pauvrete", "Taux de pauvreté des retraités", "%", " %",
+            overlay_vintages(multi["pauvrete"]),
+            "Part des retraités sous le seuil de pauvreté (60 % du niveau de vie médian). "
+            "Il reste nettement inférieur à celui de l'ensemble de la population, mais "
+            "chaque rapport en prolonge et révise la mesure.",
+            "COR / INSEE-ERFS, rapports 2016-2026 (taux de pauvreté de l'ensemble des "
+            "retraités).")
+
+    r = _rows("partie 3", "Fig 3.24")
+    if r:
+        rg = vertical_ratio(first_file(R26, "partie 3"), ("rapporté", "hommes"))
+        rg = _plausible(rg, 40, 90)
+        series = [{"label": "Femmes / hommes", "color": "#c2185b", "kind": "solid",
+                   "points": [{"x": y, "y": rg[y]} for y in sorted(rg)]}] if rg else []
+        add("ecart_genre", "Pension des femmes rapportée à celle des hommes", "%", " %",
+            series,
+            "Pension totale moyenne (y compris majorations) des femmes en % de celle des "
+            "hommes, observée puis projetée. L'écart se réduit lentement — de ~70 % à un peu "
+            "plus de 85 % attendu — sans jamais se refermer.",
+            "COR, rapport 2026 (montant brut moyen de pension totale y compris majorations, "
+            "femmes rapporté aux hommes, observé puis projeté).")
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -1163,8 +1395,8 @@ def build_explorer(multi=None):
 
     themes = [
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
-        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active"]},
-        {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie"]},
+        {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active", "emploi_seniors", "duree_carriere", "age_moyen_depart"]},
+        {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie", "taux_rempl", "duree_retraite", "ecart_genre", "pauvrete"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "dep_regimes", "dep_pub", "struct_ressources"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
@@ -1595,6 +1827,76 @@ def build():
             popact_projs[vy] = {y: v for y, v in p.items() if y >= int(vy)}
     print(f"✓ population active : {len(popact_projs)} millésimes")
 
+    # ---- Parties 3 & 4 : séries par génération / par année, superposées par
+    #      rapport. Repérage par titre (le numéro de figure change d'une édition
+    #      à l'autre) ; garde-fou de plausibilité pour écarter les figures
+    #      homonymes des vieux rapports (ex. « écart d'âge » vs « âge moyen »).
+    ALL_VINT = [("2016", "2016-06"), ("2017", "2017-06"), ("2018", "2018-06"),
+                ("2019", "2019-06"), ("2020", "2020-11"), ("2021", "2021-06"),
+                ("2022", "2022-09"), ("2023", "2023-06"), ("2024", "2024-06"),
+                ("2025", "2025-06"), ("2026", "2026-06")]
+
+    def _prodfrac(vy):  # productivité de réf. → fraction (sélection du scénario)
+        return {"1,3": 0.013, "1,0": 0.010, "0,7": 0.007}.get(PROD_LABEL.get(vy, ""), 0.013)
+
+    taux_rempl_projs, duree_ret_projs, duree_car_projs = {}, {}, {}
+    age_dep_projs, pauvrete_projs = {}, {}
+    for vy, dpat in ALL_VINT:
+        keys = ("taux de remplacement", "non-cadre")
+        s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
+                            ("sc. réf", "sc. ref", "scénario de référence", "référence",
+                             PROD_LABEL.get(vy, "")), 100, 1900, _prodfrac(vy))
+        s = _plausible(s, 30, 100)
+        if s:
+            taux_rempl_projs[vy] = s
+
+        keys = ("durée de retraite",)
+        s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
+                            ("scénario central", "central"), 1, 1900,
+                            block_key="moyenne par génération")
+        s = _plausible(s, 15, 35)
+        if s:
+            duree_ret_projs[vy] = s
+
+        keys = ("durée de carrière",)
+        s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
+                            ("moyenne par génération",), 1, 1900)
+        s = _plausible(s, 25, 55)
+        if s:
+            duree_car_projs[vy] = s
+
+        keys, exc = ("âge moyen de départ", "génération"), ("femmes",)  # ≠ figure F/H
+        path = file_with_sheet(dpat, keys, exc)
+        obs = pick_cohort_row(path, keys, ("âge moyen observé", "observé"), 1, 1900, exclude=exc)
+        proj = pick_cohort_row(path, keys, ("âge moyen projeté", "projeté"), 1, 1900, exclude=exc)
+        merged = _plausible({**proj, **obs}, 55, 70)
+        if merged:
+            age_dep_projs[vy] = merged
+
+        keys = ("pauvreté", "retraité")
+        s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
+                            ("ensemble des retraités",), 100, 1990)
+        s = _plausible(s, 3, 20)
+        if s:
+            pauvrete_projs[vy] = s
+
+    emploi_sen_projs = {}
+    for vy, dpat in ALL_VINT[4:]:  # taux d'emploi des seniors publié depuis 2020
+        # série chrono. par tranche quinquennale (≠ coupes par année, ≠ ventilation F/H)
+        keys, exc = ("taux d'emploi", "55-64 ans", "quinquennal"), ("femmes",)
+        s = pick_cohort_row(file_with_sheet(dpat, keys, exc), keys, ("ensemble",),
+                            100, 1970, exclude=exc)
+        s = _plausible(s, 20, 90)
+        if s:
+            emploi_sen_projs[vy] = s
+
+    print(f"✓ taux de remplacement : {len(taux_rempl_projs)} millésimes")
+    print(f"✓ durée de retraite : {len(duree_ret_projs)} millésimes")
+    print(f"✓ durée de carrière : {len(duree_car_projs)} millésimes")
+    print(f"✓ âge moyen de départ : {len(age_dep_projs)} millésimes")
+    print(f"✓ taux d'emploi seniors : {len(emploi_sen_projs)} millésimes")
+    print(f"✓ pauvreté retraités : {len(pauvrete_projs)} millésimes")
+
     # Séries multi-millésimes mises à disposition de l'explorateur : pour
     # chaque indicateur, les projections de tous les rapports qui publient
     # le même jeu de données, à superposer au réalisé.
@@ -1614,6 +1916,12 @@ def build():
         "pension_rel": pension_projs,
         "cot_ret": cotret_projs,
         "pop_active": popact_projs,
+        "taux_rempl": taux_rempl_projs,
+        "duree_retraite": duree_ret_projs,
+        "duree_carriere": duree_car_projs,
+        "age_moyen_depart": age_dep_projs,
+        "emploi_seniors": emploi_sen_projs,
+        "pauvrete": pauvrete_projs,
         "_notes": {"chomage": cho_notes, "emploi": emp_notes, "prod_path": prod_notes},
     }
 
