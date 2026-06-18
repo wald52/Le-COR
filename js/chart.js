@@ -832,7 +832,9 @@
     const yMin = cfg.y?.min ?? (lo < 0 ? lo - pad : 0);
 
     // Marges : gauche pour les libellés d'axe Y, bas pour les libellés de
-    // catégories (pivotés si trop longs pour la largeur de bande).
+    // catégories. Ces derniers sont désormais horizontaux et répartis sur
+    // plusieurs lignes (retour à la ligne) plutôt que pivotés : c'est plus
+    // lisible, surtout sur mobile.
     const yTicks = niceTicks(yMin, yMax, 5);
     const yLabelLen = Math.max(...yTicks.map(t =>
       (String(Math.round(t * 10) / 10).replace(".", ",") + suffix).length));
@@ -840,46 +842,54 @@
     const rightM = narrow ? 10 : 16;
     const left0 = Math.max(narrow ? 42 : 46, leftForLabels);
     const bandWApprox = (W - left0 - rightM) / Math.max(n, 1);
-    const maxCatLen = Math.max(0, ...cats.map(c => String(c).length));
-    const rotate = maxCatLen * CHAR_W * 0.62 > bandWApprox;
-    // Libellés pivotés : ancrés en fin à -35° sous l'axe, ils s'étendent vers
-    // le bas et la gauche. On dimensionne la marge basse sur la projection
-    // verticale réelle (sin 35°) pour ne pas tronquer le bas du texte.
-    const ROT_DEG = 35;
-    const rotCos = Math.cos(ROT_DEG * Math.PI / 180);
-    const rotSin = Math.sin(ROT_DEG * Math.PI / 180);
-    const LABEL_DY = 14;
+
+    // Découpe d'un libellé en lignes tenant dans la largeur d'une bande.
+    // On coupe sur les espaces (et après les « / »). Un mot insécable plus
+    // large que la bande reste sur sa propre ligne (léger débordement toléré).
+    const LBL_LH = 13; // interligne (px) des libellés de catégories
+    const LBL_CHAR = 6.2; // largeur moyenne d'un caractère à ~11px
+    const wrapMaxChars = Math.max(5, Math.floor(bandWApprox * 1.12 / LBL_CHAR));
+    const wrapLabel = text => {
+      // On autorise une coupure après « / » et « - » (le séparateur reste
+      // collé au mot précédent), sinon sur les espaces.
+      const tokens = String(text).replace(/([/-])/g, "$1 ").split(/\s+/).filter(Boolean);
+      const lines = [];
+      let cur = "";
+      const flush = () => { if (cur) { lines.push(cur); cur = ""; } };
+      tokens.forEach(tok => {
+        // Mot insécable plus large que la bande : coupé au caractère.
+        if (tok.length > wrapMaxChars && !/[/-]$/.test(tok)) {
+          flush();
+          for (let i = 0; i < tok.length; i += wrapMaxChars) lines.push(tok.slice(i, i + wrapMaxChars));
+          return;
+        }
+        const sep = cur && !/[/-]$/.test(cur) ? " " : "";
+        if (cur && (cur + sep + tok).length > wrapMaxChars) { flush(); cur = tok; }
+        else { cur += sep + tok; }
+      });
+      flush();
+      return lines.length ? lines : [String(text)];
+    };
+    const catLines = cats.map(wrapLabel);
+    const maxLines = Math.max(1, ...catLines.map(l => l.length));
+
+    const baseBottom = narrow ? 34 : 40;
     const M = {
       top: 16,
       right: rightM,
-      bottom: rotate
-        ? Math.ceil(LABEL_DY + maxCatLen * CHAR_W * rotSin) + 8
-        : (narrow ? 34 : 40),
+      bottom: Math.max(baseBottom, 16 + (maxLines - 1) * LBL_LH + 8),
       left: left0
     };
     const plotW = W - M.left - M.right;
-    const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.56, 460)) + (rotate ? M.bottom - (narrow ? 34 : 40) : 0);
+    const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.56, 460)) + Math.max(0, M.bottom - baseBottom);
     const plotH = H - M.top - M.bottom;
 
     const sy = v => M.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
     const bandW = plotW / Math.max(n, 1);
     const y0 = sy(0);
 
-    // …et vers la gauche : le début de chaque libellé pivoté peut sortir du
-    // bord gauche du SVG (qui rogne en overflow:hidden). On élargit alors le
-    // viewBox vers la gauche pour englober le libellé le plus débordant.
-    let padLeft = 0;
-    if (rotate) {
-      cats.forEach((c, i) => {
-        const cx = M.left + (i + 0.5) * bandW;
-        const startX = cx - String(c).length * CHAR_W * rotCos;
-        if (startX < padLeft) padLeft = startX;
-      });
-      padLeft = padLeft < 0 ? Math.ceil(-padLeft) + 4 : 0;
-    }
-
     const svg = el("svg", {
-      viewBox: `${-padLeft} 0 ${W + padLeft} ${H}`, class: "chart-svg", role: "img",
+      viewBox: `0 0 ${W} ${H}`, class: "chart-svg", role: "img",
       "aria-label": cfg.ariaLabel || "Graphique en barres"
     });
 
@@ -904,16 +914,19 @@
       svg.appendChild(lbl);
     });
 
-    // --- Axe X catégoriel ---
+    // --- Axe X catégoriel (libellés horizontaux, multi-lignes) ---
     const xAxisY = M.top + plotH;
     cats.forEach((c, i) => {
       const cx = M.left + (i + 0.5) * bandW;
       const lbl = el("text", {
-        x: cx, y: rotate ? xAxisY + 14 : xAxisY + 18, class: "chart-axis-label",
-        "text-anchor": rotate ? "end" : "middle"
+        x: cx, y: xAxisY + 16, class: "chart-axis-label chart-cat-label",
+        "text-anchor": "middle"
       });
-      if (rotate) lbl.setAttribute("transform", `rotate(-35 ${cx} ${xAxisY + 14})`);
-      lbl.textContent = String(c);
+      catLines[i].forEach((line, k) => {
+        const ts = el("tspan", { x: cx, dy: k === 0 ? 0 : LBL_LH });
+        ts.textContent = line;
+        lbl.appendChild(ts);
+      });
       svg.appendChild(lbl);
     });
     // Ligne de référence (zéro si l'échelle traverse 0, sinon l'axe de base).
