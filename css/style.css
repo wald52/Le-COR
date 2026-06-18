@@ -192,10 +192,17 @@ a { color: var(--bleu-clair); }
   position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--gris-clair);
   border-radius: 10px; box-shadow: var(--ombre); padding: 8px 11px; font-size: 0.82rem;
   transition: opacity 0.12s ease; min-width: 150px; z-index: 5;
+  /* Ne jamais dépasser la largeur du graphique : sur mobile, les libellés
+     longs rendaient l'infobulle plus large que l'écran, ce qui la poussait
+     hors cadre et rognait le texte. On la plafonne et on laisse les libellés
+     revenir à la ligne. */
+  max-width: calc(100% - 16px); box-sizing: border-box;
 }
 .chart-tooltip .tt-year { font-weight: 800; color: var(--bleu); margin-bottom: 4px; }
-.chart-tooltip .tt-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.chart-tooltip .tt-dot { flex: none; }
+.chart-tooltip .tt-row { display: flex; align-items: flex-start; gap: 6px; }
+.chart-tooltip .tt-dot { flex: none; margin-top: 4px; }
+.chart-tooltip .tt-txt { min-width: 0; }
+.chart-tooltip .tt-txt strong { white-space: nowrap; }
 
 /* ---------- Encadré « à retenir » ---------- */
 .takeaway {

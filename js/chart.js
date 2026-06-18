@@ -122,6 +122,24 @@
     return `<svg class="tt-dot" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">` +
       `<circle cx="4.5" cy="4.5" r="4.5" fill="${color}"/></svg>`;
   }
+  // Construit une ligne d'infobulle (pastille + libellé + valeur). Le libellé
+  // peut revenir à la ligne ; seule la valeur reste insécable.
+  function tipRow(color, label, value) {
+    return `<div class="tt-row">${dotHTML(color)}<span class="tt-txt">${label} : <strong>${value}</strong></span></div>`;
+  }
+  // Place l'infobulle près de l'ancre `anchorPx` (abscisse en pixels CSS dans
+  // le repère du conteneur) en la gardant toujours visible : on la met de
+  // préférence à droite du repère, on bascule à gauche s'il manque de place,
+  // puis on borne aux marges. Corrige le rognage sur mobile, où l'infobulle
+  // pouvait sortir du cadre lorsqu'elle était plus large que le graphique.
+  function placeTip(tip, rect, anchorPx) {
+    const margin = 8, gap = 14, tw = tip.offsetWidth;
+    let left = anchorPx + gap;
+    if (left + tw + margin > rect.width) left = anchorPx - gap - tw;
+    left = Math.max(margin, Math.min(left, rect.width - tw - margin));
+    tip.style.left = left + "px";
+    tip.style.top = "12px";
+  }
 
   // Tableau de données repliable sous le graphique — alternative accessible
   // (lecteurs d'écran, malvoyants) et gage de transparence.
@@ -696,16 +714,13 @@
         const v = valueAt(s, xr);
         if (v != null) {
           any = true;
-          rows += `<div class="tt-row">${dotHTML(s.color)}${s.label} : <strong>${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}</strong></div>`;
+          rows += tipRow(s.color, s.label, `${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}`);
         }
       });
       if (!any) { tip.style.opacity = 0; return; }
       tip.innerHTML = rows;
       tip.style.opacity = 1;
-      // Positionnement de l'infobulle
-      const leftPx = (sx(xr) / W) * rect.width;
-      tip.style.left = Math.min(leftPx + 14, rect.width - tip.offsetWidth - 8) + "px";
-      tip.style.top = "12px";
+      placeTip(tip, rect, (sx(xr) / W) * rect.width);
     });
     overlay.addEventListener("mouseleave", () => {
       tip.style.opacity = 0;
@@ -1057,15 +1072,13 @@
         const v = valAt(s, i);
         if (v != null) {
           any = true;
-          rows += `<div class="tt-row">${dotHTML(s.color)}${s.label} : <strong>${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}</strong></div>`;
+          rows += tipRow(s.color, s.label, `${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}`);
         }
       });
       if (!any) { tip.style.opacity = 0; return; }
       tip.innerHTML = rows;
       tip.style.opacity = 1;
-      const leftPx = ((M.left + (i + 0.5) * bandW) / W) * rect.width;
-      tip.style.left = Math.min(leftPx + 14, rect.width - tip.offsetWidth - 8) + "px";
-      tip.style.top = "12px";
+      placeTip(tip, rect, ((M.left + (i + 0.5) * bandW) / W) * rect.width);
     });
     overlay.addEventListener("mouseleave", () => { tip.style.opacity = 0; focusBand.setAttribute("opacity", 0); });
     svg.appendChild(overlay);
