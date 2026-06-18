@@ -1245,6 +1245,127 @@ def gendered_cohort(path, sheet_keys, pairs, scale=1.0, lo=None, hi=None,
     return out
 
 
+# Palette générique pour les séries multiples (régimes, pays, composants…).
+DEFAULT_PALETTE = ["#1f4e79", "#e8731c", "#6aa84f", "#c2185b", "#9c27b0",
+                   "#2f6fb0", "#b34700", "#0f7b6c", "#7d8ca0", "#8a6d3b"]
+
+# Couleurs par nombre d'enfants (figures « droits familiaux » par génération).
+ENF_COLORS = [("sans enf", "#1f4e79"), ("1 ou 2 enf", "#e8731c"),
+              ("3 enf", "#c2185b"), ("ensemble", "#7d8ca0")]
+
+_TS_STOP = ("lecture", "champ", "source", "note", "ensemble des", "par ordre", "année")
+
+
+def _year_of(c, floor):
+    if isinstance(c, int) and floor <= c <= 2100:
+        return c
+    if isinstance(c, str) and c.strip().isdigit() and floor <= int(c) <= 2100:
+        return int(c)
+    return None
+
+
+def _num(c):
+    if isinstance(c, (int, float)):
+        return float(c)
+    if isinstance(c, str):
+        try:
+            return float(c.strip().replace("\xa0", "").replace(",", "."))
+        except ValueError:
+            return None
+    return None
+
+
+def extract_rows_timeseries(rows, scale=1.0, floor=1990, colors=None, label_col=1, stop=_TS_STOP):
+    """Multi-courbes horizontales : une série par ligne libellée (col `label_col`),
+    années en en-tête (entières ou texte). Généralise extract_dep_regimes sans bornage."""
+    ycols, hdr_idx = {}, -1
+    for idx, r in enumerate(rows[:8]):
+        ic = [(i, y) for i, c in enumerate(r) if (y := _year_of(c, floor)) is not None]
+        if len(ic) >= 3:
+            ycols, hdr_idx = dict(ic), idx
+            break
+    if not ycols:
+        return []
+    colors = colors or DEFAULT_PALETTE
+    series, k = [], 0
+    for idx, r in enumerate(rows):
+        if idx == hdr_idx:
+            continue
+        lab = str(r[label_col]).strip() if len(r) > label_col and isinstance(r[label_col], str) else ""
+        if not lab or lab.lower().startswith(stop):
+            continue
+        pts = [{"x": ycols[i], "y": round(v * scale, 3)} for i in ycols
+               if i < len(r) and (v := _num(r[i])) is not None]
+        if len(pts) < 3:
+            continue
+        series.append({"label": lab, "color": colors[k % len(colors)], "kind": "solid", "points": pts})
+        k += 1
+    return series
+
+
+def extract_cols_timeseries(rows, spec, scale=1.0, floor=1960, year_col=1):
+    """Multi-courbes verticales : années descendant la colonne `year_col`, séries
+    décrites explicitement par `spec` = [(index_colonne, libellé, couleur), …]
+    (robuste aux en-têtes sur deux niveaux)."""
+    out = []
+    for ci, label, color in spec:
+        pts = []
+        for r in rows:
+            y = _year_of(r[year_col], floor) if len(r) > year_col else None
+            if y is None:
+                continue
+            v = _num(r[ci]) if ci < len(r) else None
+            if v is not None:
+                pts.append({"x": y, "y": round(v * scale, 3)})
+        if len(pts) >= 3:
+            out.append({"label": label, "color": color, "kind": "solid", "points": pts})
+    return out
+
+
+def extract_cohort_groups(rows, scale=1.0, floor=1900):
+    """Courbes par génération à deux niveaux : sexe (rémanent, repéré dans les
+    colonnes à gauche du libellé), sous-catégorie dans la colonne juste avant les
+    générations (ex. nombre d'enfants). Trait plein = femmes, tireté = hommes ;
+    couleur par sous-catégorie. Tolère le décalage de colonnes d'une figure à l'autre."""
+    ycols = {}
+    for r in rows[:6]:
+        ic = [(i, y) for i, c in enumerate(r) if (y := _year_of(c, floor)) is not None]
+        if len(ic) >= 3:
+            ycols = dict(ic)
+            break
+    if not ycols:
+        return []
+    sub_col = min(ycols) - 1
+    series, gender = [], None
+    for r in rows:
+        for j in range(sub_col):
+            c = r[j] if j < len(r) else None
+            if isinstance(c, str) and c.strip().lower().startswith(("femme", "homme")):
+                gender = c.strip()
+        sub = str(r[sub_col]).strip() if len(r) > sub_col and isinstance(r[sub_col], str) else ""
+        if not gender or not sub or sub.lower().startswith(("année", "champ", "source", "note", "lecture")):
+            continue
+        pts = [{"x": ycols[i], "y": round(v * scale, 3)} for i in ycols
+               if i < len(r) and (v := _num(r[i])) is not None]
+        if len(pts) < 3:
+            continue
+        col = next((c for k, c in ENF_COLORS if k in sub.lower()), "#888888")
+        kind = "solid" if gender.lower().startswith("femme") else "dash"
+        series.append({"label": f"{gender} — {sub}", "color": col, "kind": kind, "points": pts})
+    return series
+
+
+def _short_regime(c):
+    """Raccourcit les libellés de régimes (Fig droits familiaux) pour l'axe x."""
+    cl = c.lower()
+    for k, s in [("base", "Base (privé/agricole/indép.)"), ("complémentaire", "Complémentaires"),
+                 ("fonction publique", "Fonction publique"), ("spéci", "Régimes spéciaux"),
+                 ("non-salari", "Non-salariés"), ("ensemble", "Ensemble")]:
+        if k in cl:
+            return s
+    return " ".join(c.split())
+
+
 def build_explorer(multi=None):
     """`multi` : séries multi-millésimes calculées dans build() —
     {indicateur: ({vy: {année: val}} projections, obs {année: val})}."""
@@ -1700,6 +1821,98 @@ def build_explorer(multi=None):
             "PIB, horizon 2070).",
             chartType="bar", waterfall=True, categories=cats)
 
+    # --- Droits familiaux & réversion (rapport thématique COR, novembre 2025) ---
+    DF = "2025-11"
+    r = _rows("partie 1", "Fig 1.1", DF)
+    if r:
+        cats, series = extract_stacked(r, 100, DEFAULT_PALETTE)
+        cats = [_short_regime(c) for c in cats]
+        add("df_part_regime", "Poids des droits familiaux par régime", "%", " %", series,
+            "Part des dispositifs de solidarité familiale (départs anticipés, majoration de "
+            "pension, MDA, AVPF) dans les pensions de droit direct, par groupe de régimes. "
+            "Ils pèsent près de 10 % au régime général.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.1).",
+            chartType="bar", barMode="stacked", categories=cats)
+    r = _rows("partie 1", "Fig 1.3", DF)
+    if r:
+        cats, series = extract_country_grouped(r, 1, ["#1f4e79", "#c2185b"])
+        add("df_masses_genre", "Masses des droits familiaux versées, par sexe",
+            "milliards d'euros", " Md€", series,
+            "Montants annuels versés au titre de chaque dispositif familial, selon le sexe du "
+            "bénéficiaire. La MDA et l'AVPF bénéficient très majoritairement aux femmes.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.3).",
+            chartType="bar", barMode="grouped", categories=cats)
+    r = _rows("partie 1", "Fig 1.6", DF)
+    if r:
+        series = extract_rows_timeseries(r, 100, 1990)
+        obs = [s for s in series if "obs" in s["label"].lower()] or series
+        series = obs[:1]
+        if series:
+            series[0].update(label="Part des réversions", color="#1f2d3d")
+        add("df_reversion_part", "Part des pensions de réversion", "%", " %", series,
+            "Part des pensions de réversion dans l'ensemble des pensions versées. La réversion "
+            "reste un filet essentiel, surtout pour les femmes, mais sa part décline lentement.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.6).")
+    r = _rows("partie 1", "Fig 1.17", DF)
+    if r:
+        series = extract_rows_timeseries(r, 1, 2000)
+        add("df_beneficiaires", "Bénéficiaires de pensions, par type de droit",
+            "milliers", " k", series,
+            "Effectifs de retraités selon le type de droit perçu : droit direct seul, droits "
+            "dérivés (réversion) seuls, ou les deux. Beaucoup de femmes cumulent droit direct "
+            "et réversion.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.17).")
+    r = _rows("partie 1", "Fig 1.8", DF)
+    if r:
+        add("df_age_enfants", "Âge de départ par sexe et nombre d'enfants", "ans", " ans",
+            extract_cohort_groups(r, 1),
+            "Âge moyen de départ à la retraite par génération, selon le sexe et le nombre "
+            "d'enfants. Les mères de trois enfants et plus partent plus tôt (départs anticipés, "
+            "MDA), les hommes partent globalement plus tôt que les femmes.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.8).",
+            xLabel="Génération")
+    r = _rows("partie 1", "Fig 1.9", DF)
+    if r:
+        add("df_duree_enfants", "Durée validée par sexe et nombre d'enfants", "trimestres",
+            " trim.", extract_cohort_groups(r, 1),
+            "Durée d'assurance validée moyenne par génération, selon le sexe et le nombre "
+            "d'enfants. Les dispositifs familiaux (MDA, AVPF) compensent en partie les "
+            "carrières plus courtes des mères.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.9).",
+            xLabel="Génération")
+    r = _rows("partie 1", "Fig 1.10", DF)
+    if r:
+        add("df_pension_enfants", "Pension relative par sexe et nombre d'enfants", "%", " %",
+            extract_cohort_groups(r, 100),
+            "Pension moyenne perçue à 68 ans, rapportée au salaire moyen (SMPT), selon le sexe "
+            "et le nombre d'enfants. L'écart femmes-hommes et l'effet du nombre d'enfants "
+            "restent marqués malgré les droits familiaux.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.10).",
+            xLabel="Génération")
+    r = _rows("partie 2", "Fig 2.1", DF)
+    if r:
+        series = extract_cols_timeseries(r, [(2, "Femmes", "#c2185b"), (3, "Hommes", "#1f4e79")], 1, 1960)
+        add("df_inactivite", "Part des inactifs, par sexe (depuis 1968)", "%", " %", series,
+            "Part des personnes inactives selon le sexe depuis 1968. L'inactivité féminine, "
+            "très élevée autrefois, a fortement reculé — ce qui transforme peu à peu les droits "
+            "à retraite des femmes.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 2.1).")
+    r = _rows("partie 2", "Fig 2.7", DF)
+    if r:
+        series = extract_cols_timeseries(r, [(2, "Femmes", "#c2185b"), (3, "Hommes", "#1f4e79")], 1, 1970)
+        add("df_emploi_genre", "Taux d'emploi des 15-64 ans, par sexe", "%", " %", series,
+            "Taux d'emploi des femmes et des hommes (15-64 ans) depuis 1975 : la convergence "
+            "est nette mais incomplète, et nourrit l'écart de pensions à venir.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 2.7).")
+    r = _rows("partie 2", "Fig 2.9", DF)
+    if r:
+        series = extract_cols_timeseries(
+            r, [(2, "Femmes", "#c2185b"), (3, "Hommes", "#1f4e79"), (4, "Ensemble", "#6aa84f")], 1, 1970)
+        add("df_temps_partiel", "Part du temps partiel, par sexe", "%", " %", series,
+            "Part de l'emploi à temps partiel selon le sexe. Le temps partiel, très féminin, "
+            "réduit les salaires et donc les droits à retraite accumulés.",
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 2.9).")
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -1778,6 +1991,7 @@ def build_explorer(multi=None):
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie", "taux_rempl", "taux_cotisation", "tri", "duree_retraite", "ecart_genre", "assurance_genre", "age_depart_genre", "pauvrete", "intensite_pauvrete"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "solde_regimes", "dep_regimes", "dep_pub", "struct_ressources"]},
         {"name": "Comparaisons & structures", "indicators": ["composition_revenu", "emploi_pays", "determinants_depenses"]},
+        {"name": "Droits familiaux & réversion", "indicators": ["df_part_regime", "df_masses_genre", "df_reversion_part", "df_beneficiaires", "df_age_enfants", "df_duree_enfants", "df_pension_enfants", "df_inactivite", "df_emploi_genre", "df_temps_partiel"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits
