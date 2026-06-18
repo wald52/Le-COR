@@ -306,6 +306,63 @@ window.COR_DATA = {
   },
 
   /* =========================================================================
+   * 4 ter. DONNÉES MACRO DE RÉFÉRENCE — pour traduire le « % du PIB » en euros
+   *    et en « % de la dépense publique ».
+   *
+   *    Le graphique phare (« part des retraites dans le PIB ») peut être affiché
+   *    en trois unités au choix du lecteur :
+   *      - % du PIB                (donnée brute du COR)
+   *      - milliards d'euros (Md€) = (% du PIB / 100) × PIB de l'année
+   *      - % de la dépense publique = (% PIB retraites) / (dépense publique en
+   *                                    % du PIB) × 100
+   *
+   *    Convention identique au reste du fichier : extrémités sourcées, points
+   *    intermédiaires servant à l'interpolation. Au-delà de 2025, le PIB en
+   *    euros est une ESTIMATION « euros courants » (croissance réelle + inflation
+   *    des hypothèses du COR) — affichée à titre indicatif, avec avertissement.
+   * ====================================================================== */
+  macro: {
+    // PIB nominal de la France, en Md€.
+    // Passé (≤ 2025) : INSEE, comptes nationaux (PIB en valeur).
+    // Futur (> 2025) : estimation « euros courants » à partir des hypothèses
+    // macro du scénario de référence du COR (productivité + inflation).
+    pibMdEuros: {
+      source:
+        "INSEE, comptes nationaux (PIB en valeur). Au-delà de 2025 : estimation " +
+        "« euros courants » à partir des hypothèses macro du COR (rapport juin 2026).",
+      sourcedTo: 2025,
+      points: [
+        { x: 2002, y: 1549 }, { x: 2005, y: 1772 }, { x: 2008, y: 1995 },
+        { x: 2010, y: 1998 }, { x: 2012, y: 2089 }, { x: 2014, y: 2150 },
+        { x: 2016, y: 2230 }, { x: 2018, y: 2360 }, { x: 2019, y: 2438 },
+        { x: 2020, y: 2318 }, // creux Covid
+        { x: 2021, y: 2501 }, { x: 2022, y: 2658 }, { x: 2023, y: 2822 },
+        { x: 2024, y: 2921 }, { x: 2025, y: 3010 },
+        // Au-delà : euros courants estimés (≈ +2,5 %/an nominal), à titre indicatif.
+        { x: 2030, y: 3400 }, { x: 2040, y: 4360 }, { x: 2050, y: 5580 },
+        { x: 2060, y: 7150 }, { x: 2070, y: 9150 }
+      ]
+    },
+    // Dépense publique totale des administrations, en % du PIB.
+    // Sert au calcul du « % de la dépense publique ».
+    depensePubliquePctPib: {
+      source:
+        "INSEE / Eurostat — dépenses des administrations publiques, en % du PIB. " +
+        "Au-delà de 2025 : ratio supposé approximativement stable.",
+      sourcedTo: 2025,
+      points: [
+        { x: 2002, y: 52.6 }, { x: 2008, y: 53.3 }, { x: 2010, y: 56.4 },
+        { x: 2014, y: 57.2 }, { x: 2019, y: 55.4 },
+        { x: 2020, y: 61.4 }, // pic Covid
+        { x: 2022, y: 58.1 }, { x: 2023, y: 57.3 }, { x: 2024, y: 57.1 },
+        { x: 2025, y: 57.0 },
+        // Futur : ratio supposé approximativement stable.
+        { x: 2040, y: 56.5 }, { x: 2070, y: 56.0 }
+      ]
+    }
+  },
+
+  /* =========================================================================
    * 5. TABLEAU SYNTHÈSE DES HYPOTHÈSES DU SCÉNARIO DE RÉFÉRENCE
    * ====================================================================== */
   hypothesesTable: {

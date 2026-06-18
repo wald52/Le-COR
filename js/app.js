@@ -28,23 +28,123 @@
   /* ----------------------------------------------------------------------
    * 1. Graphique phare : dépenses de retraite en % du PIB, projections
    *    successives superposées.
+   *
+   *    Sélecteur d'unité (lecteur grand public) : la même courbe en % du PIB
+   *    peut être relue en milliards d'euros ou en % de la dépense publique.
+   *    On convertit les points puis on les renvoie au moteur avec le bon
+   *    suffixe : l'axe, l'infobulle, le tableau et le CSV suivent tout seuls.
    * -------------------------------------------------------------------- */
-  function renderDepensesPib(animate) {
+  let pibUnit = "pct"; // "pct" | "eur" | "share" — unité courante du graphe phare
+
+  // Interpolation linéaire bornée sur des ancres {x, y} triées par x. En dehors
+  // de la plage, on prolonge par la valeur de l'extrémité la plus proche.
+  function interpAt(points, x) {
+    if (!points || !points.length) return null;
+    if (x <= points[0].x) return points[0].y;
+    const last = points[points.length - 1];
+    if (x >= last.x) return last.y;
+    for (let i = 1; i < points.length; i++) {
+      if (x <= points[i].x) {
+        const a = points[i - 1], b = points[i];
+        return a.y + (b.y - a.y) * ((x - a.x) / (b.x - a.x));
+      }
+    }
+    return last.y;
+  }
+
+  // Convertit une valeur en % du PIB vers l'unité demandée pour une année donnée.
+  function convertPibValue(pct, x, unit) {
+    const m = D.macro || {};
+    if (unit === "eur") {
+      const pib = interpAt(m.pibMdEuros && m.pibMdEuros.points, x);
+      return pib == null ? null : Math.round((pct / 100) * pib);
+    }
+    if (unit === "share") {
+      const dp = interpAt(m.depensePubliquePctPib && m.depensePubliquePctPib.points, x);
+      return dp ? (pct / dp) * 100 : null;
+    }
+    return pct; // "pct"
+  }
+
+  // Transforme un tableau de séries (points en % du PIB) vers l'unité demandée
+  // et recalcule les étiquettes de fin, qui dépendent de l'unité.
+  function convertPibSeries(series, unit) {
+    if (unit === "pct") return series;
+    return series.map(s => {
+      const points = s.points
+        .map(p => ({ x: p.x, y: convertPibValue(p.y, p.x, unit) }))
+        .filter(p => p.y != null);
+      // On ne recalcule l'étiquette de fin que pour les séries qui en avaient
+      // une (les projections) ; la courbe « Réalisé » reste sans étiquette.
+      const last = points[points.length - 1];
+      let endNote = s.endNote;
+      if (s.endNote && last) {
+        endNote = unit === "eur"
+          ? "≈" + Math.round(last.y) + " Md€"
+          : "≈" + (Math.round(last.y * 10) / 10).toString().replace(".", ",") + " %";
+      }
+      return { ...s, points, endNote };
+    });
+  }
+
+  const PIB_UNIT_SUFFIX = { pct: " %", eur: " Md€", share: " %" };
+  const PIB_UNIT_SUBTITLE = {
+    pct: "Dépenses de retraite, en % du PIB — scénario de référence de chaque rapport",
+    eur: "Dépenses de retraite, en milliards d'euros — scénario de référence de chaque rapport",
+    share: "Dépenses de retraite, en % de la dépense publique — scénario de référence de chaque rapport"
+  };
+
+  function renderDepensesPib(animate, unit) {
+    if (unit) pibUnit = unit;
     // Données officielles générées depuis les Excel du COR si disponibles,
     // sinon valeurs d'amorçage de data.js.
     const d = (window.COR_SERIES && window.COR_SERIES.depensesPib) || D.depensesPib;
-    const series = [
+    let series = [
       { ...d.realise, kind: "solid", markers: false },
       ...d.projections.map(p => ({
         label: p.label, color: p.color, kind: "dash", points: p.points, endNote: p.endNote
       }))
     ];
+    series = convertPibSeries(series, pibUnit);
+
+    // En % du PIB on garde l'échelle d'origine ; sinon on laisse le moteur
+    // auto-cadrer l'axe Y (les ordres de grandeur Md€ / % dépense publique
+    // n'ont rien à voir avec les bornes 11–15,5 % du PIB).
+    const y = pibUnit === "pct"
+      ? { min: d.yMin, max: d.yMax, suffix: PIB_UNIT_SUFFIX.pct }
+      : { suffix: PIB_UNIT_SUFFIX[pibUnit] };
+
     lineChart(document.getElementById("chart-pib"), {
       series,
       x: { min: d.xMin, max: d.xMax },
-      y: { min: d.yMin, max: d.yMax, suffix: " %" },
-      ariaLabel: d.subtitle,
+      y,
+      ariaLabel: PIB_UNIT_SUBTITLE[pibUnit],
       animate
+    });
+
+    // Sous-titre de la carte + avertissement « euros estimés ».
+    const card = document.getElementById("chart-pib").closest(".chart-card");
+    const sub = card && card.querySelector(".chart-title span");
+    if (sub) sub.textContent = PIB_UNIT_SUBTITLE[pibUnit];
+    const note = document.getElementById("pib-unit-note");
+    if (note) note.hidden = pibUnit !== "eur";
+  }
+
+  // Câble le sélecteur d'unité (% du PIB / Md€ / % dépense publique) du graphe
+  // phare. Idempotent : on ne l'installe qu'une fois.
+  function setupPibUnitToggle() {
+    const group = document.getElementById("pib-unit-toggle");
+    if (!group || group.dataset.wired) return;
+    group.dataset.wired = "1";
+    group.addEventListener("click", e => {
+      const btn = e.target.closest(".unit-btn");
+      if (!btn || btn.classList.contains("is-active")) return;
+      group.querySelectorAll(".unit-btn").forEach(b => {
+        const on = b === btn;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      renderDepensesPib(false, btn.dataset.unit);
     });
   }
 
@@ -1050,6 +1150,7 @@
     setupToTop();
     setupChartTools();
     setupDataExports();
+    setupPibUnitToggle();
     setupZoom();
     scheduleChartPngCache();
     // Sur mobile, le repli/déploiement de la barre d'adresse pendant le

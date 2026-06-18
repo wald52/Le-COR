@@ -169,8 +169,14 @@
             <strong>La part des retraites dans le PIB selon les rapports successifs du COR</strong>
             <span>Dépenses de retraite, en % du PIB — scénario de référence de chaque rapport</span>
           </figcaption>
+          <div id="pib-unit-toggle" class="unit-toggle" role="group" aria-label="Unité d'affichage des dépenses de retraite">
+            <button type="button" class="unit-btn is-active" data-unit="pct" aria-pressed="true">% du PIB</button>
+            <button type="button" class="unit-btn" data-unit="eur" aria-pressed="false">Milliards €</button>
+            <button type="button" class="unit-btn" data-unit="share" aria-pressed="false"><span class="unit-long">% de la dépense publique</span><span class="unit-short">% dép. publique</span></button>
+          </div>
           <div id="chart-pib" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2016–2026 — <strong>données officielles</strong> extraites des fichiers Excel du COR (séries année par année, scénario de référence de chaque rapport).</p>
+          <p id="pib-unit-note" class="chart-note" hidden>Euros <em>courants</em> estimés au-delà de 2025 (à partir des hypothèses macro du COR&nbsp;: croissance + inflation) — à titre indicatif, pas un chiffre officiel.</p>
+          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2016–2026 — <strong>données officielles</strong> extraites des fichiers Excel du COR (séries année par année, scénario de référence de chaque rapport). Conversion en euros et en part de la dépense publique&nbsp;: PIB et dépenses publiques INSEE.</p>
         </figure>
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>

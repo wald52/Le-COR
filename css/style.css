@@ -370,6 +370,36 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
    « Agrandir » / « Télécharger » positionnés en absolu en haut à droite de la carte. */
 .chart-title strong { padding-right: var(--chart-tools-w, 0); }
 
+/* Sélecteur d'unité du graphique phare (% du PIB / Md€ / % dépense publique).
+   Permet au grand public de relire la même courbe dans une unité parlante. */
+.unit-toggle {
+  display: inline-flex; flex-wrap: wrap; gap: 4px;
+  margin: 4px 0 12px; padding: 3px;
+  background: var(--bleu-pale); border-radius: 10px;
+}
+.unit-btn {
+  font: inherit; font-size: 0.8rem; cursor: pointer;
+  color: var(--gris); background: transparent;
+  border: 1px solid transparent; border-radius: 7px; padding: 6px 12px;
+}
+.unit-btn:hover { color: var(--bleu); }
+.unit-btn.is-active {
+  color: var(--bleu); background: #fff; font-weight: 600;
+  border-color: var(--gris-clair); box-shadow: 0 1px 3px rgba(31, 78, 121, 0.12);
+}
+.unit-btn:focus-visible { outline: 2px solid var(--bleu-clair); outline-offset: 2px; }
+.unit-btn .unit-short { display: none; }
+
+/* Note d'avertissement (euros estimés au-delà de 2025). */
+.chart-note { font-size: 0.78rem; color: var(--gris); margin: 8px 0 0; }
+
+@media (max-width: 480px) {
+  .unit-toggle { display: flex; width: 100%; }
+  .unit-btn { flex: 1; padding: 8px 6px; text-align: center; }
+  .unit-btn .unit-long { display: none; }
+  .unit-btn .unit-short { display: inline; }
+}
+
 /* Vue agrandie : élément <dialog> natif (focus piégé, Échap, fond géré). */
 .zoom-modal {
   border: 0; padding: 0; background: #fff; color: var(--encre);
