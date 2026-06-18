@@ -29,4 +29,22 @@ Toutes les évolutions notables du site. Format inspiré de
 
 - `js/chart.js` expose désormais la configuration du graphique
   (`container.__cfg`) pour permettre l'export CSV.
-- Cache du service worker porté à `v40` (rafraîchissement des assets modifiés).
+- **Second axe Y (à droite)** dans les graphiques en courbes : une série peut
+  être rattachée à une échelle secondaire (`axis:"right"` + `cfg.y2`). Le
+  graphique « Bénéficiaires de pensions, par type de droit » l'utilise pour la
+  part des bénéficiaires d'une réversion (en %), désormais lisible à côté des
+  effectifs (en milliers) au lieu d'être écrasée sur l'échelle de gauche.
+- Cache du service worker porté à `v41` (rafraîchissement des assets modifiés).
+
+### Corrigé
+
+- **Infobulles des graphiques rognées sur mobile** : sur petit écran, les
+  libellés longs rendaient l'infobulle plus large que le graphique, ce qui la
+  poussait hors cadre (texte coupé à gauche). L'infobulle est désormais
+  plafonnée à la largeur du graphique, ses libellés reviennent à la ligne, et
+  son positionnement reste toujours dans la zone visible.
+- **Mentions « (éch. de gauche / de droite) » sans second axe** : le graphique
+  « Bénéficiaires de pensions, par type de droit » affichait ces mentions alors
+  qu'un seul axe existait, et la part (~28 %) tracée sur l'échelle des milliers
+  apparaissait comme une ligne plate à zéro (infobulle « 0,2 k » erronée). Le
+  second axe est maintenant réellement dessiné.

@@ -156,8 +156,10 @@
       : xs.filter(y => y % 5 === 0 || y === xs[0] || y === xs[xs.length - 1]);
     const rowLabel = x => (cats ? cats[x] : x);
     const at = (s, x) => {
+      // Une série rattachée à l'axe secondaire porte son propre suffixe (ex. %).
+      const sfx = s.axis === "right" ? (cfg.y2?.suffix ?? suffix) : suffix;
       const p = s.points.find(p => p.x === x);
-      return p ? String(Math.round(p.y * 10) / 10).replace(".", ",") + suffix : "—";
+      return p ? String(Math.round(p.y * 10) / 10).replace(".", ",") + sfx : "—";
     };
     let html = `<details class="data-details"><summary class="data-toggle">Voir les données (tableau)</summary>` +
       `<div class="data-table-wrap"><table><caption class="visually-hidden">${cfg.ariaLabel || "Données du graphique"}</caption>` +
@@ -205,10 +207,20 @@
     // de `categories` et non des années ; le tooltip indexe par catégorie.
     const cats = cfg.categories || null;
 
+    // Axe Y secondaire (à droite) optionnel : les séries marquées
+    // `axis:"right"` sont tracées sur leur propre échelle (cfg.y2), ce qui
+    // permet de superposer une grandeur d'unité différente (ex. une part en %)
+    // sans écraser l'échelle principale. Sans série « droite », rien ne change.
+    const isRight = s => s.axis === "right";
+    const hasY2 = cfg.series.some(isRight);
+    const leftSeries = cfg.series.filter(s => !isRight(s));
+    const rightSeries = cfg.series.filter(isRight);
+    const y2Suffix = cfg.y2?.suffix ?? "";
+
     // Calcul anticipé des bornes Y et de la hauteur de tracé (ne dépendent pas
     // de la marge droite) pour décider si chaque étiquette peut tenir à
     // l'intérieur du graphique plutôt que dans la marge droite.
-    const allY_pre = cfg.series.flatMap(s => s.points.map(p => p.y));
+    const allY_pre = leftSeries.flatMap(s => s.points.map(p => p.y));
     const yMin_pre = cfg.y?.min ?? Math.min(...allY_pre);
     const yMax_pre = cfg.y?.max ?? Math.max(...allY_pre);
     const allX_pre = cfg.series.flatMap(s => s.points.map(p => p.x));
@@ -281,11 +293,21 @@
     const yLabelLen = Math.max(...yTicksPre.map(t =>
       (String(Math.round(t * 10) / 10).replace(".", ",") + ySuffixPre).length));
     const leftForLabels = Math.ceil(yLabelLen * CHAR_W) + (narrow ? 12 : 14);
+    // Bornes anticipées de l'axe secondaire + marge droite nécessaire à ses
+    // étiquettes (sinon « 30 % » déborderait hors cadre comme à gauche).
+    const allY2_pre = rightSeries.flatMap(s => s.points.map(p => p.y));
+    const y2Min_pre = hasY2 ? (cfg.y2?.min ?? Math.min(...allY2_pre)) : 0;
+    const y2Max_pre = hasY2 ? (cfg.y2?.max ?? Math.max(...allY2_pre)) : 1;
+    const rightForLabels = hasY2
+      ? Math.ceil(Math.max(...niceTicks(y2Min_pre, y2Max_pre, 5).map(t =>
+          (String(Math.round(t * 10) / 10).replace(".", ",") + y2Suffix).length)) * CHAR_W)
+        + (narrow ? 12 : 14)
+      : 0;
     const M = {
       top: 16 + bandTop,
-      right: outsideEndLen > 0
+      right: Math.max(rightForLabels, outsideEndLen > 0
         ? Math.min(Math.max(outsideEndLen * CHAR_W + 14, narrow ? 40 : 56), narrow ? 96 : 124)
-        : (narrow ? 8 : 14),
+        : (narrow ? 8 : 14)),
       bottom: (narrow ? 34 : 46) + bandBot,
       // Marge gauche élargie en présence de coupures d'axe : les étiquettes Y
       // sont repoussées à gauche des zigzags posés sur l'axe.
@@ -296,15 +318,22 @@
 
     // Bornes
     const allX = cfg.series.flatMap(s => s.points.map(p => p.x));
-    const allY = cfg.series.flatMap(s => s.points.map(p => p.y));
+    const allY = leftSeries.flatMap(s => s.points.map(p => p.y));
     const xMin = cfg.x?.min ?? Math.min(...allX);
     const xMax = cfg.x?.max ?? Math.max(...allX);
     const yMin = cfg.y?.min ?? Math.min(...allY);
     const yMax = cfg.y?.max ?? Math.max(...allY);
     const suffix = cfg.y?.suffix ?? "";
+    const y2Min = hasY2 ? (cfg.y2?.min ?? Math.min(...allY2_pre)) : 0;
+    const y2Max = hasY2 ? (cfg.y2?.max ?? Math.max(...allY2_pre)) : 1;
 
     const sx = v => M.left + ((v - xMin) / (xMax - xMin)) * plotW;
     const sy = v => M.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
+    const sy2 = v => M.top + (1 - (v - y2Min) / (y2Max - y2Min)) * plotH;
+    // Résolveurs par série : suffixe et hors-échelle dépendent de l'axe auquel
+    // la série est rattachée. Les séries « droite » ne passent jamais par les
+    // bandes hors échelle (elles ont leur propre cadrage, cf. syAllOf).
+    const suffixOf = s => (isRight(s) ? y2Suffix : suffix);
 
     // Position Y, bandes comprises : une valeur très hors échelle est posée à
     // hauteur fixe au milieu de sa bande (l'écart réel n'est pas à l'échelle,
@@ -312,6 +341,10 @@
     const yTopBand = M.top - BAND_GAP - (BAND_H - BAND_GAP) / 2;
     const yBotBand = M.top + plotH + BAND_GAP + (BAND_H - BAND_GAP) / 2;
     const syAll = v => isFarHigh(v) ? yTopBand : isFarLow(v) ? yBotBand : sy(v);
+    // Variante par série : une série de droite est toujours « dans le cadre »
+    // sur son échelle, sans bande hors échelle ni signe de coupure.
+    const syAllOf = s => (isRight(s) ? sy2 : syAll);
+    const isFarS = (s, v) => !isRight(s) && (isFarHigh(v) || isFarLow(v));
 
     const svg = el("svg", {
       viewBox: `0 0 ${W} ${H}`,
@@ -344,6 +377,32 @@
       lbl.textContent = String(Math.round(t * 10) / 10).replace(".", ",") + suffix;
       svg.appendChild(lbl);
     });
+
+    // --- Axe Y secondaire (à droite) ---
+    // Graduations et étiquettes à droite du cadre, teintées de la couleur de
+    // la série concernée pour signaler visuellement « cette courbe se lit sur
+    // l'échelle de droite ». Pas de lignes de grille (l'échelle gauche les
+    // porte déjà) pour éviter d'encombrer le tracé.
+    if (hasY2) {
+      const y2Color = (rightSeries[0] && rightSeries[0].color) || "#5b6f93";
+      niceTicks(y2Min, y2Max, 5).forEach(t => {
+        const y = sy2(t);
+        svg.appendChild(el("line", {
+          x1: M.left + plotW, y1: y, x2: M.left + plotW + 5, y2: y, class: "chart-tick",
+          style: `stroke:${y2Color}`
+        }));
+        const lbl = el("text", {
+          x: M.left + plotW + (narrow ? 7 : 9), y: y + 4,
+          class: "chart-axis-label", "text-anchor": "start", style: `fill:${y2Color}`
+        });
+        lbl.textContent = String(Math.round(t * 10) / 10).replace(".", ",") + y2Suffix;
+        svg.appendChild(lbl);
+      });
+      svg.appendChild(el("line", {
+        x1: M.left + plotW, y1: M.top, x2: M.left + plotW, y2: M.top + plotH,
+        class: "chart-axis", style: `stroke:${y2Color}`
+      }));
+    }
 
     // --- Axe X ---
     // La ligne d'axe est posée sous la bande hors échelle du bas (le point
@@ -386,9 +445,10 @@
     // --- Courbes ---
     const seriesNodes = [];
     cfg.series.forEach((s, idx) => {
+      const syS = syAllOf(s);
       const scaled = s.points.map(p => ({
-        x: sx(p.x), y: syAll(p.y),
-        far: isFarHigh(p.y) || isFarLow(p.y), raw: p
+        x: sx(p.x), y: syS(p.y),
+        far: isFarS(s, p.y), raw: p
       }));
       const g = el("g", { class: "chart-series", "data-idx": idx });
 
@@ -434,13 +494,13 @@
           x: sp.x + 6, y: sp.y + 4,
           class: "chart-endnote", fill: s.color
         });
-        t.textContent = String(sp.raw.y).replace(".", ",").replace("-", "−") + suffix;
+        t.textContent = String(sp.raw.y).replace(".", ",").replace("-", "−") + suffixOf(s);
         g.appendChild(t);
       });
 
       // Point de fin visible (au bord droit si la série dépasse xMax).
       const endRaw = endAnchor(s);
-      const endScaled = endRaw ? { x: sx(endRaw.x), y: syAll(endRaw.y) } : null;
+      const endScaled = endRaw ? { x: sx(endRaw.x), y: syS(endRaw.y) } : null;
 
       // Points de marquage (optionnels) — utile pour le dernier point.
       if (s.markers !== false && endScaled) {
@@ -714,7 +774,7 @@
         const v = valueAt(s, xr);
         if (v != null) {
           any = true;
-          rows += tipRow(s.color, s.label, `${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}`);
+          rows += tipRow(s.color, s.label, `${String(Math.round(v * 10) / 10).replace(".", ",")}${suffixOf(s)}`);
         }
       });
       if (!any) { tip.style.opacity = 0; return; }

@@ -1444,7 +1444,7 @@ def build_explorer(multi=None):
 
     def add(iid, label, unit, suffix, series, desc, source, obs_from=2000,
             xLabel="Année", chartType="line", barMode=None, categories=None,
-            waterfall=False, yMin=None, yMax=None):
+            waterfall=False, yMin=None, yMax=None, y2=None):
         series = [s for s in series if s["points"]]
         if not series:
             print("✗ explorateur:", iid, "(vide)")
@@ -1453,6 +1453,10 @@ def build_explorer(multi=None):
                "desc": desc, "source": source, "series": series}
         if categories is not None:
             rec["categories"] = categories
+        # Axe Y secondaire (à droite) : configuration {suffix, …} pour les
+        # séries marquées axis:"right" (grandeur d'unité différente, ex. %).
+        if y2 is not None:
+            rec["y2"] = y2
         if chartType == "bar":
             # Axe catégoriel : pas de bornes x ; les bornes y sont laissées au
             # moteur (qui inclut les cumuls empilés) sauf si on les force.
@@ -1926,12 +1930,23 @@ def build_explorer(multi=None):
     r = _rows("partie 1", "Fig 1.17", DF)
     if r:
         series = extract_rows_timeseries(r, 1, 2000)
+        # La « part des retraités bénéficiaires d'une réversion » est une
+        # proportion (0–1) tracée sur un second axe (à droite) dans la figure
+        # COR d'origine. On la convertit en pourcentage et on la rattache à cet
+        # axe secondaire pour qu'elle reste lisible à côté des effectifs (en
+        # milliers) au lieu d'être écrasée sur l'échelle de gauche.
+        y2 = None
+        for s in series:
+            if "éch. de droite" in s["label"]:
+                s["axis"] = "right"
+                s["points"] = [{"x": p["x"], "y": round(p["y"] * 100, 2)} for p in s["points"]]
+                y2 = {"suffix": " %"}
         add("df_beneficiaires", "Bénéficiaires de pensions, par type de droit",
             "milliers", " k", series,
             "Effectifs de retraités selon le type de droit perçu : droit direct seul, droits "
             "dérivés (réversion) seuls, ou les deux. Beaucoup de femmes cumulent droit direct "
             "et réversion.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.17).")
+            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.17).", y2=y2)
     r = _rows("partie 1", "Fig 1.8", DF)
     if r:
         add("df_age_enfants", "Âge de départ par sexe et nombre d'enfants", "ans", " ans",
