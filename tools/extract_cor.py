@@ -994,6 +994,83 @@ def extract_composition(rows, scale=100, colors=None):
     return series
 
 
+# --------------------------------------------------------------------------
+# Figures à axe catégoriel (barres groupées / empilées) — modèle data-driven
+# de l'explorateur : chaque indicateur porte `categories` (libellés de l'axe x)
+# et des séries dont les points {x, y} ont x = index de catégorie.
+# --------------------------------------------------------------------------
+_CAT_STOP = ("lecture", "champ", "source", "note", "en ", "par ordre")
+
+
+def _header_cols(rows, floor_col=2):
+    """1re ligne portant ≥2 cellules texte à partir de `floor_col` : sert
+    d'en-tête (catégories en colonnes). Renvoie [(index_colonne, libellé)]."""
+    for r in rows[:8]:
+        cells = [(i, str(c).strip()) for i, c in enumerate(r)
+                 if i >= floor_col and isinstance(c, str) and c.strip()]
+        if len(cells) >= 2:
+            return cells
+    return []
+
+
+def extract_stacked(rows, scale=1.0, colors=None,
+                    total_keys=("rdb", "revenu disponible", "total")):
+    """Barres empilées signées : composants en lignes (col 1), catégories en
+    colonnes (en-tête). La ligne « total » devient une série `total` (repère,
+    hors empilement). Renvoie (categories, series)."""
+    hdr = _header_cols(rows)
+    if not hdr:
+        return [], []
+    idxs = [i for i, _ in hdr]
+    cats = [t for _, t in hdr]
+    colors = colors or []
+    series, k = [], 0
+    for r in rows:
+        lab = str(r[1]).strip() if len(r) > 1 and isinstance(r[1], str) else ""
+        if not lab or lab.lower().startswith(_CAT_STOP):
+            continue
+        vals = [r[i] if i < len(r) and isinstance(r[i], (int, float)) else None for i in idxs]
+        if all(v is None for v in vals):
+            continue
+        pts = [{"x": j, "y": round(v * scale, 3)} for j, v in enumerate(vals) if v is not None]
+        is_total = any(tk in lab.lower() for tk in total_keys)
+        col = colors[k % len(colors)] if colors and not is_total else "#1f2d3d"
+        s = {"label": lab, "color": col, "points": pts}
+        if is_total:
+            s["total"] = True
+        else:
+            k += 1
+        series.append(s)
+    return cats, series
+
+
+def extract_country_grouped(rows, scale=1.0, colors=None):
+    """Barres groupées : catégories = lignes (col 1, ex. pays), séries =
+    colonnes de l'en-tête (ex. tranches d'âge). Renvoie (categories, series)."""
+    hdr = _header_cols(rows)
+    if not hdr:
+        return [], []
+    idxs = [i for i, _ in hdr]
+    labels = [t for _, t in hdr]
+    colors = colors or ["#1f4e79", "#e8731c", "#6aa84f", "#c2185b", "#9c27b0"]
+    cats, cols = [], [[] for _ in idxs]
+    for r in rows:
+        c = str(r[1]).strip() if len(r) > 1 and isinstance(r[1], str) else ""
+        if not c or c.lower().startswith(_CAT_STOP):
+            continue
+        vals = [r[i] if i < len(r) and isinstance(r[i], (int, float)) else None for i in idxs]
+        if all(v is None for v in vals):
+            continue
+        ci = len(cats)
+        cats.append(c)
+        for j, v in enumerate(vals):
+            if v is not None:
+                cols[j].append({"x": ci, "y": round(v * scale, 3)})
+    series = [{"label": labels[j], "color": colors[j % len(colors)], "points": cols[j]}
+              for j in range(len(idxs)) if cols[j]]
+    return cats, series
+
+
 # Taux d'emploi des seniors (Fig 4.1) : trois tranches quinquennales, chacune
 # ventilée Ensemble/Femmes/Hommes. Une teinte par tranche, intensité par sexe.
 AGE_BAND_COLORS = {
@@ -1073,14 +1150,29 @@ def build_explorer(multi=None):
     ind = {}
 
     def add(iid, label, unit, suffix, series, desc, source, obs_from=2000,
-            xLabel="Année"):
+            xLabel="Année", chartType="line", barMode=None, categories=None,
+            waterfall=False, yMin=None, yMax=None):
         series = [s for s in series if s["points"]]
         if not series:
             print("✗ explorateur:", iid, "(vide)")
             return None
-        b = _bounds(series)
-        ind[iid] = {"label": label, "unit": unit, "suffix": suffix, "xLabel": xLabel,
-                    "desc": desc, "source": source, "series": series, **b}
+        rec = {"label": label, "unit": unit, "suffix": suffix, "xLabel": xLabel,
+               "desc": desc, "source": source, "series": series}
+        if chartType == "bar":
+            # Axe catégoriel : pas de bornes x ; les bornes y sont laissées au
+            # moteur (qui inclut les cumuls empilés) sauf si on les force.
+            rec["chartType"] = "bar"
+            rec["barMode"] = barMode or "grouped"
+            rec["categories"] = categories or []
+            if waterfall:
+                rec["waterfall"] = True
+            if yMin is not None:
+                rec["yMin"] = yMin
+            if yMax is not None:
+                rec["yMax"] = yMax
+        else:
+            rec.update(_bounds(series))
+        ind[iid] = rec
         return iid
 
     def vintage_series(obs, projs, obs_from=2000, notes=None):
@@ -1454,6 +1546,31 @@ def build_explorer(multi=None):
             "COR, rapport 2026 (solde projeté par groupe de régimes, hors transferts internes, "
             "scénario de référence).")
 
+    # --- Comparaisons & structures (axe catégoriel, barres)
+    r = _rows("partie 3", "Fig 3.8")
+    if r:
+        cats, series = extract_stacked(
+            r, 1.0,
+            ["#6aa84f", "#1f4e79", "#e8731c", "#9c27b0", "#c2185b", "#b34700"])
+        add("composition_revenu", "Composition du revenu disponible des ménages",
+            "€/mois", " €", series,
+            "D'où vient le revenu mensuel moyen des ménages, selon qu'ils sont retraités, "
+            "actifs ou l'ensemble : revenus d'activité, pensions, patrimoine, prestations, "
+            "moins les impôts et prélèvements sociaux (segments négatifs). Le repère = revenu "
+            "disponible total (RdB).",
+            "COR, rapport 2026 (composition du revenu disponible des ménages en 2023).",
+            chartType="bar", barMode="stacked", categories=cats)
+
+    r = _rows("partie 4", "Fig.4.C")
+    if r:
+        cats, series = extract_country_grouped(r, 1.0)
+        add("emploi_pays", "Taux d'emploi par pays et tranche d'âge", "%", " %", series,
+            "Où se situe la France ? Taux d'emploi par tranche d'âge (jeunes, seniors, âges "
+            "intermédiaires) dans les pays suivis par le COR. La France se distingue par un "
+            "emploi des seniors (60-64 ans) plus faible que la moyenne.",
+            "COR, rapport 2026 (taux d'emploi par âge, comparaison internationale).",
+            chartType="bar", barMode="grouped", categories=cats)
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -1531,6 +1648,7 @@ def build_explorer(multi=None):
         {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active", "emploi_seniors", "duree_carriere", "age_moyen_depart"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie", "taux_rempl", "taux_cotisation", "tri", "duree_retraite", "ecart_genre", "assurance_genre", "age_depart_genre", "pauvrete", "intensite_pauvrete"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "solde_regimes", "dep_regimes", "dep_pub", "struct_ressources"]},
+        {"name": "Comparaisons & structures", "indicators": ["composition_revenu", "emploi_pays"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits

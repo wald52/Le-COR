@@ -6,7 +6,7 @@
   "use strict";
 
   const D = window.COR_DATA;
-  const { lineChart } = window.CORChart;
+  const { lineChart, barChart } = window.CORChart;
   let explorerRedraw = null;   // permet de rejouer l'animation du graphe de l'explorateur
 
   /* ----------------------------------------------------------------------
@@ -248,18 +248,31 @@
         c.classList.toggle("active", on);
         c.setAttribute("aria-pressed", on ? "true" : "false");
       });
-      lineChart(document.getElementById("chart-explorer"), {
-        // Millésime en bout de courbe pour les indicateurs « rapports
-        // superposés », comme sur le graphique phare (« Rapport 2016 » → 2016).
-        series: ind.series.map(s => {
-          const m = /^Rapport (\d{4})/.exec(s.label);
-          return m && !s.endNote ? { ...s, endNote: m[1] } : s;
-        }),
-        x: { min: ind.xMin, max: ind.xMax, label: ind.xLabel || "Année" },
-        y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
-        ariaLabel: ind.label,
-        animate
-      });
+      if (ind.chartType === "bar") {
+        barChart(document.getElementById("chart-explorer"), {
+          series: ind.series,
+          categories: ind.categories || [],
+          barMode: ind.barMode || "grouped",
+          waterfall: ind.waterfall || false,
+          x: { label: ind.xLabel || "Catégorie" },
+          y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
+          ariaLabel: ind.label,
+          animate
+        });
+      } else {
+        lineChart(document.getElementById("chart-explorer"), {
+          // Millésime en bout de courbe pour les indicateurs « rapports
+          // superposés », comme sur le graphique phare (« Rapport 2016 » → 2016).
+          series: ind.series.map(s => {
+            const m = /^Rapport (\d{4})/.exec(s.label);
+            return m && !s.endNote ? { ...s, endNote: m[1] } : s;
+          }),
+          x: { min: ind.xMin, max: ind.xMax, label: ind.xLabel || "Année" },
+          y: { min: ind.yMin, max: ind.yMax, suffix: ind.suffix || "" },
+          ariaLabel: ind.label,
+          animate
+        });
+      }
       // Le contenu de la carte explorateur a changé : on régénère son cache PNG
       // (en temps mort) pour que le téléchargement reflète l'indicateur courant.
       const card = document.getElementById("chart-explorer").closest(".chart-card");
@@ -847,13 +860,17 @@
   // que les accents des libellés s'affichent correctement.
   function chartCsv(cfg) {
     const series = (cfg.series || []).filter(s => s.points && s.points.length);
-    const years = [...new Set(series.flatMap(s => s.points.map(p => p.x)))].sort((a, b) => a - b);
+    // Axe catégoriel (barres) : 1re colonne = libellé de catégorie ; sinon axe d'années.
+    const cats = cfg.categories;
+    const xs = cats
+      ? cats.map((_, i) => i)
+      : [...new Set(series.flatMap(s => s.points.map(p => p.x)))].sort((a, b) => a - b);
     const esc = v => { v = String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     const num = v => String(Math.round(v * 100) / 100).replace(".", ",");
-    const lines = [[cfg.x?.label || "Année", ...series.map(s => s.label)].map(esc).join(";")];
-    years.forEach(y => {
-      const cells = [String(y)];
-      series.forEach(s => { const p = s.points.find(p => p.x === y); cells.push(p ? num(p.y) : ""); });
+    const lines = [[cfg.x?.label || (cats ? "Catégorie" : "Année"), ...series.map(s => s.label)].map(esc).join(";")];
+    xs.forEach(x => {
+      const cells = [String(cats ? cats[x] : x)];
+      series.forEach(s => { const p = s.points.find(p => p.x === x); cells.push(p ? num(p.y) : ""); });
       lines.push(cells.map(esc).join(";"));
     });
     return "\uFEFF" + lines.join("\r\n");

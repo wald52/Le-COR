@@ -111,6 +111,9 @@
    * garde toujours exactement les mêmes couleurs que les courbes.
    */
   function swatchHTML(color, kind) {
+    if (kind === "bar")
+      return `<svg class="legend-swatch" width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">` +
+        `<rect x="1" y="1" width="12" height="10" rx="1.5" fill="${color}"/></svg>`;
     const dash = kind === "dash" ? ' stroke-dasharray="5 3"' : "";
     return `<svg class="legend-swatch" width="20" height="6" viewBox="0 0 20 6" aria-hidden="true">` +
       `<line x1="1" y1="3" x2="19" y2="3" stroke="${color}" stroke-width="3" stroke-linecap="round"${dash}/></svg>`;
@@ -123,22 +126,29 @@
   // Tableau de données repliable sous le graphique — alternative accessible
   // (lecteurs d'écran, malvoyants) et gage de transparence.
   function buildDataTable(container, cfg, suffix) {
-    const years = [...new Set(cfg.series.flatMap(s => s.points.map(p => p.x)))].sort((a, b) => a - b);
-    if (!years.length) return;
-    const first = years[0], last = years[years.length - 1];
-    const kept = years.filter(y => y % 5 === 0 || y === first || y === last);
-    const at = (s, y) => {
-      const p = s.points.find(p => p.x === y);
+    // Axe catégoriel (barres, profils par âge) : lignes = catégories, sans
+    // filtrage par pas de 5 ; sinon axe d'années comme avant.
+    const cats = cfg.categories;
+    const xs = cats
+      ? cats.map((_, i) => i)
+      : [...new Set(cfg.series.flatMap(s => s.points.map(p => p.x)))].sort((a, b) => a - b);
+    if (!xs.length) return;
+    const kept = cats
+      ? xs
+      : xs.filter(y => y % 5 === 0 || y === xs[0] || y === xs[xs.length - 1]);
+    const rowLabel = x => (cats ? cats[x] : x);
+    const at = (s, x) => {
+      const p = s.points.find(p => p.x === x);
       return p ? String(Math.round(p.y * 10) / 10).replace(".", ",") + suffix : "—";
     };
     let html = `<details class="data-details"><summary class="data-toggle">Voir les données (tableau)</summary>` +
       `<div class="data-table-wrap"><table><caption class="visually-hidden">${cfg.ariaLabel || "Données du graphique"}</caption>` +
-      `<thead><tr><th scope="col">${cfg.x?.label || "Année"}</th>`;
+      `<thead><tr><th scope="col">${cfg.x?.label || (cats ? "Catégorie" : "Année")}</th>`;
     cfg.series.forEach(s => { html += `<th scope="col">${s.label}</th>`; });
     html += "</tr></thead><tbody>";
-    kept.forEach(y => {
-      html += `<tr><th scope="row">${y}</th>`;
-      cfg.series.forEach(s => { html += `<td>${at(s, y)}</td>`; });
+    kept.forEach(x => {
+      html += `<tr><th scope="row">${rowLabel(x)}</th>`;
+      cfg.series.forEach(s => { html += `<td>${at(s, x)}</td>`; });
       html += "</tr>";
     });
     html += "</tbody></table></div>";
@@ -761,5 +771,255 @@
     return svg;
   }
 
-  window.CORChart = { lineChart, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
+  /**
+   * Crée un graphique en barres (axe x catégoriel).
+   * @param {HTMLElement} container
+   * @param {Object} cfg
+   *   cfg.categories : ["Retraités", …] — libellés ordonnés de l'axe x
+   *   cfg.series : [{ label, color, points:[{x,y}], total }] — x = index de catégorie
+   *   cfg.barMode : "grouped" (défaut) | "stacked"
+   *   cfg.y : { min, max, suffix }
+   * Réutilise les helpers communs (el, niceTicks, swatchHTML, dotHTML,
+   * buildDataTable) et le motif d'animation/tooltip de lineChart.
+   */
+  function barChart(container, cfg) {
+    if (container.__revealCancel) container.__revealCancel();
+    container.innerHTML = "";
+
+    const cw = Math.round(container.getBoundingClientRect().width) || 760;
+    const W = Math.max(300, Math.min(cw, 920));
+    const narrow = W < 480;
+    const cats = cfg.categories || [];
+    const n = cats.length;
+    const stacked = cfg.barMode === "stacked";
+    const suffix = cfg.y?.suffix ?? "";
+    const CHAR_W = 6.8;
+
+    const barSeries = cfg.series.filter(s => !s.total);
+    const totalSeries = cfg.series.filter(s => s.total);
+    const valAt = (s, i) => { const p = s.points.find(p => p.x === i); return p ? p.y : null; };
+
+    // Bornes Y : on inclut toujours 0 ; en empilé, les cumuls +/− séparés.
+    let lo = 0, hi = 0;
+    for (let i = 0; i < n; i++) {
+      if (stacked) {
+        let pos = 0, neg = 0;
+        barSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; if (v >= 0) pos += v; else neg += v; });
+        hi = Math.max(hi, pos); lo = Math.min(lo, neg);
+      } else {
+        barSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; hi = Math.max(hi, v); lo = Math.min(lo, v); });
+      }
+      totalSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; hi = Math.max(hi, v); lo = Math.min(lo, v); });
+    }
+    const pad = (hi - lo) * 0.08 || 1;
+    const yMax = cfg.y?.max ?? hi + pad;
+    const yMin = cfg.y?.min ?? (lo < 0 ? lo - pad : 0);
+
+    // Marges : gauche pour les libellés d'axe Y, bas pour les libellés de
+    // catégories (pivotés si trop longs pour la largeur de bande).
+    const yTicks = niceTicks(yMin, yMax, 5);
+    const yLabelLen = Math.max(...yTicks.map(t =>
+      (String(Math.round(t * 10) / 10).replace(".", ",") + suffix).length));
+    const leftForLabels = Math.ceil(yLabelLen * CHAR_W) + (narrow ? 12 : 14);
+    const rightM = narrow ? 10 : 16;
+    const left0 = Math.max(narrow ? 42 : 46, leftForLabels);
+    const bandWApprox = (W - left0 - rightM) / Math.max(n, 1);
+    const maxCatLen = Math.max(0, ...cats.map(c => String(c).length));
+    const rotate = maxCatLen * CHAR_W * 0.62 > bandWApprox;
+    const M = {
+      top: 16,
+      right: rightM,
+      bottom: rotate ? Math.min(28 + maxCatLen * CHAR_W * 0.6, 120) : (narrow ? 34 : 40),
+      left: left0
+    };
+    const plotW = W - M.left - M.right;
+    const H = Math.round(narrow ? Math.min(W * 0.98, 380) : Math.min(W * 0.56, 460)) + (rotate ? M.bottom - (narrow ? 34 : 40) : 0);
+    const plotH = H - M.top - M.bottom;
+
+    const sy = v => M.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
+    const bandW = plotW / Math.max(n, 1);
+    const y0 = sy(0);
+
+    const svg = el("svg", {
+      viewBox: `0 0 ${W} ${H}`, class: "chart-svg", role: "img",
+      "aria-label": cfg.ariaLabel || "Graphique en barres"
+    });
+
+    // Révélation animée gauche → droite (comme lineChart).
+    const rnd = Math.random().toString(36).slice(2, 8);
+    const defs = el("defs");
+    const revealId = "reveal-" + rnd;
+    const revealClip = el("clipPath", { id: revealId });
+    const revealW = W - M.left;
+    const revealRect = el("rect", { x: M.left, y: 0, width: revealW, height: H, class: "reveal-rect" });
+    revealClip.appendChild(revealRect);
+    defs.appendChild(revealClip);
+    svg.appendChild(defs);
+    const seriesLayer = el("g", { "clip-path": `url(#${revealId})` });
+
+    // --- Grille + axe Y ---
+    yTicks.forEach(t => {
+      const y = sy(t);
+      svg.appendChild(el("line", { x1: M.left, y1: y, x2: M.left + plotW, y2: y, class: "chart-grid" }));
+      const lbl = el("text", { x: M.left - 8, y: y + 4, class: "chart-axis-label", "text-anchor": "end" });
+      lbl.textContent = String(Math.round(t * 10) / 10).replace(".", ",") + suffix;
+      svg.appendChild(lbl);
+    });
+
+    // --- Axe X catégoriel ---
+    const xAxisY = M.top + plotH;
+    cats.forEach((c, i) => {
+      const cx = M.left + (i + 0.5) * bandW;
+      const lbl = el("text", {
+        x: cx, y: rotate ? xAxisY + 14 : xAxisY + 18, class: "chart-axis-label",
+        "text-anchor": rotate ? "end" : "middle"
+      });
+      if (rotate) lbl.setAttribute("transform", `rotate(-35 ${cx} ${xAxisY + 14})`);
+      lbl.textContent = String(c);
+      svg.appendChild(lbl);
+    });
+    // Ligne de référence (zéro si l'échelle traverse 0, sinon l'axe de base).
+    svg.appendChild(el("line", { x1: M.left, y1: y0, x2: M.left + plotW, y2: y0, class: "chart-axis" }));
+
+    // --- Barres ---
+    const seriesNodes = [];
+    const rectFor = (x, w, a, b, color) => el("rect", {
+      x: x, width: Math.max(0, w), y: Math.min(sy(a), sy(b)),
+      height: Math.abs(sy(a) - sy(b)), fill: color, rx: 1.5
+    });
+    barSeries.forEach((s, idx) => {
+      const g = el("g", { class: "chart-series", "data-idx": idx });
+      for (let i = 0; i < n; i++) {
+        const v = valAt(s, i);
+        if (v == null) continue;
+        const bx0 = M.left + i * bandW;
+        if (stacked) {
+          const bw = bandW * 0.62, x = bx0 + (bandW - bw) / 2;
+          // cumul (recalculé jusqu'à cette série) pour empiler +/−.
+          let pos = 0, neg = 0;
+          for (const s2 of barSeries) {
+            const v2 = valAt(s2, i);
+            if (v2 == null) { if (s2 === s) break; else continue; }
+            if (s2 === s) { g.appendChild(rectFor(x, bw, v2 >= 0 ? pos : neg, (v2 >= 0 ? pos : neg) + v2, s.color)); break; }
+            if (v2 >= 0) pos += v2; else neg += v2;
+          }
+        } else {
+          const inner = bandW * 0.74, gap0 = (bandW - inner) / 2, bw = inner / barSeries.length;
+          g.appendChild(rectFor(bx0 + gap0 + idx * bw + 1, bw - 2, 0, v, s.color));
+        }
+      }
+      seriesLayer.appendChild(g);
+      seriesNodes.push({ cfg: s, node: g });
+    });
+
+    // Série « total » : repère horizontal + valeur au-dessus de chaque barre.
+    totalSeries.forEach((s, k) => {
+      const g = el("g", { class: "chart-series", "data-idx": barSeries.length + k });
+      for (let i = 0; i < n; i++) {
+        const v = valAt(s, i);
+        if (v == null) continue;
+        const bx0 = M.left + i * bandW, bw = bandW * 0.62, x = bx0 + (bandW - bw) / 2;
+        g.appendChild(el("line", { x1: x, y1: sy(v), x2: x + bw, y2: sy(v), stroke: s.color, "stroke-width": 2.4, "stroke-linecap": "round" }));
+        const t = el("text", { x: bx0 + bandW / 2, y: sy(v) - 5, class: "chart-endnote", fill: s.color, "text-anchor": "middle" });
+        t.textContent = String(Math.round(v * 10) / 10).replace(".", ",").replace("-", "−") + suffix;
+        g.appendChild(t);
+      }
+      seriesLayer.appendChild(g);
+      seriesNodes.push({ cfg: s, node: g });
+    });
+    svg.appendChild(seriesLayer);
+
+    // --- Animation « révélation » (réutilise le motif de lineChart) ---
+    if (ANIMATE && !reducedMotion() && cfg.animate !== false) {
+      revealRect.setAttribute("width", 0);
+      const dur = 1000;
+      let raf, obs;
+      const done = () => { running.delete(finish); container.__revealCancel = null; };
+      const finish = () => { if (obs) { obs.disconnect(); obs = null; } revealRect.setAttribute("width", revealW); done(); };
+      finish.cancel = () => { if (obs) { obs.disconnect(); obs = null; } cancelAnimationFrame(raf); };
+      const start = () => {
+        const t0 = performance.now();
+        const step = now => {
+          const k = Math.max(0, Math.min(1, (now - t0) / dur));
+          revealRect.setAttribute("width", revealW * (1 - Math.pow(1 - k, 3)));
+          if (k < 1) raf = requestAnimationFrame(step); else done();
+        };
+        raf = requestAnimationFrame(step);
+      };
+      running.add(finish);
+      container.__revealCancel = () => { finish.cancel(); done(); };
+      if ("IntersectionObserver" in window) {
+        obs = new IntersectionObserver(entries => {
+          if (entries.some(e => e.isIntersecting)) { obs.disconnect(); obs = null; start(); }
+        }, { threshold: 0.15 });
+        obs.observe(svg);
+      } else { start(); }
+    }
+
+    // --- Infobulle : survol d'une bande → valeurs de la catégorie ---
+    const focusBand = el("rect", { class: "chart-focus-band", y: M.top, height: plotH, x: -10, width: 0, opacity: 0, fill: "#1f2d3d" });
+    svg.appendChild(focusBand);
+    const tip = document.createElement("div");
+    tip.className = "chart-tooltip";
+    tip.style.opacity = 0;
+    container.style.position = "relative";
+    container.appendChild(tip);
+    const overlay = el("rect", { x: M.left, y: M.top, width: plotW, height: plotH, fill: "transparent", "pointer-events": "all" });
+    overlay.addEventListener("mousemove", evt => {
+      const rect = svg.getBoundingClientRect();
+      const px = (evt.clientX - rect.left) / rect.width * W;
+      let i = Math.floor((px - M.left) / bandW);
+      i = Math.max(0, Math.min(n - 1, i));
+      focusBand.setAttribute("x", M.left + i * bandW);
+      focusBand.setAttribute("width", bandW);
+      focusBand.setAttribute("opacity", 0.06);
+      let rows = `<div class="tt-year">${cats[i]}</div>`;
+      let any = false;
+      cfg.series.forEach(s => {
+        const v = valAt(s, i);
+        if (v != null) {
+          any = true;
+          rows += `<div class="tt-row">${dotHTML(s.color)}${s.label} : <strong>${String(Math.round(v * 10) / 10).replace(".", ",")}${suffix}</strong></div>`;
+        }
+      });
+      if (!any) { tip.style.opacity = 0; return; }
+      tip.innerHTML = rows;
+      tip.style.opacity = 1;
+      const leftPx = ((M.left + (i + 0.5) * bandW) / W) * rect.width;
+      tip.style.left = Math.min(leftPx + 14, rect.width - tip.offsetWidth - 8) + "px";
+      tip.style.top = "12px";
+    });
+    overlay.addEventListener("mouseleave", () => { tip.style.opacity = 0; focusBand.setAttribute("opacity", 0); });
+    svg.appendChild(overlay);
+
+    container.appendChild(svg);
+
+    // --- Légende interactive (pastilles « barre », atténuation au survol) ---
+    if (cfg.legend !== false) {
+      const legend = document.createElement("div");
+      legend.className = "chart-legend";
+      seriesNodes.forEach(sn => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "legend-item is-long";
+        item.title = sn.cfg.label;
+        item.innerHTML = swatchHTML(sn.cfg.color, "bar") + `<span>${sn.cfg.label}</span>`;
+        const dim = on => { seriesNodes.forEach(o => { o.node.style.opacity = on && o !== sn ? 0.18 : 1; }); };
+        item.addEventListener("mouseenter", () => dim(true));
+        item.addEventListener("mouseleave", () => dim(false));
+        item.addEventListener("focus", () => dim(true));
+        item.addEventListener("blur", () => dim(false));
+        legend.appendChild(item);
+      });
+      container.appendChild(legend);
+    }
+
+    if (cfg.table !== false) buildDataTable(container, cfg, suffix);
+
+    container.__zoomRender = target => barChart(target, Object.assign({}, cfg, { animate: false, table: false }));
+    container.__cfg = cfg;
+    return svg;
+  }
+
+  window.CORChart = { lineChart, barChart, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
 })();
