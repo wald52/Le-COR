@@ -1071,6 +1071,59 @@ def extract_country_grouped(rows, scale=1.0, colors=None):
     return cats, series
 
 
+def extract_determinants(rows, horizon="2070", scale=1.0):
+    """Cascade : décomposition de l'écart de dépenses (en points de PIB) entre
+    deux rapports, à un horizon donné. Contributions signées + barre « résidu »
+    pour boucler sur le total (les « Dont » ne somment pas exactement), puis la
+    barre « total ». Renvoie (categories, series) ; le point total porte total=True."""
+    hcol = None
+    for r in rows[:6]:
+        for i, c in enumerate(r):
+            if str(c).strip() == horizon:
+                hcol = i
+                break
+        if hcol is not None:
+            break
+    if hcol is None:
+        return [], []
+
+    def num(r):
+        v = r[hcol] if hcol < len(r) else None
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            t = v.strip().replace(",", ".")
+            try:
+                return float(t)
+            except ValueError:
+                return None
+        return None
+
+    SHORT = [("fécondité", "Fécondité"), ("solde migratoire", "Migrations"),
+             ("espérance de vie", "Espérance de vie"), ("économique", "Hypothèses éco."),
+             ("lfss", "Mesures LFSS 2026"), ("revalorisation", "Revalorisation")]
+    total, contribs = None, []
+    for r in rows:
+        lab = str(r[1]).strip() if len(r) > 1 and isinstance(r[1], str) else ""
+        ll = lab.lower()
+        if ll.startswith("écart de dépenses"):
+            total = num(r)
+        elif ll.startswith("dont") and "démographi" not in ll:
+            v = num(r)
+            if v is None:
+                continue
+            short = next((s for k, s in SHORT if k in ll), lab.replace("Dont", "").strip())
+            contribs.append((short, v))
+    if total is None or not contribs:
+        return [], []
+    resid = round(total - sum(v for _, v in contribs), 3)
+    cats = [c for c, _ in contribs] + ["Autres / résidu", "Écart total"]
+    pts = [{"x": i, "y": round(v * scale, 3)} for i, (_, v) in enumerate(contribs)]
+    pts.append({"x": len(contribs), "y": round(resid * scale, 3)})
+    pts.append({"x": len(contribs) + 1, "y": round(total * scale, 3), "total": True})
+    return cats, [{"label": "Écart de dépenses (points de PIB)", "color": "#1f4e79", "points": pts}]
+
+
 # Profil par âge (Fig 1.8) : courbe catégorielle. Catégories = tranches d'âge,
 # une série par (sexe × année). Couleur par année, plein = femmes, tireté = hommes.
 PROFILE_YEAR_COLORS = {1975: "#9aa7b4", 2024: "#2f6fb0", 2025: "#2f6fb0",
@@ -1633,6 +1686,20 @@ def build_explorer(multi=None):
             "COR, rapport 2026 (taux d'activité par âge en 1975, 2024, 2050 et 2070).",
             xLabel="Tranche d'âge", categories=cats)
 
+    r = _rows("partie 2", "Tab 2.5")
+    if r:
+        cats, series = extract_determinants(r, "2070", 1.0)
+        add("determinants_depenses", "Pourquoi la dépense projetée a changé (2070)",
+            "points de PIB", " pts", series,
+            "Décomposition de l'écart entre la dépense de retraite projetée en 2070 par le "
+            "rapport 2026 et celle du rapport précédent : chaque facteur pousse à la hausse "
+            "(vert) ou à la baisse (rouge), pour aboutir à l'écart total (bleu). La fécondité "
+            "plus basse pèse le plus lourd. La barre « Autres / résidu » referme la "
+            "décomposition (interactions et effets non détaillés).",
+            "COR, rapport 2026 (Tableau 2.5, décomposition des écarts de dépenses en part de "
+            "PIB, horizon 2070).",
+            chartType="bar", waterfall=True, categories=cats)
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -1710,7 +1777,7 @@ def build_explorer(multi=None):
         {"name": "Emploi & économie", "indicators": ["emploi", "chomage", "productivite", "pop_active", "emploi_seniors", "profil_age", "duree_carriere", "age_moyen_depart"]},
         {"name": "Pensions & retraités", "indicators": ["age_depart", "pension_rel", "niveau_vie", "taux_rempl", "taux_cotisation", "tri", "duree_retraite", "ecart_genre", "assurance_genre", "age_depart_genre", "pauvrete", "intensite_pauvrete"]},
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "solde_regimes", "dep_regimes", "dep_pub", "struct_ressources"]},
-        {"name": "Comparaisons & structures", "indicators": ["composition_revenu", "emploi_pays"]},
+        {"name": "Comparaisons & structures", "indicators": ["composition_revenu", "emploi_pays", "determinants_depenses"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits

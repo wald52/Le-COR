@@ -797,6 +797,7 @@
     const narrow = W < 480;
     const cats = cfg.categories || [];
     const n = cats.length;
+    const waterfall = !!cfg.waterfall;
     const stacked = cfg.barMode === "stacked";
     const suffix = cfg.y?.suffix ?? "";
     const CHAR_W = 6.8;
@@ -805,17 +806,26 @@
     const totalSeries = cfg.series.filter(s => s.total);
     const valAt = (s, i) => { const p = s.points.find(p => p.x === i); return p ? p.y : null; };
 
-    // Bornes Y : on inclut toujours 0 ; en empilé, les cumuls +/− séparés.
+    // Bornes Y : on inclut toujours 0 ; en empilé, les cumuls +/− séparés ;
+    // en cascade, on suit la trajectoire cumulée.
     let lo = 0, hi = 0;
-    for (let i = 0; i < n; i++) {
-      if (stacked) {
-        let pos = 0, neg = 0;
-        barSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; if (v >= 0) pos += v; else neg += v; });
-        hi = Math.max(hi, pos); lo = Math.min(lo, neg);
-      } else {
-        barSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; hi = Math.max(hi, v); lo = Math.min(lo, v); });
+    if (waterfall && barSeries.length) {
+      let cum = 0;
+      barSeries[0].points.forEach(p => {
+        if (p.total) { hi = Math.max(hi, p.y); lo = Math.min(lo, p.y); }
+        else { const b = cum + p.y; hi = Math.max(hi, cum, b); lo = Math.min(lo, cum, b); cum = b; }
+      });
+    } else {
+      for (let i = 0; i < n; i++) {
+        if (stacked) {
+          let pos = 0, neg = 0;
+          barSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; if (v >= 0) pos += v; else neg += v; });
+          hi = Math.max(hi, pos); lo = Math.min(lo, neg);
+        } else {
+          barSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; hi = Math.max(hi, v); lo = Math.min(lo, v); });
+        }
+        totalSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; hi = Math.max(hi, v); lo = Math.min(lo, v); });
       }
-      totalSeries.forEach(s => { const v = valAt(s, i); if (v == null) return; hi = Math.max(hi, v); lo = Math.min(lo, v); });
     }
     const pad = (hi - lo) * 0.08 || 1;
     const yMax = cfg.y?.max ?? hi + pad;
@@ -893,6 +903,31 @@
       x: x, width: Math.max(0, w), y: Math.min(sy(a), sy(b)),
       height: Math.abs(sy(a) - sy(b)), fill: color, rx: 1.5
     });
+    // Cascade : barres flottantes partant du cumul précédent (vert = hausse,
+    // rouge = baisse), connecteurs pointillés, barre « total » repartant de 0.
+    if (waterfall && barSeries.length) {
+      const s = barSeries[0];
+      const POS = "#2e7d32", NEG = "#c62828", TOT = "#1f4e79";
+      const g = el("g", { class: "chart-series", "data-idx": 0 });
+      let cum = 0, prevRightX = null;
+      for (let i = 0; i < n; i++) {
+        const p = s.points.find(pt => pt.x === i);
+        if (!p) continue;
+        const v = p.y, bw = bandW * 0.6, x = M.left + i * bandW + (bandW - bw) / 2;
+        const a = p.total ? 0 : cum;
+        const b = p.total ? v : cum + v;
+        const color = p.total ? TOT : (v >= 0 ? POS : NEG);
+        if (prevRightX != null && !p.total)
+          g.appendChild(el("line", { x1: prevRightX, y1: sy(a), x2: x, y2: sy(a), stroke: "#9aa7b4", "stroke-width": 1, "stroke-dasharray": "3 3" }));
+        g.appendChild(rectFor(x, bw, a, b, color));
+        const t = el("text", { x: x + bw / 2, y: Math.min(sy(a), sy(b)) - 4, class: "chart-endnote", fill: color, "text-anchor": "middle" });
+        t.textContent = (p.total ? "" : (v >= 0 ? "+" : "−")) + String(Math.abs(Math.round(v * 100) / 100)).replace(".", ",") + suffix;
+        g.appendChild(t);
+        if (p.total) { prevRightX = null; } else { cum = b; prevRightX = x + bw; }
+      }
+      seriesLayer.appendChild(g);
+      seriesNodes.push({ cfg: s, node: g });
+    } else
     barSeries.forEach((s, idx) => {
       const g = el("g", { class: "chart-series", "data-idx": idx });
       for (let i = 0; i < n; i++) {
@@ -1001,7 +1036,9 @@
     container.appendChild(svg);
 
     // --- Légende interactive (pastilles « barre », atténuation au survol) ---
-    if (cfg.legend !== false) {
+    // En cascade, une seule série : la couleur des barres (hausse/baisse/total)
+    // et les valeurs ± portées au-dessus suffisent, pas de légende.
+    if (cfg.legend !== false && !waterfall) {
       const legend = document.createElement("div");
       legend.className = "chart-legend";
       seriesNodes.forEach(sn => {
