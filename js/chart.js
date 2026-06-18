@@ -842,10 +842,19 @@
     const bandWApprox = (W - left0 - rightM) / Math.max(n, 1);
     const maxCatLen = Math.max(0, ...cats.map(c => String(c).length));
     const rotate = maxCatLen * CHAR_W * 0.62 > bandWApprox;
+    // Libellés pivotés : ancrés en fin à -35° sous l'axe, ils s'étendent vers
+    // le bas et la gauche. On dimensionne la marge basse sur la projection
+    // verticale réelle (sin 35°) pour ne pas tronquer le bas du texte.
+    const ROT_DEG = 35;
+    const rotCos = Math.cos(ROT_DEG * Math.PI / 180);
+    const rotSin = Math.sin(ROT_DEG * Math.PI / 180);
+    const LABEL_DY = 14;
     const M = {
       top: 16,
       right: rightM,
-      bottom: rotate ? Math.min(28 + maxCatLen * CHAR_W * 0.6, 120) : (narrow ? 34 : 40),
+      bottom: rotate
+        ? Math.ceil(LABEL_DY + maxCatLen * CHAR_W * rotSin) + 8
+        : (narrow ? 34 : 40),
       left: left0
     };
     const plotW = W - M.left - M.right;
@@ -856,8 +865,21 @@
     const bandW = plotW / Math.max(n, 1);
     const y0 = sy(0);
 
+    // …et vers la gauche : le début de chaque libellé pivoté peut sortir du
+    // bord gauche du SVG (qui rogne en overflow:hidden). On élargit alors le
+    // viewBox vers la gauche pour englober le libellé le plus débordant.
+    let padLeft = 0;
+    if (rotate) {
+      cats.forEach((c, i) => {
+        const cx = M.left + (i + 0.5) * bandW;
+        const startX = cx - String(c).length * CHAR_W * rotCos;
+        if (startX < padLeft) padLeft = startX;
+      });
+      padLeft = padLeft < 0 ? Math.ceil(-padLeft) + 4 : 0;
+    }
+
     const svg = el("svg", {
-      viewBox: `0 0 ${W} ${H}`, class: "chart-svg", role: "img",
+      viewBox: `${-padLeft} 0 ${W + padLeft} ${H}`, class: "chart-svg", role: "img",
       "aria-label": cfg.ariaLabel || "Graphique en barres"
     });
 
