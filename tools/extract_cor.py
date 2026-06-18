@@ -1366,6 +1366,32 @@ def _short_regime(c):
     return " ".join(c.split())
 
 
+def extract_category_snapshot(rows, row_key="par pays", scale=1.0, accent="france",
+                              accent_color="#c2185b", base_color="#5b6f93"):
+    """Instantané par catégorie : catégories = en-tête (ex. pays en colonnes), une
+    barre par catégorie issue de la ligne `row_key`. Tri décroissant, catégorie
+    `accent` (France) en couleur saillante (couleur portée par chaque point)."""
+    hdr = _header_cols(rows)
+    if not hdr:
+        return [], []
+    datarow = next((r for r in rows if len(r) > 1 and isinstance(r[1], str)
+                    and row_key in r[1].strip().lower()), None)
+    if datarow is None:
+        return [], []
+    pairs = []
+    for i, name in hdr:
+        v = _num(datarow[i]) if i < len(datarow) else None
+        if v is not None:
+            pairs.append((" ".join(str(name).split()), round(v * scale, 3)))
+    if not pairs:
+        return [], []
+    pairs.sort(key=lambda kv: kv[1], reverse=True)
+    cats = [p[0] for p in pairs]
+    pts = [{"x": j, "y": v, "color": accent_color if accent in cats[j].lower() else base_color}
+           for j, (_, v) in enumerate(pairs)]
+    return cats, [{"label": "Par pays", "color": base_color, "points": pts}]
+
+
 def build_explorer(multi=None):
     """`multi` : séries multi-millésimes calculées dans build() —
     {indicateur: ({vy: {année: val}} projections, obs {année: val})}."""
@@ -1913,6 +1939,50 @@ def build_explorer(multi=None):
             "réduit les salaires et donc les droits à retraite accumulés.",
             "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 2.9).")
 
+    # --- Comparaisons internationales (Panorama des systèmes de retraite, 2020) ---
+    PA = "2020-12"
+
+    def intl_snap(iid, sheet, label, unit, suffix, scale, desc):
+        r = _rows("thématique", sheet, PA)
+        if not r:
+            return
+        cats, series = extract_category_snapshot(r, scale=scale)
+        add(iid, label, unit, suffix, series,
+            desc + " Comparaison internationale (instantané, données ~2017).",
+            f"COR, « Panorama des systèmes de retraite en France et à l'étranger » 2020 ({sheet}).",
+            chartType="bar", barMode="grouped", categories=cats)
+
+    intl_snap("intl_emploi", "Fig 5.7", "Taux d'emploi des 20-64 ans, par pays", "%", " %", 100,
+              "Part des 20-64 ans en emploi selon le pays.")
+    intl_snap("intl_ratio_demo", "Fig 5.3", "Rapport démographique, par pays", "ratio", "", 1,
+              "Personnes de 20-64 ans pour une personne de 65 ans et plus, selon le pays.")
+    intl_snap("intl_revenus_act", "Fig 5.9", "Part des revenus d'activité dans le PIB, par pays",
+              "%", " %", 100, "Poids de la rémunération du travail dans le PIB selon le pays.")
+    intl_snap("intl_retraites", "Fig 5.11", "Taux de retraités, par pays", "%", " %", 100,
+              "Nombre de retraités rapporté à la population de 65 ans et plus, selon le pays.")
+    intl_snap("intl_pension_rel", "Fig 5.12", "Pension relative aux revenus d'activité, par pays",
+              "%", " %", 100, "Pension moyenne rapportée au revenu d'activité moyen, selon le pays.")
+
+    r = _rows("thématique", "Fig 5.1", PA)
+    if r:
+        cats, series = extract_stacked(r, 100, ["#1f4e79", "#8fb8e0"], total_keys=("totales", "total"))
+        add("intl_depenses", "Dépenses de retraite (publiques + privées), par pays", "% du PIB",
+            " %", series,
+            "Part des dépenses de retraite dans le PIB selon le pays, distinguant les régimes "
+            "publics des dispositifs privés (importants aux Pays-Bas, au Canada…). Comparaison "
+            "internationale (données ~2017).",
+            "COR, « Panorama des systèmes de retraite … » 2020 (Fig 5.1).",
+            chartType="bar", barMode="stacked", categories=cats)
+    r = _rows("thématique", "Fig 3.1", PA)
+    if r:
+        cats, series = extract_country_grouped(r, 100, ["#1f4e79", "#e8731c"])
+        series = [s for s in series if "total" not in s["label"].lower()]
+        add("intl_cotisation", "Taux de cotisation retraite, par pays", "%", " %", series,
+            "Taux de cotisation aux régimes obligatoires selon le pays, part salariale et part "
+            "employeur empilées. Comparaison internationale (données ~2017).",
+            "COR, « Panorama des systèmes de retraite … » 2020 (Fig 3.1).",
+            chartType="bar", barMode="stacked", categories=cats)
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -1992,6 +2062,7 @@ def build_explorer(multi=None):
         {"name": "Finances du système", "indicators": ["depenses", "ressources", "solde", "solde_regimes", "dep_regimes", "dep_pub", "struct_ressources"]},
         {"name": "Comparaisons & structures", "indicators": ["composition_revenu", "emploi_pays", "determinants_depenses"]},
         {"name": "Droits familiaux & réversion", "indicators": ["df_part_regime", "df_masses_genre", "df_reversion_part", "df_beneficiaires", "df_age_enfants", "df_duree_enfants", "df_pension_enfants", "df_inactivite", "df_emploi_genre", "df_temps_partiel"]},
+        {"name": "Comparaisons internationales", "indicators": ["intl_emploi", "intl_ratio_demo", "intl_revenus_act", "intl_retraites", "intl_pension_rel", "intl_depenses", "intl_cotisation"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits

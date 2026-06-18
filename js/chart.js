@@ -946,7 +946,9 @@
           }
         } else {
           const inner = bandW * 0.74, gap0 = (bandW - inner) / 2, bw = inner / barSeries.length;
-          g.appendChild(rectFor(bx0 + gap0 + idx * bw + 1, bw - 2, 0, v, s.color));
+          // couleur par barre si le point la porte (ex. instantané pays, France saillante)
+          const pc = (s.points.find(pt => pt.x === i) || {}).color || s.color;
+          g.appendChild(rectFor(bx0 + gap0 + idx * bw + 1, bw - 2, 0, v, pc));
         }
       }
       seriesLayer.appendChild(g);
