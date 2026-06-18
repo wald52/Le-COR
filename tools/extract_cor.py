@@ -1366,6 +1366,50 @@ def _short_regime(c):
     return " ".join(c.split())
 
 
+# Grands régimes retenus (les ~30 régimes du thématique 2017 seraient illisibles).
+REG_KEEP = ["CNAV", "AGIRC-ARRCO", "FPE", "CNRACL", "IRCANTEC", "RSI",
+            "MSA salariés agricoles"]
+_REG_NOISE = ("écart", "partage", "taux de chômage", "population", "dont")
+
+
+def extract_regime_series(rows, sub_key, scale=1.0, floor=2000, colors=None, keep=REG_KEEP):
+    """Une courbe par grand régime : régime rémanent en col 1, sous-ligne
+    sélectionnée par `sub_key` (col 2, ex. « ensemble » ou scénario « 1,3 »),
+    années en en-tête. Filtre `keep` (grands régimes) et déduplique (1re sous-ligne
+    par régime, hors lignes d'écarts/variantes). Thématique 2017 « par régime »."""
+    ycols, hdr_idx = {}, -1
+    for idx, r in enumerate(rows[:6]):
+        ic = [(i, y) for i, c in enumerate(r) if (y := _year_of(c, floor)) is not None]
+        if len(ic) >= 3:
+            ycols, hdr_idx = dict(ic), idx
+            break
+    if not ycols:
+        return []
+    colors = colors or DEFAULT_PALETTE
+    series, regime, seen, k = [], None, set(), 0
+    for idx, r in enumerate(rows):
+        if idx == hdr_idx:
+            continue
+        reg = str(r[1]).strip() if len(r) > 1 and isinstance(r[1], str) else ""
+        if reg:
+            regime = reg
+        sub = str(r[2]).strip().lower() if len(r) > 2 and isinstance(r[2], str) else ""
+        if not regime or sub_key not in sub or sub.startswith(_REG_NOISE):
+            continue
+        if keep and regime not in keep:
+            continue
+        if regime in seen:
+            continue
+        pts = [{"x": ycols[i], "y": round(v * scale, 3)} for i in ycols
+               if i < len(r) and (v := _num(r[i])) is not None]
+        if len(pts) < 3:
+            continue
+        seen.add(regime)
+        series.append({"label": regime, "color": colors[k % len(colors)], "kind": "solid", "points": pts})
+        k += 1
+    return series
+
+
 def extract_category_snapshot(rows, row_key="par pays", scale=1.0, accent="france",
                               accent_color="#c2185b", base_color="#5b6f93"):
     """Instantané par catégorie : catégories = en-tête (ex. pays en colonnes), une
@@ -1983,6 +2027,34 @@ def build_explorer(multi=None):
             "COR, « Panorama des systèmes de retraite … » 2020 (Fig 3.1).",
             chartType="bar", barMode="stacked", categories=cats)
 
+    # --- Projections par régime (rapport thématique COR, novembre 2017) ---
+    RG = "2017-11"
+
+    def reg_ind(iid, sheet, sub, label, unit, suffix, scale, desc):
+        r = _rows("annexe", sheet, RG)
+        if not r:
+            return
+        add(iid, label, unit, suffix, extract_regime_series(r, sub, scale),
+            desc + " Une courbe par régime (projections du rapport thématique 2017).",
+            f"COR, rapport « Perspectives … résultats par régime » 2017 ({sheet}).")
+
+    reg_ind("reg_cotisants", "Tableau_1", "ensemble", "Cotisants par régime", "milliers", " k", 1,
+            "Effectifs de cotisants projetés, par régime.")
+    reg_ind("reg_retraites", "Tableau_2", "ensemble", "Retraités de droit direct par régime",
+            "milliers", " k", 1, "Effectifs de retraités de droit direct projetés, par régime.")
+    reg_ind("reg_ressources", "Tableau_4", "1,3", "Masse des ressources par régime", "% du PIB",
+            " %", 100, "Ressources de chaque régime en part de PIB (scénario central 1,3 %).")
+    reg_ind("reg_prestations", "Tableau_5", "1,3", "Masse des prestations par régime", "% du PIB",
+            " %", 100, "Prestations de chaque régime en part de PIB (scénario central 1,3 %).")
+    reg_ind("reg_depenses", "Tableau_6", "1,3", "Masse des dépenses par régime", "% du PIB",
+            " %", 100, "Dépenses de chaque régime en part de PIB (scénario central 1,3 %).")
+    reg_ind("reg_solde", "Tableau_7", "1,3", "Solde technique par régime", "% du PIB", " %", 100,
+            "Solde technique (ressources − dépenses) de chaque régime, en part de PIB "
+            "(scénario central 1,3 %).")
+    reg_ind("reg_solde_elargi", "Tableau_8", "1,3", "Solde élargi par régime", "% du PIB", " %", 100,
+            "Solde élargi (intégrant contributions et subventions d'équilibre) de chaque régime, "
+            "en part de PIB (scénario central 1,3 %).")
+
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
         """Bloc 'Dépenses, en % du PIB' d'une figure de sensibilité : {clé: série}.
@@ -2063,6 +2135,7 @@ def build_explorer(multi=None):
         {"name": "Comparaisons & structures", "indicators": ["composition_revenu", "emploi_pays", "determinants_depenses"]},
         {"name": "Droits familiaux & réversion", "indicators": ["df_part_regime", "df_masses_genre", "df_reversion_part", "df_beneficiaires", "df_age_enfants", "df_duree_enfants", "df_pension_enfants", "df_inactivite", "df_emploi_genre", "df_temps_partiel"]},
         {"name": "Comparaisons internationales", "indicators": ["intl_emploi", "intl_ratio_demo", "intl_revenus_act", "intl_retraites", "intl_pension_rel", "intl_depenses", "intl_cotisation"]},
+        {"name": "Par régime (2017)", "indicators": ["reg_cotisants", "reg_retraites", "reg_ressources", "reg_prestations", "reg_depenses", "reg_solde", "reg_solde_elargi"]},
         {"name": "Sensibilité : et si… ?", "indicators": ["sens_fec", "sens_ev", "sens_mig", "sens_cho", "sens_prod"]},
     ]
     # on ne garde que les indicateurs réellement extraits
