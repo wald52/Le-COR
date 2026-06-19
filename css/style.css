@@ -401,7 +401,6 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   /* Tableau des hypothèses : tout tenir sans scroll horizontal */
   #hyp-table table { font-size: 0.76rem; }
   #hyp-table th, #hyp-table td { padding: 8px 4px; white-space: normal; text-align: center; }
-  #hyp-table thead th { word-break: break-word; hyphens: auto; }
 }
 
 /* Vue agrandie : élément <dialog> natif (focus piégé, Échap, fond géré). */
