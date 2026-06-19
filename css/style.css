@@ -75,6 +75,15 @@ a { color: var(--bleu-clair); }
 }
 .nav-link:hover { background: var(--bleu-pale); color: var(--bleu); }
 .nav-link.active { background: var(--bleu); color: #fff; }
+/* Libellé de chapitre dans la nav : repère visuel non interactif.
+   Sur grand écran, un fin séparateur le précède (sauf le premier). */
+.nav-group-title {
+  align-self: center; color: var(--bleu); font-size: 0.7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7;
+  padding: 0 4px 0 10px; margin-left: 6px; border-left: 1px solid var(--gris-clair);
+  pointer-events: none; user-select: none;
+}
+.nav-group-title:first-child { border-left: 0; margin-left: 0; padding-left: 4px; }
 .nav-toggle {
   display: none; align-items: center; justify-content: center;
   width: 42px; height: 42px; background: none; border: 0;
@@ -144,6 +153,19 @@ a { color: var(--bleu-clair); }
 /* Le texte courant occupe toute la largeur du conteneur, aligné sur les
    graphiques et tableaux (choix assumé : pas de largeur de lecture réduite). */
 .section-intro { font-size: 1.05rem; color: var(--encre); margin: 0 0 26px; }
+
+/* ---------- Intercalaires de chapitre ---------- */
+/* Bandeau qui annonce chacun des trois actes (Le constat / Comment ça marche /
+   Que faire) et donne au lecteur le fil du parcours. */
+.chapter-intro { background: var(--bleu); color: #fff; padding: 40px 0; }
+.chapter-intro .chapter-kicker {
+  margin: 0 0 8px; font-size: 0.8rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 2px; color: #cdddee;
+}
+.chapter-intro .chapter-lede {
+  margin: 0; font-size: 1.2rem; line-height: 1.5; max-width: 62ch; color: #fff;
+}
+.chapter-intro .chapter-lede strong { color: #fff; }
 
 /* ---------- Cartes graphiques ---------- */
 .chart-card {

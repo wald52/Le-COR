@@ -6,7 +6,9 @@ import { test, expect } from "@playwright/test";
 test("la page d'accueil se charge avec son titre principal", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/Ceci est mon COR/i);
-  await expect(page.locator("h1")).toContainText(/COR change-t-il/i);
+  await expect(page.locator("h1")).toContainText(/chiffres du COR/i);
+  // L'accroche d'origine reste présente, désormais dans le chapô.
+  await expect(page.locator(".lede")).toContainText(/COR change-t-il/i);
 });
 
 test("le lien d'évitement apparaît au focus clavier", async ({ page }) => {

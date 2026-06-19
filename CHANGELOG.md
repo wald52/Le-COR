@@ -27,6 +27,16 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Modifié
 
+- **Re-cadrage éditorial en trois chapitres** : le site, devenu un explicateur
+  complet de 12 sections, est désormais structuré en trois actes annoncés par
+  des intercalaires — « Le constat », « Comment ça marche vraiment » et « Que
+  faire ? ». Nouveau titre et chapô d'accueil annonçant ce parcours (l'ancienne
+  accroche « Le COR change-t-il d'avis ? » devient le hook d'ouverture). La
+  navigation est regroupée par chapitre. Les sections « productivité », « réalité »
+  et « niveau de vie » remontent dans le chapitre « constat » pour rétablir le fil
+  narratif ; « financement » et « dette » rejoignent « comment ça marche ». Les
+  ancres (`#id`) des sections sont **inchangées** : les liens de partage existants
+  restent valides ; seule la numérotation visible (« N · ») a été mise à jour.
 - `js/chart.js` expose désormais la configuration du graphique
   (`container.__cfg`) pour permettre l'export CSV.
 - **Second axe Y (à droite)** dans les graphiques en courbes : une série peut
@@ -34,7 +44,7 @@ Toutes les évolutions notables du site. Format inspiré de
   graphique « Bénéficiaires de pensions, par type de droit » l'utilise pour la
   part des bénéficiaires d'une réversion (en %), désormais lisible à côté des
   effectifs (en milliers) au lieu d'être écrasée sur l'échelle de gauche.
-- Cache du service worker porté à `v41` (rafraîchissement des assets modifiés).
+- Cache du service worker porté à `v43` (rafraîchissement des assets modifiés).
 
 ### Corrigé
 

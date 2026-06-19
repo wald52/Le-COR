@@ -18,13 +18,27 @@ des données de l'INSEE, de la Dares, etc.).
 
 ## Ce que montre le site
 
+Le site se lit comme un parcours en **trois chapitres** (12 sections au total) :
+
+**Chapitre 1 — Le constat** (combien on dépense, et des prévisions qui bougent)
 1. **Le graphique clé** — part des dépenses de retraite dans le PIB :
    réalisé (courbe pleine) + une projection par rapport annuel (pointillés).
-2. **Le revirement** — comment l'hypothèse de productivité a été abaissée.
-3. **La réalité** — hypothèses vs valeurs réellement observées
-   (fécondité, productivité).
-4. **Le tableau de bord** des hypothèses du scénario de référence.
-5. **Méthode & sources**.
+2. **Le déficit** — solde du système et effet « ciseaux ».
+3. **Le revirement** — comment l'hypothèse de productivité a été abaissée.
+4. **La réalité** — hypothèses vs valeurs réellement observées (fécondité, productivité).
+5. **Le niveau de vie** des retraités face au reste de la population.
+
+**Chapitre 2 — Comment ça marche vraiment** (décoder le système)
+6. **Le financement** — d'où vient vraiment l'argent des retraites.
+7. **La dette** — « la moitié part dans les retraites », vrai ou faux ?
+8. **La France dans le monde** — comparaison internationale des dépenses.
+9. **Le tableau de bord** des hypothèses du scénario de référence.
+10. **L'explorateur** de tous les indicateurs.
+
+**Chapitre 3 — Que faire ?**
+11. **Le simulateur** des trois leviers d'équilibrage.
+
+Plus une annexe : **12. Méthode & sources**.
 
 ## Caractéristiques techniques
 
