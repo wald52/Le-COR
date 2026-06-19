@@ -652,7 +652,7 @@
       })
       .sort((a, b) => a.y - b.y);
     if (placed.length > 0) {
-      const minGap = narrow ? 11 : 13;
+      const minGap = narrow ? 13 : 14;
       const topY = M.top + 8, bottomY = M.top + plotH + 4;
       for (let i = 1; i < placed.length; i++) {
         if (placed[i].y - placed[i - 1].y < minGap) placed[i].y = placed[i - 1].y + minGap;

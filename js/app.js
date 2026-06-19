@@ -76,14 +76,7 @@
         .filter(p => p.y != null);
       // On ne recalcule l'étiquette de fin que pour les séries qui en avaient
       // une (les projections) ; la courbe « Réalisé » reste sans étiquette.
-      const last = points[points.length - 1];
-      let endNote = s.endNote;
-      if (s.endNote && last) {
-        endNote = unit === "eur"
-          ? "≈" + Math.round(last.y) + " Md€"
-          : "≈" + (Math.round(last.y * 10) / 10).toString().replace(".", ",") + " %";
-      }
-      return { ...s, points, endNote };
+      return { ...s, points };
     });
   }
 
