@@ -369,6 +369,7 @@ window.COR_DATA = {
     title: "Les hypothèses du scénario de référence, rapport par rapport",
     source: "COR, rapports annuels 2019 à 2026.",
     colonnes: ["Rapport", "Productivité (LT)", "Fécondité", "Solde migratoire", "Chômage (LT)"],
+    colonnesShort: ["Rapport", "Prod. (LT)", "Fécond.", "Solde migr.", "Chôm. (LT)"],
     lignes: [
       ["2019", "1,3 %", "1,95", "+70 000 / an", "7,0 %"],
       ["2021", "1,3 %", "1,95", "+70 000 / an", "7,0 %"],

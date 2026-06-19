@@ -317,6 +317,8 @@ thead th { background: var(--bleu); color: #fff; font-weight: 700; }
 tbody th { color: var(--bleu); font-weight: 700; }
 tbody tr:nth-child(even) { background: var(--fond-alt); }
 tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+/* Versions longue/courte des en-têtes de colonnes (affichage selon largeur écran) */
+.col-short { display: none; }
 
 /* ---------- Méthode / sources ---------- */
 .method h3 { margin: 22px 0 8px; font-size: 1.1rem; }
@@ -398,6 +400,11 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   .unit-btn { flex: 1; padding: 8px 6px; text-align: center; }
   .unit-btn .unit-long { display: none; }
   .unit-btn .unit-short { display: inline; }
+  /* Tableau des hypothèses : tout tenir sans scroll horizontal */
+  #hyp-table table { font-size: 0.76rem; }
+  #hyp-table th, #hyp-table td { padding: 8px 4px; white-space: normal; }
+  .col-long { display: none; }
+  .col-short { display: inline; }
 }
 
 /* Vue agrandie : élément <dialog> natif (focus piégé, Échap, fond géré). */

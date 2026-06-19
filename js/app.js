@@ -537,7 +537,10 @@
     const d = D.hypothesesTable;
     const wrap = document.getElementById("hyp-table");
     let html = "<table><thead><tr>";
-    d.colonnes.forEach(c => html += `<th>${c}</th>`);
+    d.colonnes.forEach((c, i) => {
+      const short = d.colonnesShort ? d.colonnesShort[i] : c;
+      html += `<th><span class="col-long">${c}</span><span class="col-short">${short}</span></th>`;
+    });
     html += "</tr></thead><tbody>";
     d.lignes.forEach(row => {
       html += "<tr>";
