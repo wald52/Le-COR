@@ -402,7 +402,7 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   .unit-btn .unit-short { display: inline; }
   /* Tableau des hypothèses : tout tenir sans scroll horizontal */
   #hyp-table table { font-size: 0.76rem; }
-  #hyp-table th, #hyp-table td { padding: 8px 4px; white-space: normal; }
+  #hyp-table th, #hyp-table td { padding: 8px 4px; white-space: normal; text-align: center; }
   .col-long { display: none; }
   .col-short { display: inline; }
 }
