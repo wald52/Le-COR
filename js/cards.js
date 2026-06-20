@@ -415,9 +415,6 @@
       '<div class="cd-sheet" role="dialog" aria-modal="true" aria-label="' +
       card.title.replace(/"/g, "&quot;") + '">' +
       '<div class="cd-handle"></div>' +
-      '<button class="cd-back" type="button" aria-label="Revenir au carousel">' +
-      '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>' +
-      '<span>Retour</span></button>' +
       '<div class="cd-body"></div>' +
       "</div>";
     document.body.appendChild(detailEl);
@@ -442,8 +439,7 @@
     document.body.classList.add("detail-open");
     screen.setAttribute("aria-hidden", "true");
 
-    // Bouton retour + swipe-down.
-    detailEl.querySelector(".cd-back").addEventListener("click", closeDetail);
+    // Fermeture : glissement vers le bas (mobile), Échap (clavier), clic sur le voile.
     scrim.addEventListener("click", closeDetail);
     setupSheetDismiss(sheet);
 

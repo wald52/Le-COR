@@ -42,12 +42,12 @@ test("taper la carte active ouvre la vue détail avec son contenu complet", asyn
   await expect(page.locator(".cd-body .takeaway")).toContainText(/retenir/i);
 });
 
-test("le bouton retour ferme la vue détail et restitue le carousel", async ({ page }) => {
+test("la touche Échap ferme la vue détail et restitue le carousel", async ({ page }) => {
   await page.goto("/");
   await page.locator(".card.is-active").click();
   await expect(page.locator(".card-detail")).toBeVisible();
 
-  await page.getByRole("button", { name: /revenir au carousel/i }).click();
+  await page.keyboard.press("Escape");
   await expect(page.locator(".card-detail")).toHaveCount(0);
   await expect(page.locator(".card.is-active")).toBeVisible();
   // La section est revenue dans le réservoir caché.

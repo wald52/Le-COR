@@ -270,24 +270,6 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   background: var(--gris-clair);
   margin: 8px auto 2px;
 }
-.cd-back {
-  position: sticky;
-  top: 6px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 6px 0 6px 14px;
-  padding: 8px 14px 8px 10px;
-  font: 600 0.92rem var(--police);
-  color: var(--bleu);
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid var(--gris-clair);
-  border-radius: 999px;
-  box-shadow: var(--ombre);
-  cursor: pointer;
-}
-.cd-back:hover { background: var(--bleu-pale); }
 .cd-body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
 /* La <section> déplacée garde son style d'origine ; on neutralise juste le
    fond alterné pour une feuille homogène. */
