@@ -42,8 +42,8 @@
   /* ======================================================================
    * CONSTANTES RÉGLABLES — voir aussi css/cards.css (mêmes valeurs en --var).
    * ==================================================================== */
-  const CARD_WIDTH = 300;      // largeur d'une carte (px)
-  const CARD_HEIGHT = 460;     // hauteur d'une carte (px)
+  const CARD_WIDTH = 340;      // largeur d'une carte (px)
+  const CARD_HEIGHT = 520;     // hauteur d'une carte (px)
   const CARD_SPACING = 20;     // espace entre deux cartes (px)
   const ACTIVE_SCALE = 1.0;    // échelle de la carte centrale
   const INACTIVE_SCALE = 0.86; // échelle des cartes latérales

@@ -2,12 +2,12 @@
    CardSwipeScreen — carousel mobile de cartes swipeables.
    Réutilise les variables de :root définies dans css/style.css
    (--bleu, --rayon, --ombre, --police, --encre, --gris…).
-   Constantes JS miroir : voir js/cards.js (CARD_WIDTH = 300, etc.).
+   Constantes JS miroir : voir js/cards.js (CARD_WIDTH = 340, etc.).
    ============================================================ */
 
 :root {
-  --card-w: 300px;
-  --card-h: 460px;
+  --card-w: 340px;
+  --card-h: 520px;
 }
 
 /* ---------- Mode carousel : on masque la coquille « page » ---------- */
