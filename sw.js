@@ -4,15 +4,17 @@
  * dernière version (le navigateur revalide via ETag, donc 304 quasi gratuit
  * si rien n'a changé), avec repli sur le cache si le réseau est absent.
  */
-const CACHE = "le-cor-citoyen-v43";
+const CACHE = "le-cor-citoyen-v44";
 const NETWORK_TIMEOUT_MS = 5000;
 const ASSETS = [
   "./",
   "./index.html",
   "./legal.html",
   "./css/style.css",
+  "./css/cards.css",
   "./js/chart.js",
   "./js/app.js",
+  "./js/cards.js",
   "./data/data.js",
   "./data/cor-series.generated.js",
   // Données de l'explorateur : chargées paresseusement par la page, mais

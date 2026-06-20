@@ -1,0 +1,290 @@
+/* ============================================================
+   CardSwipeScreen — carousel mobile de cartes swipeables.
+   Réutilise les variables de :root définies dans css/style.css
+   (--bleu, --rayon, --ombre, --police, --encre, --gris…).
+   Constantes JS miroir : voir js/cards.js (CARD_WIDTH = 300, etc.).
+   ============================================================ */
+
+:root {
+  --card-w: 300px;
+  --card-h: 460px;
+}
+
+/* ---------- Mode carousel : on masque la coquille « page » ---------- */
+body.mode-carousel {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+body.mode-carousel .site-header,
+body.mode-carousel .site-footer,
+body.mode-carousel .to-top,
+body.mode-carousel .skip-link { display: none !important; }
+
+/* Le contenu d'origine sert de réservoir aux vues détail. */
+#story-sections[hidden] { display: none !important; }
+
+/* ---------- Écran carousel ---------- */
+.card-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 80% at 50% 0%, #ffffff 0%, #eef3f8 55%, #e4ebf3 100%);
+  color: var(--encre);
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 0 calc(env(safe-area-inset-bottom, 0px) + 12px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.cs-head {
+  text-align: center;
+  padding: 4px 22px 2px;
+  flex: none;
+}
+.cs-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--bleu-clair);
+  opacity: 0.85;
+}
+.cs-title {
+  margin: 4px 0 2px;
+  font-size: 1.7rem;
+  line-height: 1.1;
+  color: var(--bleu);
+}
+.cs-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--gris);
+}
+
+/* ---------- Piste + cartes ---------- */
+.cs-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: hidden;
+  touch-action: pan-y;            /* on gère le swipe horizontal en JS */
+}
+.cs-track {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--card-w);
+  height: var(--card-h);
+  margin-left: calc(var(--card-w) / -2);
+  margin-top: calc(var(--card-h) / -2);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  cursor: pointer;
+  outline: none;
+}
+.card:focus-visible .card-inner {
+  box-shadow: 0 0 0 3px var(--bleu), 0 18px 40px rgba(31, 78, 121, 0.28);
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 26px;
+  overflow: hidden;
+  background: var(--theme, #1f4e79);
+  box-shadow: 0 18px 40px rgba(31, 78, 121, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Fond de profondeur : dégradé teinté du thème de la carte. */
+.card-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(160deg,
+      color-mix(in srgb, var(--theme) 18%, #ffffff) 0%,
+      color-mix(in srgb, var(--theme) 6%, #ffffff) 60%,
+      #ffffff 100%);
+}
+
+/* Calque graphique (parallaxé en JS). Légèrement plus large que la carte pour
+   que le décalage parallax ne révèle pas de bord vide. */
+.card-chart {
+  position: absolute;
+  top: 18px;
+  left: -8%;
+  width: 116%;
+  height: 64%;
+  will-change: transform;
+  pointer-events: none;
+}
+.card-chart svg { width: 100%; height: auto; display: block; }
+.card-chart * { pointer-events: none !important; }
+/* Le moteur ajoute une infobulle/overlay : inutiles ici, on les neutralise. */
+.card-chart .chart-tooltip,
+.card-chart .chart-legend,
+.card-chart .data-details { display: none !important; }
+
+/* Cartes « outil » sans graphique : grande icône centrée. */
+.card-chart--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60%;
+}
+.card-icon { font-size: 4.6rem; line-height: 1; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.12)); }
+
+/* Overlay sombre en bas : lisibilité du texte au-dessus du graphique. */
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(15, 23, 38, 0) 40%,
+    rgba(15, 23, 38, 0.55) 72%,
+    rgba(15, 23, 38, 0.86) 100%);
+  pointer-events: none;
+}
+
+.card-text {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 18px 20px 22px;
+  color: #fff;
+}
+.card-chapter {
+  display: inline-block;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+  margin-bottom: 8px;
+}
+.card-title {
+  margin: 0 0 4px;
+  font-size: 1.32rem;
+  line-height: 1.18;
+  color: #fff;
+}
+.card-sub {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+.card-desc {
+  margin: 0 0 12px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.92);
+  /* La description complète n'apparaît qu'en plein (la carte active est lisible). */
+}
+.card-cta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  opacity: 0.92;
+}
+
+/* Cartes inactives : on atténue le texte (la profondeur vient surtout du JS). */
+.card:not(.is-active) .card-desc,
+.card:not(.is-active) .card-cta { opacity: 0; transition: opacity .2s ease; }
+.card.is-active .card-desc,
+.card.is-active .card-cta { opacity: 1; transition: opacity .25s ease .05s; }
+
+/* ---------- Pagination (dots) ---------- */
+.cs-dots {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 0 4px;
+}
+.cs-dot {
+  width: 8px; height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gris-clair);
+  cursor: pointer;
+  transition: width .25s ease, background .25s ease;
+}
+.cs-dot.is-active { width: 22px; background: var(--bleu); }
+
+/* ======================================================================
+   CardDetailView — « plongée » plein écran.
+   ==================================================================== */
+body.detail-open { overflow: hidden; }
+
+.card-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+.cd-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 20, 33, 0.55);
+}
+.cd-sheet {
+  position: absolute;
+  inset: 0;
+  background: var(--fond);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  will-change: transform;
+  transform-origin: center center;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 4px);
+}
+.cd-handle {
+  width: 42px; height: 5px;
+  border-radius: 999px;
+  background: var(--gris-clair);
+  margin: 8px auto 2px;
+}
+.cd-back {
+  position: sticky;
+  top: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 6px 14px;
+  padding: 8px 14px 8px 10px;
+  font: 600 0.92rem var(--police);
+  color: var(--bleu);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--gris-clair);
+  border-radius: 999px;
+  box-shadow: var(--ombre);
+  cursor: pointer;
+}
+.cd-back:hover { background: var(--bleu-pale); }
+.cd-body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
+/* La <section> déplacée garde son style d'origine ; on neutralise juste le
+   fond alterné pour une feuille homogène. */
+.cd-body .band { padding-top: 8px; }
+.cd-body .band.alt { background: var(--fond); }
+
+/* ======================================================================
+   Réduction des animations : transitions simples, pas de zoom/parallax.
+   ==================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .card { will-change: auto; }
+  .card-chart { will-change: auto; }
+  .card-detail.is-open .cd-sheet { animation: none; }
+}

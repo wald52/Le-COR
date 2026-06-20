@@ -642,6 +642,21 @@
     return p;
   }
 
+  // Charge (une seule fois) les données de l'explorateur puis le construit.
+  // Sorti de init() pour pouvoir aussi être déclenché à la demande par le mode
+  // carousel (js/cards.js) quand on ouvre la carte « Explorer ».
+  let explorerLoaded = false;
+  function ensureExplorer() {
+    if (explorerLoaded) return Promise.resolve();
+    return loadScript("./data/cor-explorer.generated.js").then(() => {
+      if (window.COR_SERIES && window.COR_EXPLORER)
+        window.COR_SERIES.explorer = window.COR_EXPLORER.explorer;
+      renderExplorer();
+      setupChartTools();
+      explorerLoaded = true;
+    }).catch(() => {});
+  }
+
   // Exécute `cb` quand l'élément approche du viewport (ou tout de suite si
   // IntersectionObserver est indisponible).
   function whenVisible(el, cb) {
@@ -1125,15 +1140,8 @@
     // reste libre (Total Blocking Time bas) et le travail s'étale au défilement.
     CHARTS.forEach(entry =>
       whenVisible(document.getElementById(entry.id), () => drawChart(entry, true)));
-    whenVisible(document.getElementById("chart-explorer"), () => {
-      // Données de l'explorateur chargées paresseusement (gros bloc séparé).
-      loadScript("./data/cor-explorer.generated.js").then(() => {
-        if (window.COR_SERIES && window.COR_EXPLORER)
-          window.COR_SERIES.explorer = window.COR_EXPLORER.explorer;
-        renderExplorer();
-        setupChartTools();
-      }).catch(() => {});
-    });
+    // Données de l'explorateur chargées paresseusement (gros bloc séparé).
+    whenVisible(document.getElementById("chart-explorer"), ensureExplorer);
     renderLeviers();
     renderTable();
     renderSources();
@@ -1171,6 +1179,36 @@
       });
     }
   }
+
+  /* ----------------------------------------------------------------------
+   * API publique pour le mode carousel (js/cards.js).
+   * `renderSection` (re)dessine le ou les graphiques d'une section à partir
+   * de son id (celui des <section> de index.html). Le mode carousel déplace la
+   * <section> dans sa vue détail puis appelle cette fonction : les graphiques se
+   * tracent à pleine taille, interactifs, et les outils (agrandir / télécharger)
+   * sont recâblés. Une seule source de vérité — pas de duplication du rendu.
+   * -------------------------------------------------------------------- */
+  window.CORApp = {
+    renderSection(id, animate) {
+      const a = animate !== false;
+      switch (id) {
+        case "depenses": renderDepensesPib(a); break;
+        case "deficit": renderSolde(a); renderCiseaux(a); break;
+        case "productivite": renderProductivite(); break;
+        case "realite": renderFecondite(a); renderProductiviteReel(a); break;
+        case "niveau": renderNiveauVie(a); break;
+        case "financement": renderFiscalisation(a); break;
+        case "monde": renderInternational(); break;
+        case "explorer": ensureExplorer(); break;
+        // simulateur / hypotheses / methode : contenu statique ou déjà câblé
+        // au chargement (renderLeviers / renderTable / renderSources).
+        default: break;
+      }
+      setupChartTools();
+      reserveTitleSpaceForTools();
+    },
+    ensureExplorer
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
