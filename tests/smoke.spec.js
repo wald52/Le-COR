@@ -51,10 +51,10 @@ test("le bouton retour ferme la vue détail et restitue le carousel", async ({ p
 
 test("la navigation au clavier change de carte active", async ({ page }) => {
   await page.goto("/");
-  await page.locator("#card-screen").focus();
+  await expect(page.locator(".card.is-active")).toBeVisible();
   const titleBefore = await page.locator(".card.is-active .card-title").textContent();
-  await page.locator("#card-screen").press("ArrowRight");
-  // Après le snap, la carte active a changé.
+  await page.keyboard.press("ArrowRight");
+  // Après le snap (spring), la carte active a changé.
   await expect
     .poll(async () => page.locator(".card.is-active .card-title").textContent())
     .not.toBe(titleBefore);

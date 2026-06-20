@@ -360,14 +360,17 @@
     viewport.addEventListener("pointerup", endDrag);
     viewport.addEventListener("pointercancel", endDrag);
 
-    // Clavier : flèches pour naviguer, Entrée/Espace pour ouvrir.
-    screen.addEventListener("keydown", e => {
-      if (detailOpen) return;
+    // Clavier : flèches pour naviguer, Entrée/Espace pour ouvrir la carte focalisée.
+    // Écoute sur `document` : #card-screen n'est pas focusable, un keydown sur le
+    // <body> ne « remonterait » jamais jusqu'à lui (les événements bubblent vers
+    // les ancêtres, pas les descendants).
+    document.addEventListener("keydown", e => {
+      if (detailOpen || !document.body.classList.contains("mode-carousel")) return;
+      const onCard = document.activeElement && document.activeElement.classList.contains("card");
       if (e.key === "ArrowRight") { springTo(index + 1); e.preventDefault(); }
       else if (e.key === "ArrowLeft") { springTo(index - 1); e.preventDefault(); }
-      else if (e.key === "Enter" || e.key === " ") {
-        if (document.activeElement && document.activeElement.classList.contains("card"))
-          { openDetail(+document.activeElement.dataset.index); e.preventDefault(); }
+      else if ((e.key === "Enter" || e.key === " ") && onCard) {
+        openDetail(+document.activeElement.dataset.index); e.preventDefault();
       }
     });
   }
