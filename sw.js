@@ -23,7 +23,9 @@ const ASSETS = [
   "./data/cor-explorer.generated.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
-  "./icons/cor-logo.png"
+  "./icons/cor-logo.png",
+  // Illustration de la carte d'introduction (première carte du carousel).
+  "./images/intro-cor.jpg"
 ];
 
 self.addEventListener("install", event => {

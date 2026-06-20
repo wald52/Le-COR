@@ -116,6 +116,10 @@
    * Réordonner / ajouter une carte = éditer ce tableau, rien d'autre.
    * ==================================================================== */
   const cards = [
+    { id: "presentation", chapter: "Bienvenue", title: "À quoi sert ce site ?",
+      subtitle: "Le principe en bref",
+      description: "Le COR change-t-il d'avis sur nos retraites ? Ce site superpose les projections officielles de 2001 à 2026 pour le voir.",
+      image: { section: "presentation", theme: "#1f4e79", photo: "./images/intro-cor.jpg" } },
     { id: "depenses", chapter: "Le constat", title: "La même question, des réponses différentes",
       subtitle: "Dépenses de retraite en % du PIB",
       description: "Chaque rapport du COR reprévoit la même courbe… et change d'avis : de « ça baisse » à « ça monte fortement ».",
@@ -189,8 +193,20 @@
     bg.className = "card-bg";
 
     const chart = document.createElement("div");
-    chart.className = "card-chart" + (card.image.mini ? "" : " card-chart--icon");
-    if (!card.image.mini) chart.innerHTML = `<span class="card-icon">${card.image.icon || "•"}</span>`;
+    if (card.image.photo) {
+      // Carte « photo » : une image pleine carte sert de fond (pas de mini-graphe).
+      chart.className = "card-chart card-chart--photo";
+      const img = document.createElement("img");
+      img.className = "card-photo";
+      img.src = card.image.photo;
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      chart.appendChild(img);
+    } else {
+      chart.className = "card-chart" + (card.image.mini ? "" : " card-chart--icon");
+      if (!card.image.mini) chart.innerHTML = `<span class="card-icon">${card.image.icon || "•"}</span>`;
+    }
 
     const overlay = document.createElement("div");
     overlay.className = "card-overlay";
