@@ -473,8 +473,12 @@
     detailEl.classList.add("is-open");
   }
 
-  function closeDetail() {
+  // `opts.slideDown` (avec `fromY`/`velocity`) ⇒ fermeture par glissement : la
+  // feuille continue vers le bas et sort de l'écran. Sinon ⇒ « replongée » dans
+  // la carte d'origine (FLIP), symétrique de l'ouverture (bouton/Échap/voile).
+  function closeDetail(opts) {
     if (!detailOpen || !detailEl) return;
+    opts = opts || {};
     const sheet = detailEl.querySelector(".cd-sheet");
     const scrim = detailEl.querySelector(".cd-scrim");
 
@@ -493,20 +497,53 @@
     };
 
     if (reduceMotion()) { finish(); return; }
+
+    // ----- Fermeture par glissement : continuité avec le doigt -----
+    // On repart EXACTEMENT de la position courante de la feuille (translateY du
+    // drag) et on la laisse filer vers le bas, hors écran, pendant que le voile
+    // s'efface. Pas de saut, pas de mouvement à contre-sens : ça « tombe » dans
+    // le prolongement du geste. La durée tient compte de l'élan (flick rapide ⇒
+    // sortie plus vive).
+    if (opts.slideDown) {
+      const vh = window.innerHeight;
+      const fromY = opts.fromY || 0;
+      const v = Math.max(opts.velocity || 0, 0);              // px/ms
+      const dur = clamp(v > 0 ? (vh - fromY) / v : 300, 200, 420);
+      const r0 = parseFloat(sheet.style.borderRadius) || 0;
+      const s0 = scrim ? (parseFloat(scrim.style.opacity) || 1) : 1;
+      const a = sheet.animate(
+        [
+          { transform: `translateY(${fromY}px)`, borderRadius: r0 + "px" },
+          { transform: `translateY(${vh}px)`, borderRadius: "26px" }
+        ],
+        { duration: dur, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" }
+      );
+      if (scrim) scrim.animate([{ opacity: s0 }, { opacity: 0 }], { duration: dur, fill: "both" });
+      a.onfinish = finish;
+      a.oncancel = finish;
+      return;
+    }
+
+    // ----- Fermeture par bouton/Échap/voile : replongée dans la carte (FLIP) -----
     const i = index;
     const rect = cardEls[i].getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;
     const sx = rect.width / vw, sy = rect.height / vh;
     const tx = rect.left + rect.width / 2 - vw / 2;
     const ty = rect.top + rect.height / 2 - vh / 2;
+    const body = detailEl.querySelector(".cd-body");
     const a = sheet.animate(
       [
-        { transform: "none", borderRadius: "0px", opacity: 1 },
-        { transform: `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`, borderRadius: "22px", opacity: 0.4 }
+        { transform: "translate(0px,0px) scale(1,1)", borderRadius: "0px", opacity: 1 },
+        { transform: `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`, borderRadius: "26px", opacity: 0.35 }
       ],
-      { duration: OPEN_DURATION, easing: "cubic-bezier(.4,0,.2,1)", fill: "both" }
+      { duration: OPEN_DURATION, easing: "cubic-bezier(.32,.72,0,1)", fill: "both" }
     );
     scrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: OPEN_DURATION, fill: "both" });
+    // Le contenu s'efface un peu plus tôt que la réduction → on évite l'effet
+    // « texte écrasé » pendant que la feuille rapetisse.
+    if (body) body.animate([{ opacity: 1 }, { opacity: 0 }],
+      { duration: Math.round(OPEN_DURATION * 0.6), easing: "ease-out", fill: "both" });
     a.onfinish = finish;
     a.oncancel = finish;
   }
@@ -515,9 +552,11 @@
   // haut de course. Translate la feuille, ferme au-delà d'un seuil, sinon revient.
   function setupSheetDismiss(sheet) {
     let dragging = false, startY = 0, dy = 0, axis = null, startX = 0;
+    let lastY = 0, lastT = 0, vy = 0;        // suivi de vélocité (px/ms) pour le « flick »
     sheet.addEventListener("pointerdown", e => {
       if (sheet.scrollTop > 0) return;       // on ne happe le geste qu'en haut
       dragging = true; axis = null; startY = e.clientY; startX = e.clientX; dy = 0;
+      lastY = e.clientY; lastT = performance.now(); vy = 0;
     });
     sheet.addEventListener("pointermove", e => {
       if (!dragging) return;
@@ -528,6 +567,9 @@
       }
       if (axis !== "y" || ddy < 0) return;   // seulement vers le bas
       dy = ddy;
+      const now = performance.now();
+      if (now > lastT) vy = (e.clientY - lastY) / (now - lastT);
+      lastY = e.clientY; lastT = now;
       if (e.cancelable) e.preventDefault();  // le blocage réel vient du touchmove (voir plus bas)
       sheet.style.transform = `translateY(${dy}px)`;
       sheet.style.borderRadius = Math.min(22, dy / 6) + "px";
@@ -537,17 +579,19 @@
     function up() {
       if (!dragging) return;
       dragging = false;
-      if (dy > 120) { sheet.style.transform = ""; sheet.style.borderRadius = ""; closeDetail(); }
-      else {
-        // Revient en place.
-        sheet.style.transition = "transform .25s ease, border-radius .25s ease";
+      // Fermeture si on a dépassé le seuil OU sur un « flick » descendant vif.
+      if (dy > 120 || (vy > 0.45 && dy > 24)) {
+        closeDetail({ slideDown: true, fromY: dy, velocity: Math.max(vy, 0) });
+      } else {
+        // Retour en place — réglage un peu plus doux/élastique.
+        sheet.style.transition = "transform .32s cubic-bezier(.22,1,.36,1), border-radius .32s cubic-bezier(.22,1,.36,1)";
         sheet.style.transform = "";
         sheet.style.borderRadius = "";
         const scrim = detailEl.querySelector(".cd-scrim");
         if (scrim) scrim.style.opacity = "1";
-        setTimeout(() => { if (sheet) sheet.style.transition = ""; }, 260);
+        setTimeout(() => { if (sheet) sheet.style.transition = ""; }, 340);
       }
-      dy = 0; axis = null;
+      dy = 0; axis = null; vy = 0;
     }
     sheet.addEventListener("pointerup", up);
     sheet.addEventListener("pointercancel", up);
