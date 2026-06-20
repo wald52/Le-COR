@@ -528,7 +528,7 @@
       }
       if (axis !== "y" || ddy < 0) return;   // seulement vers le bas
       dy = ddy;
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();  // le blocage réel vient du touchmove (voir plus bas)
       sheet.style.transform = `translateY(${dy}px)`;
       sheet.style.borderRadius = Math.min(22, dy / 6) + "px";
       const scrim = detailEl.querySelector(".cd-scrim");
@@ -551,6 +551,21 @@
     }
     sheet.addEventListener("pointerup", up);
     sheet.addEventListener("pointercancel", up);
+
+    // Garde tactile : seule façon fiable de supprimer le « pull-to-refresh » natif.
+    // Le preventDefault() d'un pointer event n'est PAS honoré une fois que le
+    // navigateur a classé le geste en défilement ; il faut un touchmove NON passif.
+    // On ne bloque QUE quand le contenu est tout en haut ET que le doigt descend,
+    // pour laisser intact le défilement vertical normal du descriptif.
+    let tStartY = 0;
+    sheet.addEventListener("touchstart", e => {
+      if (e.touches.length === 1) tStartY = e.touches[0].clientY;
+    }, { passive: true });
+    sheet.addEventListener("touchmove", e => {
+      if (e.touches.length !== 1) return;     // pinch/zoom : on laisse le natif
+      const ddy = e.touches[0].clientY - tStartY;
+      if (sheet.scrollTop <= 0 && ddy > 0 && e.cancelable) e.preventDefault();
+    }, { passive: false });
   }
 
   // Échap ferme le détail.

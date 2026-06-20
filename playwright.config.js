@@ -24,5 +24,17 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 30_000
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }]
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: /swipe\.spec\.js/
+    },
+    {
+      // Contexte tactile (hasTouch) pour le geste de fermeture par glissement.
+      name: "mobile",
+      use: { ...devices["Pixel 5"] },
+      testMatch: /swipe\.spec\.js/
+    }
+  ]
 });

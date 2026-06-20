@@ -10,6 +10,10 @@
   --card-h: 520px;
 }
 
+/* Le <html> est le vrai propriétaire du « pull-to-refresh » du document sur
+   Chrome Android. L'app étant mono-écran, ce geste n'y est jamais souhaité. */
+html { overscroll-behavior-y: contain; }
+
 /* ---------- Mode carousel : on masque la coquille « page » ---------- */
 body.mode-carousel {
   overflow: hidden;
@@ -237,7 +241,7 @@ body.mode-carousel .skip-link { display: none !important; }
 /* ======================================================================
    CardDetailView — « plongée » plein écran.
    ==================================================================== */
-body.detail-open { overflow: hidden; }
+body.detail-open { overflow: hidden; overscroll-behavior: none; }
 
 .card-detail {
   position: fixed;

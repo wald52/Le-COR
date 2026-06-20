@@ -10,12 +10,15 @@ test("le carousel d'accueil se charge avec son titre", async ({ page }) => {
   await expect(page.locator("body.mode-carousel")).toBeAttached();
 });
 
-test("le carousel affiche des cartes, des dots et un graphique sur la carte active", async ({ page }) => {
+test("le carousel affiche des cartes, des dots et un graphique sur une carte", async ({ page }) => {
   await page.goto("/");
   const cards = page.locator(".cs-track .card");
-  await expect(cards).toHaveCount(9);
-  await expect(page.locator(".cs-dots .cs-dot")).toHaveCount(9);
-  // Le mini-graphique (SVG réel) de la carte active est rendu.
+  await expect(cards).toHaveCount(10);
+  await expect(page.locator(".cs-dots .cs-dot")).toHaveCount(10);
+  // La carte d'intro active affiche sa photo…
+  await expect(page.locator(".card.is-active .card-photo")).toBeVisible();
+  // …et la carte suivante (« depenses ») un vrai mini-graphique SVG.
+  await page.keyboard.press("ArrowRight");
   await expect(page.locator(".card.is-active .card-chart .chart-svg")).toBeVisible();
 });
 
@@ -26,7 +29,9 @@ test("un repli <noscript> est présent dans le document", async ({ page }) => {
 
 test("taper la carte active ouvre la vue détail avec son contenu complet", async ({ page }) => {
   await page.goto("/");
-  const active = page.locator(".card.is-active");
+  // On va sur la carte « depenses » (la 1re carte est désormais l'intro photo).
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
   await expect(active).toBeVisible();
   await active.click();
 
