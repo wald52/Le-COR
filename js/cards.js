@@ -160,7 +160,7 @@
     { id: "hypotheses", chapter: "Comment ça marche", title: "Le tableau de bord des hypothèses",
       subtitle: "Toutes les hypothèses, d'un coup d'œil",
       description: "Productivité, fécondité, chômage, immigration… le récapitulatif des hypothèses retenues par chaque rapport du COR.",
-      image: { section: "hypotheses", theme: "#475569", icon: "📋" } },
+      image: { section: "hypotheses", theme: "#475569", photo: "./images/hypotheses-cockpit.jpg" } },
     { id: "explorer", chapter: "Aller plus loin", title: "Explorer tous les indicateurs",
       subtitle: "Un thème, un indicateur, un graphique",
       description: "Choisissez un thème puis un indicateur : toutes les projections des rapports se superposent.",
