@@ -124,7 +124,6 @@
   const cards = [
     { id: "presentation", chapter: "Bienvenue", title: "À quoi sert ce site ?",
       subtitle: "Le principe en bref",
-      description: "Le COR change-t-il d'avis sur nos retraites ? Ce site superpose les projections officielles de 2001 à 2026 pour le voir.",
       image: { section: "presentation", theme: "#1f4e79", photo: "./images/intro-cor.jpg" } },
     { id: "depenses", chapter: "Le constat", title: "La même question, des réponses différentes",
       subtitle: "Dépenses de retraite en % du PIB",
@@ -235,7 +234,7 @@
       `<span class="card-chapter">${card.chapter} · ${String(i + 1).padStart(2, "0")}</span>` +
       `<h2 class="card-title">${card.title}</h2>` +
       `<p class="card-sub">${card.subtitle}</p>` +
-      `<p class="card-desc">${card.description}</p>` +
+      (card.description ? `<p class="card-desc">${card.description}</p>` : "") +
       `<span class="card-cta">Tapez pour plonger ›</span>`;
 
     inner.appendChild(bg);
