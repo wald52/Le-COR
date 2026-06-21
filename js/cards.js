@@ -172,7 +172,7 @@
     { id: "methode", chapter: "Aller plus loin", title: "Méthode & sources",
       subtitle: "D'où viennent les données",
       description: "Comment lire ces graphiques, et les fichiers officiels du COR derrière chaque courbe.",
-      image: { section: "methode", theme: "#475569", icon: "📚" } }
+      image: { section: "methode", theme: "#475569", photo: "./images/sources-logos.png" } }
   ];
 
   /* ======================================================================
