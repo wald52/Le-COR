@@ -8,3 +8,6 @@
   pousser quand même le travail final sur `main` : c'est une autorisation
   permanente du propriétaire du dépôt.
 - Ne pas ouvrir de pull request : les changements vont directement sur `main`.
+- **Ne pas force-pusher sur `main`** pour corriger un statut « Unverified » :
+  laisser le commit tel quel. Le statut de signature des commits n'est pas
+  une préoccupation ; ne pas réécrire l'historique pour cela.
