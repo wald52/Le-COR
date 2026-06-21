@@ -28,7 +28,41 @@ global.window = {};
 eval(fs.readFileSync(path.join(ROOT, "data", "cor-explorer.generated.js"), "utf8"));
 const EXP = global.window.COR_EXPLORER.explorer;
 const INDIC = EXP.indicators;
-const KEYS = Object.keys(INDIC); // ordre stable = ordre du fichier de données
+const THEMES = EXP.themes; // [{ name, indicators: [clé, …] }, …]
+
+// Nombre de séries « traçables » d'un indicateur (≥ 2 points) — sert à privilégier
+// les indicateurs aux courbes les plus riches dans chaque thème.
+const richness = (key) => {
+  const ind = INDIC[key];
+  if (!ind || !ind.series) return 0;
+  return ind.series.filter((s) => s.points && s.points.length >= 2).length;
+};
+
+// Sélection ÉQUILIBRÉE de ~N indicateurs : round-robin sur les 9 thèmes, en prenant
+// dans chacun ses indicateurs du plus riche au moins riche. Donne un échantillon
+// représentatif et stable, résilient à une évolution des données.
+function selectKeys(n) {
+  const pools = THEMES.map((t) =>
+    (t.indicators || [])
+      .filter((k) => INDIC[k] && richness(k) > 0)
+      .sort((a, b) => richness(b) - richness(a))
+  );
+  const out = [];
+  for (let pass = 0; out.length < n; pass++) {
+    let progressed = false;
+    for (const pool of pools) {
+      if (pass < pool.length) {
+        out.push(pool[pass]);
+        progressed = true;
+        if (out.length >= n) break;
+      }
+    }
+    if (!progressed) break; // plus rien à piocher
+  }
+  return out;
+}
+
+const KEYS = selectKeys(24); // 24 indicateurs équilibrés sur les 9 thèmes
 
 const r3 = (n) => Math.round(n * 1000) / 1000;
 
@@ -80,25 +114,25 @@ function pickSeries(ind) {
   return [s[0], s[s.length - 1]]; // observé/1er + dernière projection
 }
 
-// --- Disposition : grille décalée 7 x 10, fort chevauchement ------------------
+// --- Disposition : grille décalée 4 x 6 = 24, chevauchement léger -------------
 const W = 680, H = 1040;
-const COLS = 7, ROWS = 10;
-const stepX = (W - 40) / (COLS - 1);   // ~106
-const stepY = (H - 40) / (ROWS - 1);   // ~111
-const CARD_W = 160, CARD_H = 122;      // > pas => recouvrement, aucun trou
+const COLS = 4, ROWS = 6;
+const stepX = (W - 80) / (COLS - 1);   // ~200
+const stepY = (H - 60) / (ROWS - 1);   // ~196
+const CARD_W = 256, CARD_H = 188;      // > pas => recouvrement, aucun trou
 const hw = CARD_W / 2, hh = CARD_H / 2;
-const bx = (CARD_W - 24) / 2, by = (CARD_H - 22) / 2; // boîte courbe (marge interne)
+const bx = (CARD_W - 34) / 2, by = (CARD_H - 30) / 2; // boîte courbe (marge interne)
 
 let cards = "";
-let k = 0; // index cyclique sur les 67 indicateurs
+let k = 0; // index sur les 24 indicateurs sélectionnés (exactement 4×6 slots)
 for (let r = 0; r < ROWS; r++) {
   for (let c = 0; c < COLS; c++) {
     const ind = INDIC[KEYS[k % KEYS.length]];
     k++;
     const stagger = (r % 2) * stepX * 0.5; // rangées impaires décalées (effet pile)
-    const cx = 20 + c * stepX + stagger + (rnd() - 0.5) * 22;
-    const cy = 20 + r * stepY + (rnd() - 0.5) * 18;
-    const rot = (rnd() - 0.5) * 15;        // ±7,5°
+    const cx = 40 + c * stepX + stagger - stepX * 0.25 + (rnd() - 0.5) * 26;
+    const cy = 30 + r * stepY + (rnd() - 0.5) * 20;
+    const rot = (rnd() - 0.5) * 10;        // ±5°
     const series = pickSeries(ind);
     let paths = "";
     series.forEach((se, idx) => {
@@ -116,7 +150,7 @@ for (let r = 0; r < ROWS; r++) {
 }
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-hidden="true" preserveAspectRatio="xMidYMin slice">
-  <title>Une pile dense de vignettes-courbes : les 67 indicateurs de l'explorateur du COR (démographie, emploi, pensions, finances, comparaisons internationales…), chacun tracé à partir de ses séries réelles et de leurs couleurs d'origine.</title>
+  <title>Une pile de vignettes-courbes : une sélection d'indicateurs de l'explorateur du COR couvrant les neuf thèmes (démographie, emploi, pensions, finances, comparaisons internationales…), chacun tracé à partir de ses séries réelles et de leurs couleurs d'origine.</title>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
       <stop offset="0" stop-color="#f1f5f9"/><stop offset="1" stop-color="#dde5ee"/>
@@ -129,7 +163,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" rol
     </filter>
   </defs>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
-  <g fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${cards}
+  <g fill="none" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">${cards}
   </g>
   <rect width="${W}" height="${H}" fill="url(#vg)"/>
 </svg>
