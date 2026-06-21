@@ -152,7 +152,7 @@
     { id: "dette", chapter: "Comment ça marche", title: "« La moitié de la dette part dans les retraites » ?",
       subtitle: "Vrai ou faux ? — le débat Bayrou / Beaufret",
       description: "Le chiffre avancé par F. Bayrou, et sa lecture « avant concours publics » (Beaufret, Molinari, Fondapol) : ce que disent vraiment les sources.",
-      image: { section: "dette", theme: "#b91c1c", icon: "⚖️" } },
+      image: { section: "dette", theme: "#b91c1c", photo: "./images/bayrou.jpg" } },
     { id: "monde", chapter: "Comment ça marche", title: "La France dans le monde",
       subtitle: "Dépenses de retraite par pays (2021)",
       description: "Parmi les pays qui dépensent le plus, mais des dépenses quasi entièrement publiques : un choix de répartition.",
