@@ -91,6 +91,12 @@
         { min: 0, max: 2, suffix: " %" });
     },
     realite: t => miniOverlay(t, S.fecondite || D.fecondite, "hypotheses", ""),
+    financement: t => {
+      const d = S.fiscalisation || D.fiscalisation;
+      if (!d) return;
+      miniLine(t, [{ ...d.realise, kind: "solid", markers: false }],
+        { min: d.xMin, max: d.xMax }, { min: d.yMin, max: d.yMax, suffix: " Md€" });
+    },
     niveau: t => miniOverlay(t, S.niveauVie, "projections", " %"),
     monde: t => {
       const d = S.international;
@@ -140,10 +146,22 @@
       subtitle: "Niveau de vie relatif des retraités",
       description: "Proche de la parité aujourd'hui (~100 %), le COR projette un décrochage progressif — d'ampleur variable selon les rapports.",
       image: { section: "niveau", theme: "#0f766e", mini: "niveau" } },
+    { id: "financement", chapter: "Comment ça marche", title: "D'où vient vraiment l'argent des retraites ?",
+      subtitle: "Cotisations, impôts, transferts",
+      description: "Le financement n'est pas que des cotisations : la part de l'impôt (CSG, ITAF) monte. D'où vient réellement l'argent ?",
+      image: { section: "financement", theme: "#0e7490", mini: "financement" } },
+    { id: "dette", chapter: "Comment ça marche", title: "« La moitié de la dette part dans les retraites » ?",
+      subtitle: "Vrai ou faux ? — le débat Bayrou / Beaufret",
+      description: "Le chiffre avancé par F. Bayrou, et sa lecture « avant concours publics » (Beaufret, Molinari, Fondapol) : ce que disent vraiment les sources.",
+      image: { section: "dette", theme: "#b91c1c", icon: "⚖️" } },
     { id: "monde", chapter: "Comment ça marche", title: "La France dans le monde",
       subtitle: "Dépenses de retraite par pays (2021)",
       description: "Parmi les pays qui dépensent le plus, mais des dépenses quasi entièrement publiques : un choix de répartition.",
       image: { section: "monde", theme: "#b45309", mini: "monde" } },
+    { id: "hypotheses", chapter: "Comment ça marche", title: "Le tableau de bord des hypothèses",
+      subtitle: "Toutes les hypothèses, d'un coup d'œil",
+      description: "Productivité, fécondité, chômage, immigration… le récapitulatif des hypothèses retenues par chaque rapport du COR.",
+      image: { section: "hypotheses", theme: "#475569", icon: "📋" } },
     { id: "explorer", chapter: "Aller plus loin", title: "Explorer tous les indicateurs",
       subtitle: "Un thème, un indicateur, un graphique",
       description: "Choisissez un thème puis un indicateur : toutes les projections des rapports se superposent.",

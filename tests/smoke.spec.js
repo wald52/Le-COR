@@ -13,8 +13,8 @@ test("le carousel d'accueil se charge avec son titre", async ({ page }) => {
 test("le carousel affiche des cartes, des dots et un graphique sur une carte", async ({ page }) => {
   await page.goto("/");
   const cards = page.locator(".cs-track .card");
-  await expect(cards).toHaveCount(10);
-  await expect(page.locator(".cs-dots .cs-dot")).toHaveCount(10);
+  await expect(cards).toHaveCount(13);
+  await expect(page.locator(".cs-dots .cs-dot")).toHaveCount(13);
   // La carte d'intro active affiche sa photo…
   await expect(page.locator(".card.is-active .card-photo")).toBeVisible();
   // …et la carte suivante (« depenses ») un vrai mini-graphique SVG.
