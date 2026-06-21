@@ -168,7 +168,7 @@
     { id: "simulateur", chapter: "Que faire ?", title: "Équilibrez le système",
       subtitle: "Le simulateur des 3 leviers",
       description: "Âge, cotisations, pensions : dosez les leviers et voyez si le système revient à l'équilibre en 2070.",
-      image: { section: "simulateur", theme: "#1f4e79", icon: "🎚️" } },
+      image: { section: "simulateur", theme: "#1f4e79", photo: "./images/simulateur-faders.jpg" } },
     { id: "methode", chapter: "Aller plus loin", title: "Méthode & sources",
       subtitle: "D'où viennent les données",
       description: "Comment lire ces graphiques, et les fichiers officiels du COR derrière chaque courbe.",
