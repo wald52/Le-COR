@@ -238,6 +238,35 @@ body.mode-carousel .skip-link { display: none !important; }
 }
 .cs-dot.is-active { width: 22px; background: var(--bleu); }
 
+/* ---------- Flèches de navigation gauche/droite ---------- */
+.cs-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 200;                 /* au-dessus des cartes (z-index ≤ 100) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--bleu);
+  box-shadow: 0 4px 14px rgba(31, 78, 121, 0.22);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  transition: opacity .2s ease, transform .15s ease, background .2s ease;
+}
+.cs-nav .icon { width: 24px; height: 24px; }
+.cs-nav-prev { left: 10px; }
+.cs-nav-next { right: 10px; }
+.cs-nav:hover { background: #fff; }
+.cs-nav:active { transform: translateY(-50%) scale(0.92); }
+.cs-nav:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }
+.cs-nav:disabled { opacity: 0; pointer-events: none; }  /* masquée au bout */
+
 /* ======================================================================
    CardDetailView — « plongée » plein écran.
    ==================================================================== */

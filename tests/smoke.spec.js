@@ -54,6 +54,21 @@ test("la touche Échap ferme la vue détail et restitue le carousel", async ({ p
   await expect(page.locator("#story-sections #depenses")).toBeAttached();
 });
 
+test("les flèches gauche/droite naviguent entre les cartes", async ({ page }) => {
+  await page.goto("/");
+  // À la 1re carte : la flèche « précédente » est grisée, la « suivante » active.
+  await expect(page.locator(".cs-nav-prev")).toBeDisabled();
+  await expect(page.locator(".cs-nav-next")).toBeEnabled();
+
+  const titleBefore = await page.locator(".card.is-active .card-title").textContent();
+  await page.locator(".cs-nav-next").click();
+  // Après le snap (spring), la carte active a changé et « précédente » s'active.
+  await expect
+    .poll(async () => page.locator(".card.is-active .card-title").textContent())
+    .not.toBe(titleBefore);
+  await expect(page.locator(".cs-nav-prev")).toBeEnabled();
+});
+
 test("la navigation au clavier change de carte active", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".card.is-active")).toBeVisible();

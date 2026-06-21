@@ -188,7 +188,7 @@
   const dotEls = [];
   const miniDrawn = new Set(); // cartes dont le mini-graphique est déjà tracé
 
-  let screen, viewport, track, dotsWrap;
+  let screen, viewport, track, dotsWrap, prevBtn, nextBtn;
 
   /* ----------------------------------------------------------------------
    * CardItem — construit une carte.
@@ -286,6 +286,7 @@
       el.classList.toggle("is-active", i === Math.round(off));
     }
     updateDots(Math.round(off));
+    updateNav(Math.round(off));
   }
 
   function updateDots(active) {
@@ -294,6 +295,13 @@
       dotEls[i].classList.toggle("is-active", on);
       dotEls[i].setAttribute("aria-current", on ? "true" : "false");
     }
+  }
+
+  /* Grise la flèche aux extrémités (indice visuel que le bout est atteint). */
+  function updateNav(active) {
+    if (!prevBtn) return;
+    prevBtn.disabled = active <= 0;
+    nextBtn.disabled = active >= cards.length - 1;
   }
 
   /* ----------------------------------------------------------------------
@@ -661,7 +669,15 @@
       '<h1 class="cs-title">Ceci est mon COR</h1>' +
       '<p class="cs-hint">Glissez pour explorer · tapez une carte pour plonger</p>' +
       "</header>" +
-      '<div class="cs-viewport"><ul class="cs-track" role="list"></ul></div>' +
+      '<div class="cs-viewport">' +
+      '<ul class="cs-track" role="list"></ul>' +
+      '<button class="cs-nav cs-nav-prev" type="button" aria-label="Carte précédente">' +
+      '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>' +
+      "</button>" +
+      '<button class="cs-nav cs-nav-next" type="button" aria-label="Carte suivante">' +
+      '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
+      "</button>" +
+      "</div>" +
       '<nav class="cs-dots" aria-label="Pagination des cartes"></nav>';
 
     main.insertBefore(screen, storeyard);
@@ -681,6 +697,16 @@
       dotEls[i] = dot;
       dotsWrap.appendChild(dot);
     });
+
+    // Flèches de navigation : même logique que clavier/dots (springTo clampe).
+    prevBtn = screen.querySelector(".cs-nav-prev");
+    nextBtn = screen.querySelector(".cs-nav-next");
+    prevBtn.addEventListener("click", () => springTo(index - 1));
+    nextBtn.addEventListener("click", () => springTo(index + 1));
+    // Empêcher le viewport de capturer le pointer (setPointerCapture) sur
+    // pointerdown, sinon le `click` du bouton risque de ne pas se déclencher.
+    [prevBtn, nextBtn].forEach(b =>
+      b.addEventListener("pointerdown", e => e.stopPropagation()));
 
     document.body.classList.add("mode-carousel");
     setupGestures();
