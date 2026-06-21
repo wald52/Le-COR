@@ -297,11 +297,14 @@
     }
   }
 
-  /* Grise la flèche aux extrémités (indice visuel que le bout est atteint). */
+  /* Grise la flèche aux extrémités (indice visuel que le bout est atteint).
+   * Dès que l'utilisateur quitte la 1re carte, on coupe l'animation « indice »
+   * qui invite à explorer : il a compris le geste, plus besoin de le guider. */
   function updateNav(active) {
     if (!prevBtn) return;
     prevBtn.disabled = active <= 0;
     nextBtn.disabled = active >= cards.length - 1;
+    if (active >= 1) nextBtn.classList.remove("is-hint");
   }
 
   /* ----------------------------------------------------------------------
@@ -674,7 +677,7 @@
       '<button class="cs-nav cs-nav-prev" type="button" aria-label="Carte précédente">' +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>' +
       "</button>" +
-      '<button class="cs-nav cs-nav-next" type="button" aria-label="Carte suivante">' +
+      '<button class="cs-nav cs-nav-next is-hint" type="button" aria-label="Carte suivante">' +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
       "</button>" +
       "</div>" +

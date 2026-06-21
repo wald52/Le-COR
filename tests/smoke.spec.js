@@ -69,6 +69,15 @@ test("les flèches gauche/droite naviguent entre les cartes", async ({ page }) =
   await expect(page.locator(".cs-nav-prev")).toBeEnabled();
 });
 
+test("la flèche suivante clignote sur la 1re carte puis s'arrête après navigation", async ({ page }) => {
+  await page.goto("/");
+  // Au chargement (aucune interaction) : l'indice d'amorçage est actif.
+  await expect(page.locator(".cs-nav-next")).toHaveClass(/is-hint/);
+  // Une fois la 2e carte atteinte, l'indice disparaît définitivement.
+  await page.locator(".cs-nav-next").click();
+  await expect(page.locator(".cs-nav-next")).not.toHaveClass(/is-hint/);
+});
+
 test("la navigation au clavier change de carte active", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".card.is-active")).toBeVisible();
