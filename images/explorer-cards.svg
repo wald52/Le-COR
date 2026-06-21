@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 1040" role="img" aria-hidden="true" preserveAspectRatio="xMidYMin slice">
+  <title>Plusieurs cartes-courbes éparpillées sur une table, évoquant la superposition des projections du COR</title>
+
+  <defs>
+    <!-- Fond « table » : dégradé clair papier/lin, teintes slate -->
+    <linearGradient id="table" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="0.55" stop-color="#eef2f7"/>
+      <stop offset="1" stop-color="#dde5ee"/>
+    </linearGradient>
+
+    <!-- Léger vignettage pour creuser la surface -->
+    <radialGradient id="vignette" cx="0.5" cy="0.42" r="0.75">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="0.78" stop-color="#1e293b" stop-opacity="0"/>
+      <stop offset="1" stop-color="#1e293b" stop-opacity="0.10"/>
+    </radialGradient>
+
+    <!-- Ombre portée douce des vignettes -->
+    <filter id="cardShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1e293b" flood-opacity="0.18"/>
+    </filter>
+
+    <!-- Une mini-carte réutilisable : rectangle blanc arrondi + liseré -->
+    <g id="slip">
+      <rect x="-110" y="-78" width="220" height="156" rx="16"
+            fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+    </g>
+  </defs>
+
+  <!-- Table -->
+  <rect width="680" height="1040" fill="url(#table)"/>
+
+  <!-- Pile de cartes éparpillées. Ordre = profondeur (les dernières sont dessus).
+       Chaque groupe : translate vers sa place, rotate pour l'effet « jeté ».
+       Courbes tracées dans le repère local de la vignette (x ∈ [-92,92], y ∈ [-58,58]). -->
+  <g fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+
+    <!-- 1. arrière-plan, gris « ancien rapport », courbe descendante -->
+    <g transform="translate(200 250) rotate(-19)" filter="url(#cardShadow)">
+      <use href="#slip"/>
+      <path d="M -90 -34 C -50 -20 -10 28 36 40 S 86 50 90 52" stroke="#94a3b8"/>
+    </g>
+
+    <!-- 2. gris clair, courbe en cloche -->
+    <g transform="translate(470 235) rotate(16)" filter="url(#cardShadow)">
+      <use href="#slip"/>
+      <path d="M -90 44 C -52 -30 -16 -52 6 -50 C 40 -48 66 26 90 46" stroke="#a8b3c2"/>
+    </g>
+
+    <!-- 3. teal, courbe légèrement montante -->
+    <g transform="translate(250 470) rotate(11)" filter="url(#cardShadow)">
+      <use href="#slip"/>
+      <path d="M -90 40 C -44 30 -8 6 30 -16 S 80 -44 90 -50" stroke="#0f766e"/>
+    </g>
+
+    <!-- 4. orange, courbe en vague -->
+    <g transform="translate(478 480) rotate(-13)" filter="url(#cardShadow)">
+      <use href="#slip"/>
+      <path d="M -90 6 C -56 -42 -22 44 14 -2 C 44 -40 70 26 90 -8" stroke="#b45309"/>
+    </g>
+
+    <!-- 5. rouge, déficit qui plonge -->
+    <g transform="translate(228 690) rotate(-7)" filter="url(#cardShadow)">
+      <use href="#slip"/>
+      <path d="M -90 -44 C -46 -38 -8 -8 28 24 S 78 56 90 56" stroke="#c0392b"/>
+    </g>
+
+    <!-- 6. dessus : violet + bleu superposés (effet ciseaux des projections) -->
+    <g transform="translate(372 600) rotate(6)" filter="url(#cardShadow)">
+      <use href="#slip"/>
+      <path d="M -90 30 C -48 18 -8 -6 30 -26 S 80 -50 90 -54" stroke="#7b1fa2"/>
+      <path d="M -90 -8 C -48 -2 -8 18 30 34 S 80 52 90 54" stroke="#1f4e79"/>
+    </g>
+
+  </g>
+
+  <!-- Creux/vignettage par-dessus -->
+  <rect width="680" height="1040" fill="url(#vignette)"/>
+</svg>

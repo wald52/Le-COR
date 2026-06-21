@@ -164,7 +164,7 @@
     { id: "explorer", chapter: "Aller plus loin", title: "Explorer tous les indicateurs",
       subtitle: "Un thème, un indicateur, un graphique",
       description: "Choisissez un thème puis un indicateur : toutes les projections des rapports se superposent.",
-      image: { section: "explorer", theme: "#334155", icon: "📊" } },
+      image: { section: "explorer", theme: "#334155", photo: "./images/explorer-cards.svg" } },
     { id: "simulateur", chapter: "Que faire ?", title: "Équilibrez le système",
       subtitle: "Le simulateur des 3 leviers",
       description: "Âge, cotisations, pensions : dosez les leviers et voyez si le système revient à l'équilibre en 2070.",
