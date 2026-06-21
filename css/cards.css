@@ -268,12 +268,9 @@ body.mode-carousel .skip-link { display: none !important; }
 .cs-nav:disabled { opacity: 0; pointer-events: none; }  /* masquée au bout */
 
 /* Indice d'amorçage : tant que l'utilisateur n'a pas quitté la 1re carte, la
-   flèche « suivante » se met en évidence (couleur pleine + léger balancement)
-   pour inviter à explorer les cartes suivantes. Retirée dès la 2e carte (JS). */
+   flèche « suivante » se balance légèrement pour inviter à explorer les cartes
+   suivantes (sans changer de couleur). Retirée dès la 2e carte (JS). */
 .cs-nav.is-hint {
-  background: var(--bleu);
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(31, 78, 121, 0.35);
   animation: cs-nav-nudge 1.2s ease-in-out infinite;
 }
 @keyframes cs-nav-nudge {
@@ -326,6 +323,6 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   .card { will-change: auto; }
   .card-chart { will-change: auto; }
   .card-detail.is-open .cd-sheet { animation: none; }
-  /* Pas de balancement : l'indice reste visible (couleur pleine), sans bouger. */
+  /* Pas de balancement : l'indice est entièrement neutralisé. */
   .cs-nav.is-hint { animation: none; }
 }
