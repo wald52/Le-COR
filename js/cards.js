@@ -426,6 +426,7 @@
   let detailEl = null;       // overlay courant
   let movedSection = null;   // <section> déplacée (à remettre)
   let sectionPlaceholder = null;
+  let detailHistoryPushed = false; // a-t-on empilé une entrée d'historique pour ce détail ?
 
   function openDetail(i) {
     if (detailOpen) return;
@@ -434,6 +435,13 @@
     if (!section) return;
     detailOpen = true;
     index = i;
+
+    // Empile une entrée d'historique (sans changer l'URL) pour que le bouton
+    // Retour referme le descriptif et revienne aux cartes au lieu de quitter le site.
+    try {
+      history.pushState({ corDetail: card.image.section }, "");
+      detailHistoryPushed = true;
+    } catch (e) {}
 
     // Construit l'overlay.
     detailEl = document.createElement("div");
@@ -503,6 +511,16 @@
   function closeDetail(opts) {
     if (!detailOpen || !detailEl) return;
     opts = opts || {};
+
+    // Fermeture « manuelle » (Échap/voile/glissement) : on consomme nous-mêmes
+    // l'entrée d'historique empilée à l'ouverture pour garder l'historique propre.
+    // Le popstate qui suit est neutralisé (drapeau déjà à false). Une fermeture
+    // déclenchée par le Retour (fromPopstate) a déjà vu son entrée retirée.
+    if (detailHistoryPushed && !opts.fromPopstate) {
+      detailHistoryPushed = false;
+      history.back();
+    }
+
     const sheet = detailEl.querySelector(".cd-sheet");
     const scrim = detailEl.querySelector(".cd-scrim");
 
@@ -639,6 +657,16 @@
   // Échap ferme le détail.
   document.addEventListener("keydown", e => {
     if (e.key === "Escape" && detailOpen) closeDetail();
+  });
+
+  // Bouton/geste Retour du navigateur : l'entrée empilée à l'ouverture vient
+  // d'être consommée → on referme le descriptif (animation conservée) et on
+  // revient aux cartes, sans re-toucher l'historique.
+  window.addEventListener("popstate", () => {
+    if (detailOpen && detailHistoryPushed) {
+      detailHistoryPushed = false;
+      closeDetail({ fromPopstate: true });
+    }
   });
 
   /* ======================================================================
