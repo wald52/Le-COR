@@ -324,6 +324,7 @@
     if (!exp || !exp.themes.length) return;
     const themesEl = document.getElementById("explorer-themes");
     const chipsEl = document.getElementById("explorer-indicators");
+    themesEl.innerHTML = "";
     let currentTheme = exp.themes[0];
 
     let currentId = null;
@@ -645,16 +646,20 @@
   // Charge (une seule fois) les données de l'explorateur puis le construit.
   // Sorti de init() pour pouvoir aussi être déclenché à la demande par le mode
   // carousel (js/cards.js) quand on ouvre la carte « Explorer ».
-  let explorerLoaded = false;
+  // Mémoïse la promesse pour que le garde soit synchrone : sans cela, plusieurs
+  // appels concurrents (observateur de défilement, carousel, CORApp) déclenchés
+  // avant la fin du chargement passeraient tous le garde et construiraient
+  // l'explorateur en double (boutons de thèmes dupliqués).
+  let explorerPromise = null;
   function ensureExplorer() {
-    if (explorerLoaded) return Promise.resolve();
-    return loadScript("./data/cor-explorer.generated.js").then(() => {
+    if (explorerPromise) return explorerPromise;
+    explorerPromise = loadScript("./data/cor-explorer.generated.js").then(() => {
       if (window.COR_SERIES && window.COR_EXPLORER)
         window.COR_SERIES.explorer = window.COR_EXPLORER.explorer;
       renderExplorer();
       setupChartTools();
-      explorerLoaded = true;
-    }).catch(() => {});
+    }).catch(() => { explorerPromise = null; });
+    return explorerPromise;
   }
 
   // Exécute `cb` quand l'élément approche du viewport (ou tout de suite si
