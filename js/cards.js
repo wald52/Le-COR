@@ -244,7 +244,7 @@
       `<h2 class="card-title">${card.title}</h2>` +
       `<p class="card-sub">${card.subtitle}</p>` +
       (card.description ? `<p class="card-desc">${card.description}</p>` : "") +
-      (card.noDetail ? "" : `<span class="card-cta">Tapez pour plonger ›</span>`);
+      (card.noDetail ? "" : `<span class="card-cta">Voir le détail ›</span>`);
 
     inner.appendChild(bg);
     inner.appendChild(chart);
@@ -712,7 +712,7 @@
       '<header class="cs-head">' +
       '<p class="cs-kicker">Outil citoyen · données publiques du COR</p>' +
       '<h1 class="cs-title">Ceci est mon COR</h1>' +
-      '<p class="cs-hint">Glissez pour explorer · tapez une carte pour plonger</p>' +
+      '<p class="cs-hint">Glissez pour explorer · touchez une carte pour le détail</p>' +
       "</header>" +
       '<div class="cs-viewport">' +
       '<ul class="cs-track" role="list"></ul>' +
