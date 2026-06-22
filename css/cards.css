@@ -306,20 +306,29 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   transform-origin: center center;
   padding-top: calc(env(safe-area-inset-top, 0px) + 4px);
 }
-/* Flèche de retour vers les cartes. Centrée en haut de la feuille et COLLANTE
-   (sticky) : elle reste visible même quand on fait défiler le descriptif, donc
-   on peut revenir à tout moment — en particulier sur ordinateur, où aucun moyen
-   visible n'existait. Cliquable OU « tirable » vers le bas (le glissement
-   réutilise le swipe-down géré dans setupSheetDismiss). */
-.cd-back {
+/* Barre de retour COLLANTE (sticky) : reste visible même en faisant défiler le
+   descriptif, donc on peut revenir à tout moment — en particulier sur ordinateur,
+   où aucun moyen visible n'existait. Elle centre la flèche et, à la première
+   ouverture, un court libellé d'aide juste en dessous.
+   `pointer-events` : la barre (pleine largeur) laisse passer les clics vers le
+   contenu derrière ; seul le bouton reste interactif → jamais de zone morte. */
+.cd-backbar {
   position: sticky;
   top: calc(env(safe-area-inset-top, 0px) + 8px);
   z-index: 6;                    /* au-dessus du contenu défilant de la feuille */
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  margin: 6px 0 2px;
+  pointer-events: none;
+}
+.cd-back {
+  pointer-events: auto;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 46px; height: 46px;
-  margin: 6px auto 2px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -337,17 +346,40 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
 .cd-back:hover { background: #fff; }
 .cd-back:active { transform: translateY(2px) scale(0.94); }
 .cd-back:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }
-/* Dès que l'utilisateur a vu/compris l'affordance (survol, focus clavier, ou
-   défilement → classe .is-still posée en JS), on coupe le va-et-vient pour ne
-   plus distraire pendant la lecture du descriptif. */
+/* Dès que l'utilisateur a vu/compris l'affordance (survol, focus clavier,
+   défilement ou début de glissement → classe .is-still posée en JS), on coupe le
+   va-et-vient pour ne plus distraire pendant la lecture du descriptif. */
 .cd-back:hover,
 .cd-back:focus-visible,
-.cd-back.is-still { animation: none; }
+.cd-backbar.is-still .cd-back { animation: none; }
 
 @keyframes cd-back-nudge {
   0%, 55%, 100% { transform: translateY(0); }
   25%           { transform: translateY(7px); }
 }
+
+/* Libellé d'aide affiché UNE FOIS, à la première ouverture d'un détail. Court,
+   sous la flèche, jamais bloquant (pointer-events: none) → on peut toujours
+   cliquer/tirer la flèche. Apparition différée (.is-shown, posée en JS après
+   l'animation d'ouverture) ; s'efface à la première prise en main (.is-still). */
+.cd-back-hint {
+  pointer-events: none;
+  max-width: min(80vw, 280px);
+  padding: 5px 13px;
+  border-radius: 999px;
+  background: rgba(31, 78, 121, 0.94);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(31, 78, 121, 0.3);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.cd-back-hint.is-shown { opacity: 1; transform: translateY(0); }
+.cd-backbar.is-still .cd-back-hint { opacity: 0; transform: translateY(-6px); }
 .cd-body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
 /* La <section> déplacée garde son style d'origine ; on neutralise juste le
    fond alterné pour une feuille homogène. */
@@ -364,4 +396,6 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   /* Pas de balancement : les indices (carrousel, flèche de retour) sont neutralisés. */
   .cs-nav.is-hint { animation: none; }
   .cd-back { animation: none; }
+  /* Libellé d'aide : on garde un fondu d'opacité doux mais aucun déplacement. */
+  .cd-back-hint { transform: none !important; transition-duration: .2s; }
 }

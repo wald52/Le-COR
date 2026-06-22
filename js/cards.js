@@ -440,6 +440,7 @@
   let movedSection = null;   // <section> déplacée (à remettre)
   let sectionPlaceholder = null;
   let detailHistoryPushed = false; // a-t-on empilé une entrée d'historique pour ce détail ?
+  let backHintShown = false; // l'indice texte « cliquez/glissez pour revenir » ne s'affiche qu'à la 1re ouverture
 
   function openDetail(i) {
     if (detailOpen) return;
@@ -457,6 +458,19 @@
       detailHistoryPushed = true;
     } catch (e) {}
 
+    // Indice texte affiché UNE SEULE FOIS (première ouverture d'un détail) pour
+    // expliciter comment revenir. Le verbe s'adapte à la plateforme : « Glissez »
+    // sur écran tactile (on tire la feuille vers le bas), « Cliquez » au pointeur
+    // fin (souris). Court, pour ne pas envahir l'écran et laisser interagir.
+    const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    const showHint = !backHintShown;
+    backHintShown = true;
+    const hintHtml = showHint
+      ? '<span class="cd-back-hint" aria-hidden="true">' +
+        (coarse ? "Glissez pour revenir à l'accueil" : "Cliquez pour revenir à l'accueil") +
+        "</span>"
+      : "";
+
     // Construit l'overlay.
     detailEl = document.createElement("div");
     detailEl.className = "card-detail";
@@ -464,14 +478,18 @@
       '<div class="cd-scrim"></div>' +
       '<div class="cd-sheet" role="dialog" aria-modal="true" aria-label="' +
       card.title.replace(/"/g, "&quot;") + '">' +
-      // Flèche de retour : affordance VISIBLE pour revenir aux cartes. On la
-      // « tire » vers le bas (réutilise le swipe-down) ou on clique dessus. Un
-      // léger va-et-vient (nudge, en CSS) invite au geste — utile à qui n'a pas
-      // l'habitude des bottom-sheets (mobile) et indispensable sur ordinateur,
-      // où aucun geste n'existait pour revenir.
+      // Barre de retour collante : affordance VISIBLE pour revenir aux cartes.
+      // On « tire » la flèche vers le bas (réutilise le swipe-down) ou on clique
+      // dessus ; un léger va-et-vient (nudge, en CSS) et, à la 1re ouverture, un
+      // court libellé d'aide invitent au geste — utile à qui n'a pas l'habitude
+      // des bottom-sheets (mobile) et indispensable sur ordinateur, où aucun
+      // geste n'existait pour revenir.
+      '<div class="cd-backbar">' +
       '<button class="cd-back" type="button" aria-label="Revenir aux cartes">' +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>' +
       "</button>" +
+      hintHtml +
+      "</div>" +
       '<div class="cd-body"></div>' +
       "</div>";
     document.body.appendChild(detailEl);
@@ -480,6 +498,8 @@
     const scrim = detailEl.querySelector(".cd-scrim");
     const body = detailEl.querySelector(".cd-body");
     const backBtn = detailEl.querySelector(".cd-back");
+    const backbar = detailEl.querySelector(".cd-backbar");
+    const hintEl = detailEl.querySelector(".cd-back-hint");
 
     // Déplace la <section> réelle dans la vue détail (placeholder pour la remettre).
     sectionPlaceholder = document.createComment("section:" + card.image.section);
@@ -502,12 +522,19 @@
     // vers le bas (slideDown) — dans le sens de la flèche, comme un « tiré » bref.
     scrim.addEventListener("click", closeDetail);
     backBtn.addEventListener("click", () => closeDetail({ slideDown: true }));
-    // Le va-et-vient de la flèche s'arrête dès que l'utilisateur s'en empare
-    // (survol/focus gérés en CSS ; défilement ou début de glissement ici) : on a
-    // invité au geste, inutile de continuer à attirer l'œil pendant la lecture.
-    const stopHint = () => backBtn.classList.add("is-still");
+    // Le va-et-vient ET le libellé d'aide s'effacent dès la première prise en
+    // main (défilement, ou pression — clic/tap/début de glissement) : on a montré
+    // comment revenir, inutile d'insister pendant la lecture. (Le survol/focus de
+    // la flèche stoppe en plus le nudge en CSS, pour un retour immédiat.)
+    const stopHint = () => backbar.classList.add("is-still");
     sheet.addEventListener("scroll", stopHint, { once: true, passive: true });
     sheet.addEventListener("pointerdown", stopHint, { once: true });
+    // Apparition différée du libellé (après l'animation d'ouverture), via une
+    // transition CSS pilotée par la classe .is-shown.
+    if (hintEl) {
+      setTimeout(() => { if (hintEl.isConnected) hintEl.classList.add("is-shown"); },
+        reduceMotion() ? 60 : 480);
+    }
     setupSheetDismiss(sheet);
 
     // Animation d'ouverture (FLIP depuis la carte).
