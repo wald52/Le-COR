@@ -158,26 +158,14 @@ body.mode-carousel .skip-link { display: none !important; }
   display: block;
 }
 
-/* Panneau de lisibilité en bas de carte : un SEUL calque « verre dépoli ».
-   Pour éviter tout artefact, ce calque n'utilise PAS de mask-image :
-   - Le masque sur un backdrop-filter n'est appliqué par Chrome qu'après un
-     repaint (fin du chargement de l'image), d'où un flou net sur la moitié de
-     la carte le temps du chargement.
-   - Avec un flou uniforme mais un voile en dégradé jusqu'à transparent, le haut
-     du panneau montrait « du flou sans voile » et le bas « du flou + voile » :
-     deux zones lues comme deux flous différents.
-   Solution : flou uniforme + voile sombre TOUJOURS présent (jamais transparent),
-   confiné en bas par la seule géométrie. Un panneau homogène, un seul flou,
-   aucun flash. Les coins hauts arrondis donnent un bord net mais intentionnel. */
+/* Overlay sombre en bas : lisibilité du texte au-dessus du graphique. */
 .card-overlay {
   position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 44%;
-  background: rgba(15, 23, 38, 0.62);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border-top-left-radius: 22px;
-  border-top-right-radius: 22px;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(15, 23, 38, 0) 40%,
+    rgba(15, 23, 38, 0.55) 72%,
+    rgba(15, 23, 38, 0.86) 100%);
   pointer-events: none;
 }
 
@@ -196,6 +184,7 @@ body.mode-carousel .skip-link { display: none !important; }
   padding: 3px 9px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
   margin-bottom: 8px;
 }
 .card-title {
