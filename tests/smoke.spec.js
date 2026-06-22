@@ -44,7 +44,11 @@ test("taper la carte active ouvre la vue détail avec son contenu complet", asyn
 
 test("la touche Échap ferme la vue détail et restitue le carousel", async ({ page }) => {
   await page.goto("/");
-  await page.locator(".card.is-active").click();
+  // La 1re carte (intro) n'a pas de vue détail : on ouvre celle de « depenses ».
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.click();
   await expect(page.locator(".card-detail")).toBeVisible();
 
   await page.keyboard.press("Escape");

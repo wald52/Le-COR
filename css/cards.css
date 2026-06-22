@@ -100,6 +100,12 @@ body.mode-carousel .skip-link { display: none !important; }
   box-shadow: 0 0 0 3px var(--bleu), 0 18px 40px rgba(31, 78, 121, 0.28);
 }
 
+/* Carte sans vue détail (l'accueil) : aucun descriptif à ouvrir. Quand elle est
+   centrée, un tap n'ouvre rien → on retire le curseur « main » trompeur. Une
+   fois décentrée, elle redevient cliquable pour revenir au centre, comme les
+   autres cartes. */
+.card--no-detail.is-active { cursor: default; }
+
 .card-inner {
   position: relative;
   width: 100%;

@@ -27,7 +27,11 @@ test("glisser vers le bas depuis le détail revient aux cartes sans recharger", 
   // Sentinelle : un vrai rechargement effacerait cette variable de window.
   await page.evaluate(() => { window.__noReload = true; });
 
-  await page.locator(".card.is-active").click();
+  // La 1re carte (intro) n'a pas de vue détail : on ouvre celle de « depenses ».
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.click();
   await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
 
   // Glissement franc vers le bas (> 120px, seuil de fermeture) depuis le haut.
@@ -41,7 +45,11 @@ test("glisser vers le bas depuis le détail revient aux cartes sans recharger", 
 
 test("un petit glissement vers le bas ne ferme pas le détail (retour élastique)", async ({ page }) => {
   await page.goto("/");
-  await page.locator(".card.is-active").click();
+  // La 1re carte (intro) n'a pas de vue détail : on ouvre celle de « depenses ».
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.click();
   await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
 
   // Sous le seuil (< 120px) : la feuille revient en place, le détail reste ouvert.

@@ -200,7 +200,10 @@
     li.dataset.index = String(i);
     li.dataset.section = card.image.section;
     // Carte sans vue détail (noDetail) : ni rôle bouton, ni libellé « ouvrir ».
+    // La classe `card--no-detail` permet au CSS de retirer l'affordance
+    // « cliquable » (curseur) quand la carte est centrée : un tap n'ouvre rien.
     if (card.noDetail) {
+      li.classList.add("card--no-detail");
       li.setAttribute("aria-label", card.title);
     } else {
       li.setAttribute("role", "button");
