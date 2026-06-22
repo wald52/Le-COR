@@ -237,7 +237,7 @@
     const text = document.createElement("div");
     text.className = "card-text";
     text.innerHTML =
-      (i === 0 ? "" : `<span class="card-chapter">${card.chapter} · ${String(i + 1).padStart(2, "0")}</span>`) +
+      (i === 0 ? "" : `<span class="card-chapter">${card.chapter} · ${String(i).padStart(2, "0")}</span>`) +
       `<h2 class="card-title">${card.title}</h2>` +
       `<p class="card-sub">${card.subtitle}</p>` +
       (card.description ? `<p class="card-desc">${card.description}</p>` : "") +
