@@ -712,7 +712,6 @@
       '<header class="cs-head">' +
       '<p class="cs-kicker">Outil citoyen · données publiques du COR</p>' +
       '<h1 class="cs-title">Ceci est mon COR</h1>' +
-      '<p class="cs-hint">Glissez pour explorer · touchez une carte pour le détail</p>' +
       "</header>" +
       '<div class="cs-viewport">' +
       '<ul class="cs-track" role="list"></ul>' +
