@@ -123,7 +123,7 @@
    * ==================================================================== */
   const cards = [
     { id: "presentation", chapter: "Bienvenue", title: "À quoi sert ce site ?",
-      subtitle: "Le principe en bref",
+      subtitle: "Le principe en bref", noDetail: true,
       image: { section: "presentation", theme: "#1f4e79", photo: "./images/intro-cor.jpg" } },
     { id: "depenses", chapter: "Le constat", title: "La même question, des réponses différentes",
       subtitle: "Dépenses de retraite en % du PIB",
@@ -198,9 +198,14 @@
     li.className = "card";
     li.dataset.index = String(i);
     li.dataset.section = card.image.section;
-    li.setAttribute("role", "button");
-    li.setAttribute("tabindex", "0");
-    li.setAttribute("aria-label", card.title + " — ouvrir");
+    // Carte sans vue détail (noDetail) : ni rôle bouton, ni libellé « ouvrir ».
+    if (card.noDetail) {
+      li.setAttribute("aria-label", card.title);
+    } else {
+      li.setAttribute("role", "button");
+      li.setAttribute("tabindex", "0");
+      li.setAttribute("aria-label", card.title + " — ouvrir");
+    }
 
     const inner = document.createElement("div");
     inner.className = "card-inner";
@@ -235,7 +240,7 @@
       `<h2 class="card-title">${card.title}</h2>` +
       `<p class="card-sub">${card.subtitle}</p>` +
       (card.description ? `<p class="card-desc">${card.description}</p>` : "") +
-      `<span class="card-cta">Tapez pour plonger ›</span>`;
+      (card.noDetail ? "" : `<span class="card-cta">Tapez pour plonger ›</span>`);
 
     inner.appendChild(bg);
     inner.appendChild(chart);
@@ -431,6 +436,7 @@
   function openDetail(i) {
     if (detailOpen) return;
     const card = cards[i];
+    if (card.noDetail) return;            // carte sans descriptif détaillé
     const section = storeyard.querySelector("#" + CSS.escape(card.image.section));
     if (!section) return;
     detailOpen = true;
