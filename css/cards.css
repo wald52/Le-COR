@@ -149,9 +149,10 @@ body.mode-carousel .skip-link { display: none !important; }
 .card-icon { font-size: 4.6rem; line-height: 1; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.12)); }
 
 /* Cartes « photo » : l'image occupe toute la carte (le texte se lit par-dessus
-   l'overlay sombre du bas). Légèrement plus large que la carte, comme le calque
-   graphique, pour que le parallax ne révèle pas de bord vide. */
-.card-chart--photo { top: 0; height: 100%; }
+   l'overlay sombre du bas). Élargie à 140% (débord 20% de chaque côté) pour
+   couvrir le décalage parallax max (STEP × PARALLAX_AMOUNT = 360 × 0.18 ≈ 65 px
+   ≈ 19% de la carte) sans révéler de bord vide sur les cartes latérales. */
+.card-chart--photo { top: 0; height: 100%; left: -20%; width: 140%; }
 .card-photo {
   width: 100%; height: 100%;
   object-fit: cover; object-position: center top;

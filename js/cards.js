@@ -287,7 +287,11 @@
       const chart = chartEls[i];
       if (chart) {
         // Parallax : le graphique se déplace plus lentement que la carte.
-        chart.style.transform = `translate3d(${(-d * STEP * PARALLAX_AMOUNT).toFixed(2)}px,0,0)`;
+        // On borne la distance à ±1 : le décalage sature et reste couvert par le
+        // débord de l'image (cf. .card-chart--photo) → aucune carte ne révèle de
+        // bord vide, même très loin du centre.
+        const dp = clamp(d, -1, 1);
+        chart.style.transform = `translate3d(${(-dp * STEP * PARALLAX_AMOUNT).toFixed(2)}px,0,0)`;
       }
       el.classList.toggle("is-active", i === Math.round(off));
     }
