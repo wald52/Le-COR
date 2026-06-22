@@ -464,7 +464,14 @@
       '<div class="cd-scrim"></div>' +
       '<div class="cd-sheet" role="dialog" aria-modal="true" aria-label="' +
       card.title.replace(/"/g, "&quot;") + '">' +
-      '<div class="cd-handle"></div>' +
+      // Flèche de retour : affordance VISIBLE pour revenir aux cartes. On la
+      // « tire » vers le bas (réutilise le swipe-down) ou on clique dessus. Un
+      // léger va-et-vient (nudge, en CSS) invite au geste — utile à qui n'a pas
+      // l'habitude des bottom-sheets (mobile) et indispensable sur ordinateur,
+      // où aucun geste n'existait pour revenir.
+      '<button class="cd-back" type="button" aria-label="Revenir aux cartes">' +
+      '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>' +
+      "</button>" +
       '<div class="cd-body"></div>' +
       "</div>";
     document.body.appendChild(detailEl);
@@ -472,6 +479,7 @@
     const sheet = detailEl.querySelector(".cd-sheet");
     const scrim = detailEl.querySelector(".cd-scrim");
     const body = detailEl.querySelector(".cd-body");
+    const backBtn = detailEl.querySelector(".cd-back");
 
     // Déplace la <section> réelle dans la vue détail (placeholder pour la remettre).
     sectionPlaceholder = document.createComment("section:" + card.image.section);
@@ -489,8 +497,17 @@
     document.body.classList.add("detail-open");
     screen.setAttribute("aria-hidden", "true");
 
-    // Fermeture : glissement vers le bas (mobile), Échap (clavier), clic sur le voile.
+    // Fermeture : flèche de retour, glissement vers le bas (mobile), Échap
+    // (clavier), clic sur le voile. Un clic sur la flèche fait glisser la feuille
+    // vers le bas (slideDown) — dans le sens de la flèche, comme un « tiré » bref.
     scrim.addEventListener("click", closeDetail);
+    backBtn.addEventListener("click", () => closeDetail({ slideDown: true }));
+    // Le va-et-vient de la flèche s'arrête dès que l'utilisateur s'en empare
+    // (survol/focus gérés en CSS ; défilement ou début de glissement ici) : on a
+    // invité au geste, inutile de continuer à attirer l'œil pendant la lecture.
+    const stopHint = () => backBtn.classList.add("is-still");
+    sheet.addEventListener("scroll", stopHint, { once: true, passive: true });
+    sheet.addEventListener("pointerdown", stopHint, { once: true });
     setupSheetDismiss(sheet);
 
     // Animation d'ouverture (FLIP depuis la carte).
