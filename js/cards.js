@@ -451,6 +451,7 @@
       if (!refs) return;
       const sheet = refs.sheet, scrim = refs.scrim;
       const settle = () => {
+        detailReady = true;        // ouverture confirmée : le voile peut fermer
         sheet.style.transform = "";
         sheet.style.borderRadius = "";
         if (scrim) scrim.style.opacity = "1";
@@ -548,6 +549,7 @@
   let openDragInner = null;  // .card-inner estompé au doigt pendant l'ouverture-glissement (styles inline à restaurer)
   let detailChartsRendered = false; // a-t-on déjà (re)dessiné les graphiques de la section ?
   let pendingDetailRender = null;   // rendu des graphiques différé jusqu'à la fin de l'ouverture
+  let detailReady = false;          // ouverture TERMINÉE → le voile accepte la fermeture (cf. clic parasite ci-dessous)
 
   // Fige les animations d'ouverture : on écrit leur valeur de fin dans le style
   // inline (commitStyles) puis on les annule (cancel). Sans ça, une animation WAAPI
@@ -555,6 +557,7 @@
   // écrase le `transform`/`opacity` posés par le drag → la feuille ne suit pas le
   // doigt (effet « on/off »). Les valeurs commit = valeurs de fin ⇒ aucun saut.
   function freezeOpenAnims() {
+    detailReady = true;            // ouverture posée : le voile peut désormais fermer
     openAnims.forEach(a => {
       if (!a) return;
       try { a.commitStyles(); } catch (e) {}
@@ -585,6 +588,7 @@
     const section = storeyard.querySelector("#" + CSS.escape(card.image.section));
     if (!section) return null;
     detailOpen = true;
+    detailReady = false;           // réarmé à chaque ouverture (voir garde du voile plus bas)
     index = i;
 
     // Empile une entrée d'historique (sans changer l'URL) pour que le bouton
@@ -660,7 +664,13 @@
     // Fermeture : flèche de retour, glissement vers le bas (mobile), Échap
     // (clavier), clic sur le voile. Un clic sur la flèche fait glisser la feuille
     // vers le bas (slideDown) — dans le sens de la flèche, comme un « tiré » bref.
-    scrim.addEventListener("click", closeDetail);
+    // Clic sur le voile = fermeture, MAIS seulement une fois l'ouverture terminée
+    // (detailReady). La feuille opaque plein écran recouvre le voile en état ouvert :
+    // un clic sur le voile n'est donc jamais légitime « ouvert ». Sans cette garde, le
+    // `click` synthétique émis juste après le tap d'ouverture (alors que la feuille
+    // monte encore depuis le bas, hors écran → seul le voile est sous le doigt) ferme
+    // aussitôt le détail à peine ouvert (« sursaut »/dézoom instantané).
+    scrim.addEventListener("click", () => { if (detailReady) closeDetail(); });
     backBtn.addEventListener("click", () => closeDetail({ slideDown: true }));
     // Le va-et-vient s'arrête et la bulle se replie (le libellé rentre) dès la
     // première prise en main (défilement, ou pression — clic/tap/début de
@@ -700,6 +710,7 @@
     // symétrique.
     if (reduceMotion()) {
       detailEl.classList.add("is-open");
+      detailReady = true;          // ouverture immédiate : le voile peut fermer
       body.style.opacity = "1";
       // Pas d'animation à concurrencer : on dessine les graphiques tout de suite.
       const render = pendingDetailRender;
@@ -790,6 +801,7 @@
       document.body.classList.remove("detail-open");
       screen.removeAttribute("aria-hidden");
       detailOpen = false;
+      detailReady = false;
       // Annule un éventuel rendu différé non encore déclenché (fermeture rapide
       // avant la fin de l'ouverture) et réarme l'état pour la prochaine ouverture.
       detailChartsRendered = false;

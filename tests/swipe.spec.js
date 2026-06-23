@@ -233,6 +233,32 @@ test("glisser la carte active vers le haut ouvre le détail (suivi puis confirma
   expect(await page.evaluate(() => window.__noReload)).toBe(true);
 });
 
+test("taper la carte active ouvre le détail et il RESTE ouvert (clic synthétique neutralisé)", async ({ page }) => {
+  // Régression : un TAP émet, après le touchend, un `click` synthétique re-testé
+  // sous le doigt. Pendant la montée de la feuille (translateY 100% → 0), seul le
+  // voile est sous le doigt au centre → sans garde, ce clic déclenchait la
+  // fermeture et le détail se refermait aussitôt (« sursaut »). (NB : un click
+  // SOURIS ne reproduit pas le bug — sa cible est la carte, ancêtre commun
+  // mousedown/mouseup — d'où l'usage d'un vrai tap tactile ici.)
+  await page.goto("/");
+  await page.evaluate(() => { window.__noReload = true; });
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+
+  await active.tap();
+
+  // Le détail s'ouvre et NE se referme PAS : feuille posée (translateY ≈ 0).
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+  await page.waitForTimeout(600);
+  await expect(page.locator(".card-detail")).toBeVisible();
+  const ty = await page.locator(".cd-sheet").evaluate(
+    el => new DOMMatrixReadOnly(getComputedStyle(el).transform).f
+  );
+  expect(Math.abs(ty)).toBeLessThan(1);
+  expect(await page.evaluate(() => window.__noReload)).toBe(true);
+});
+
 test("un petit glisser LENT vers le haut puis relâcher annule l'ouverture (retour aux cartes)", async ({ page }) => {
   await page.goto("/");
   await page.keyboard.press("ArrowRight");
