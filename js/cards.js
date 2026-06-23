@@ -443,6 +443,21 @@
   let sectionPlaceholder = null;
   let detailHistoryPushed = false; // a-t-on empilé une entrée d'historique pour ce détail ?
   let backHintShown = false; // l'indice texte « cliquez/glissez pour revenir » ne s'affiche qu'à la 1re ouverture
+  let openAnims = [];        // animations d'ouverture (WAAPI) à figer avant un drag
+
+  // Fige les animations d'ouverture : on écrit leur valeur de fin dans le style
+  // inline (commitStyles) puis on les annule (cancel). Sans ça, une animation WAAPI
+  // en `fill: "both"` garde la priorité sur le style inline dans la cascade et
+  // écrase le `transform`/`opacity` posés par le drag → la feuille ne suit pas le
+  // doigt (effet « on/off »). Les valeurs commit = valeurs de fin ⇒ aucun saut.
+  function freezeOpenAnims() {
+    openAnims.forEach(a => {
+      if (!a) return;
+      try { a.commitStyles(); } catch (e) {}
+      try { a.cancel(); } catch (e) {}
+    });
+    openAnims = [];
+  }
 
   function openDetail(i) {
     if (detailOpen) return;
@@ -549,18 +564,23 @@
     const sx = rect.width / vw, sy = rect.height / vh;
     const tx = rect.left + rect.width / 2 - vw / 2;
     const ty = rect.top + rect.height / 2 - vh / 2;
-    sheet.animate(
+    const sheetAnim = sheet.animate(
       [
         { transform: `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`, borderRadius: "22px", opacity: 0.5 },
         { transform: "none", borderRadius: "0px", opacity: 1 }
       ],
       { duration: OPEN_DURATION, easing: "cubic-bezier(.2,.7,.2,1)", fill: "both" }
     );
-    scrim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: OPEN_DURATION, fill: "both" });
-    body.animate(
+    const scrimAnim = scrim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: OPEN_DURATION, fill: "both" });
+    const bodyAnim = body.animate(
       [{ opacity: 0, transform: "translateY(28px)" }, { opacity: 1, transform: "none" }],
       { duration: OPEN_DURATION, delay: 90, easing: "cubic-bezier(.2,.7,.2,1)", fill: "both" }
     );
+    // À la fin de l'ouverture, on fige ces animations (commit + cancel) pour rendre
+    // la main au style inline → le drag de fermeture pourra réellement déplacer la
+    // feuille. (Un drag amorcé plus tôt déclenche aussi freezeOpenAnims via beginDrag.)
+    openAnims = [sheetAnim, scrimAnim, bodyAnim];
+    sheetAnim.onfinish = freezeOpenAnims;
     detailEl.classList.add("is-open");
   }
 
@@ -674,6 +694,9 @@
     // Renvoie false si on n'amorce pas (le geste reste un défilement normal).
     function beginDrag(y, x) {
       if (sheet.scrollTop > 0) return false;
+      // Fige l'animation d'ouverture si elle « remplit » encore : sinon elle écrase
+      // le transform inline du drag et la feuille ne suivrait pas le doigt.
+      freezeOpenAnims();
       dragging = true; axis = null; dy = 0;
       startY = y; startX = x;
       lastY = y; lastT = performance.now(); vy = 0;

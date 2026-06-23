@@ -87,6 +87,45 @@ test("glisser (touch) vers le bas depuis le détail revient aux cartes", async (
   expect(await page.evaluate(() => window.__noReload)).toBe(true);
 });
 
+test("la feuille suit le doigt pendant le glissement (transform en direct)", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.click();
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+
+  // On attend la fin de l'animation d'ouverture (WAAPI, fill:both). Sans le
+  // freezeOpenAnims, cette animation garderait la priorité sur le style inline et
+  // le transform du drag n'aurait AUCUN effet visible → ce test échouerait.
+  await page.waitForTimeout(600);
+
+  // touchstart + quelques touchmove SANS touchend : on inspecte en plein geste.
+  const ty = await page.locator(".cd-sheet").evaluate(el => {
+    const mk = y => new Touch({ identifier: 1, target: el, clientX: 180, clientY: y });
+    const fire = (type, y) => el.dispatchEvent(new TouchEvent(type, {
+      bubbles: true, cancelable: true,
+      touches: [mk(y)], targetTouches: [mk(y)], changedTouches: [mk(y)]
+    }));
+    fire("touchstart", 80);
+    for (let i = 1; i <= 5; i++) fire("touchmove", 80 + i * 12);  // jusqu'à +60px
+    // matrix(a, b, c, d, e, f) → f = translateY appliqué.
+    const m = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+    return m.f;
+  });
+  // La feuille a bien suivi le doigt vers le bas (translation positive notable).
+  expect(ty).toBeGreaterThan(20);
+
+  // On relâche sous le seuil : retour élastique, le détail reste ouvert.
+  await page.locator(".cd-sheet").evaluate(el => {
+    const t = new Touch({ identifier: 1, target: el, clientX: 180, clientY: 60 });
+    el.dispatchEvent(new TouchEvent("touchend", {
+      bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [t]
+    }));
+  });
+  await expect(page.locator(".card-detail")).toBeVisible();
+});
+
 test("un petit glissement (touch) ne ferme pas le détail (retour élastique)", async ({ page }) => {
   await page.goto("/");
   await page.keyboard.press("ArrowRight");
