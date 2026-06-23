@@ -22,7 +22,10 @@
   color-scheme: only light;
 }
 
-* { box-sizing: border-box; }
+/* Supprime le voile bleu posé par défaut sur les cibles tactiles au toucher
+   (Safari iOS / Chrome / Samsung Internet Android). L'anneau de focus clavier
+   reste géré par `:focus-visible` ci-dessous : l'accessibilité est préservée. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 
 html { scroll-behavior: smooth; scroll-padding-top: 80px; }
