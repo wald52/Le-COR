@@ -154,3 +154,28 @@ test("un petit glissement vers le bas ne ferme pas le détail (retour élastique
 
   await expect(page.locator(".card-detail")).toBeVisible();
 });
+
+test("après l'ouverture, la feuille est posée et la carte d'origine restaurée", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.click();
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+
+  // Fin de l'animation de montée (OPEN_DURATION = 440ms + marge).
+  await page.waitForTimeout(600);
+
+  // (a) La feuille est arrivée à destination : translateY ≈ 0 (matrice identité).
+  const ty = await page.locator(".cd-sheet").evaluate(
+    el => new DOMMatrixReadOnly(getComputedStyle(el).transform).f
+  );
+  expect(Math.abs(ty)).toBeLessThan(1);
+
+  // (b) Le contenu de la carte active (.card-inner) est restauré (le fondu a été
+  // annulé) : opacité pleine, donc la carte sera normale au retour.
+  const innerOpacity = await page.locator('.card.is-active .card-inner').evaluate(
+    el => getComputedStyle(el).opacity
+  );
+  expect(innerOpacity).toBe("1");
+});

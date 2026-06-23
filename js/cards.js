@@ -444,6 +444,7 @@
   let detailHistoryPushed = false; // a-t-on empilé une entrée d'historique pour ce détail ?
   let backHintShown = false; // l'indice texte « cliquez/glissez pour revenir » ne s'affiche qu'à la 1re ouverture
   let openAnims = [];        // animations d'ouverture (WAAPI) à figer avant un drag
+  let openCardAnim = null;   // fondu de la carte d'origine pendant l'ouverture (à annuler pour la restaurer)
 
   // Fige les animations d'ouverture : on écrit leur valeur de fin dans le style
   // inline (commitStyles) puis on les annule (cancel). Sans ça, une animation WAAPI
@@ -553,29 +554,46 @@
     }
     setupSheetDismiss(sheet);
 
-    // Animation d'ouverture (FLIP depuis la carte).
+    // Animation d'ouverture : INVERSE de la fermeture par glissement (la feuille
+    // MONTE depuis le bas), plus un fondu de la carte d'origine. Même courbe
+    // (cubic-bezier(.22,1,.36,1)) que le slideDown de fermeture → mouvement
+    // symétrique.
     if (reduceMotion()) {
       detailEl.classList.add("is-open");
       body.style.opacity = "1";
       return;
     }
-    const rect = cardEls[i].getBoundingClientRect();
-    const vw = window.innerWidth, vh = window.innerHeight;
-    const sx = rect.width / vw, sy = rect.height / vh;
-    const tx = rect.left + rect.width / 2 - vw / 2;
-    const ty = rect.top + rect.height / 2 - vh / 2;
     const sheetAnim = sheet.animate(
       [
-        { transform: `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`, borderRadius: "22px", opacity: 0.5 },
-        { transform: "none", borderRadius: "0px", opacity: 1 }
+        { transform: "translateY(100%)", borderRadius: "28px" },
+        { transform: "translateY(0)", borderRadius: "0px" }
       ],
-      { duration: OPEN_DURATION, easing: "cubic-bezier(.2,.7,.2,1)", fill: "both" }
+      { duration: OPEN_DURATION, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" }
     );
     const scrimAnim = scrim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: OPEN_DURATION, fill: "both" });
     const bodyAnim = body.animate(
       [{ opacity: 0, transform: "translateY(28px)" }, { opacity: 1, transform: "none" }],
       { duration: OPEN_DURATION, delay: 90, easing: "cubic-bezier(.2,.7,.2,1)", fill: "both" }
     );
+    // Fondu de la carte d'accueil : son contenu (.card-inner) se soulève en se
+    // dissolvant pendant que le détail apparaît → effet de « passage de relais »
+    // depuis la carte. On anime l'inner (et non le <li>) pour ne pas écraser le
+    // transform/opacity posés par applyTransforms sur le <li>. L'opacité tombe à 0
+    // tôt (offset .6) puis y reste : à la fin, la feuille recouvre la carte → pas de
+    // flash au cancel (lequel restaure la carte, voir closeDetail/onfinish).
+    const cardInner = cardEls[i] && cardEls[i].querySelector(".card-inner");
+    if (cardInner) {
+      openCardAnim = cardInner.animate(
+        [
+          { opacity: 1, transform: "scale(1) translateY(0)", offset: 0 },
+          { opacity: 0, transform: "scale(1.06) translateY(-8px)", offset: 0.6 },
+          { opacity: 0, transform: "scale(1.06) translateY(-8px)", offset: 1 }
+        ],
+        { duration: OPEN_DURATION, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" }
+      );
+      // Restaure la carte (opacité 1, transform neutre) une fois cachée par la feuille.
+      openCardAnim.onfinish = () => { try { openCardAnim.cancel(); } catch (e) {} };
+    }
     // À la fin de l'ouverture, on fige ces animations (commit + cancel) pour rendre
     // la main au style inline → le drag de fermeture pourra réellement déplacer la
     // feuille. (Un drag amorcé plus tôt déclenche aussi freezeOpenAnims via beginDrag.)
@@ -602,6 +620,10 @@
 
     const sheet = detailEl.querySelector(".cd-sheet");
     const scrim = detailEl.querySelector(".cd-scrim");
+
+    // Si l'ouverture est encore en cours (fermeture déclenchée tôt), on annule le
+    // fondu de la carte pour la restaurer (sinon elle resterait estompée au retour).
+    try { if (openCardAnim) { openCardAnim.cancel(); openCardAnim = null; } } catch (e) {}
 
     const finish = () => {
       // Remet la <section> à sa place dans le réservoir.
