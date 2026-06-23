@@ -647,6 +647,22 @@
     section.hidden = false;
     movedSection = section;
 
+    // Bouton de retour EN BAS du descriptif : même action que la flèche du haut
+    // (revenir aux cartes), au style du site (pilule .cta). On l'ajoute APRÈS la
+    // section, comme frère dans .cd-body (jamais DANS la section, que finish()
+    // remet au réservoir à la fermeture). Placé tout en bas, il n'est atteignable
+    // qu'une fois la feuille entièrement défilée.
+    const returnBtn = document.createElement("button");
+    returnBtn.type = "button";
+    returnBtn.className = "cta cd-return";
+    returnBtn.innerHTML =
+      '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" ' +
+      'fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>' +
+      "Revenir à l'accueil";
+    returnBtn.addEventListener("click", () => closeDetail({ slideDown: true }));
+    body.appendChild(returnBtn);
+
     // (Re)dessine le ou les graphiques de la section, à pleine taille et animés.
     // DIFFÉRÉ jusqu'à la fin de l'ouverture (déclenché par freezeOpenAnims) :
     // reconstruire le SVG est un gros travail synchrone qui, lancé pendant la montée

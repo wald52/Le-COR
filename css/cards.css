@@ -406,6 +406,16 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
 .cd-body .band { padding-top: 8px; }
 .cd-body .band.alt { background: var(--fond); }
 
+/* Bouton de retour EN BAS du descriptif : la pilule .cta du site (style inchangé),
+   centrée sur sa propre ligne et espacée du contenu. Tout en bas du contenu
+   défilant : on n'y accède qu'après avoir fait défiler la feuille jusqu'au bout. */
+.cd-return {
+  display: flex;            /* + width:fit-content + marges auto = pilule centrée */
+  width: -moz-fit-content;
+  width: fit-content;
+  margin: 34px auto 4px;
+}
+
 /* ======================================================================
    Réduction des animations : transitions simples, pas de zoom/parallax.
    ==================================================================== */

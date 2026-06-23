@@ -289,6 +289,29 @@ test("un petit glisser LENT vers le haut puis relâcher annule l'ouverture (reto
   expect(innerOpacity).toBe("1");
 });
 
+test("un bouton 'Revenir à l'accueil' en bas du descriptif ramène aux cartes", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => { window.__noReload = true; });
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.tap();
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+  await page.waitForTimeout(600);   // fin de la montée
+
+  // Le bouton existe DANS la feuille, en bas du contenu (dernier enfant de .cd-body,
+  // donc après la <section> du descriptif → atteint seulement après défilement).
+  const ret = page.locator(".cd-sheet .cd-body > .cd-return");
+  await expect(ret).toHaveCount(1);
+  await expect(page.locator(".cd-body > *:last-child")).toHaveClass(/cd-return/);
+
+  // Même fonction que la flèche du haut : on revient aux cartes, sans recharger.
+  await ret.click();
+  await expect(page.locator(".card-detail")).toHaveCount(0);
+  await expect(page.locator(".card.is-active")).toBeVisible();
+  expect(await page.evaluate(() => window.__noReload)).toBe(true);
+});
+
 test("le graphique de la section est rendu après l'ouverture (rendu différé)", async ({ page }) => {
   // Le rendu des graphiques est DIFFÉRÉ à la fin de l'ouverture (sinon il saccade
   // l'animation, effet « on/off »). On vérifie qu'il a bien eu lieu une fois la
