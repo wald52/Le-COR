@@ -445,6 +445,8 @@
   let backHintShown = false; // l'indice texte « cliquez/glissez pour revenir » ne s'affiche qu'à la 1re ouverture
   let openAnims = [];        // animations d'ouverture (WAAPI) à figer avant un drag
   let openCardAnim = null;   // fondu de la carte d'origine pendant l'ouverture (à annuler pour la restaurer)
+  let detailChartsRendered = false; // a-t-on déjà (re)dessiné les graphiques de la section ?
+  let pendingDetailRender = null;   // rendu des graphiques différé jusqu'à la fin de l'ouverture
 
   // Fige les animations d'ouverture : on écrit leur valeur de fin dans le style
   // inline (commitStyles) puis on les annule (cancel). Sans ça, une animation WAAPI
@@ -458,6 +460,17 @@
       try { a.cancel(); } catch (e) {}
     });
     openAnims = [];
+    // Le rendu des graphiques a été DIFFÉRÉ pour ne pas saccader l'ouverture (effet
+    // « on/off » : reconstruire le SVG bloque le thread pendant la montée de la
+    // feuille). On le déclenche maintenant, une seule fois, l'animation étant figée
+    // — en rAF pour laisser le commit/cancel se poser d'abord, et seulement si le
+    // détail est toujours ouvert (sinon la section est déjà repartie au réservoir).
+    if (pendingDetailRender && !detailChartsRendered) {
+      detailChartsRendered = true;
+      const render = pendingDetailRender;
+      pendingDetailRender = null;
+      requestAnimationFrame(() => { if (detailOpen) render(); });
+    }
   }
 
   function openDetail(i) {
@@ -526,9 +539,14 @@
     movedSection = section;
 
     // (Re)dessine le ou les graphiques de la section, à pleine taille et animés.
-    requestAnimationFrame(() => {
+    // DIFFÉRÉ jusqu'à la fin de l'ouverture (déclenché par freezeOpenAnims) :
+    // reconstruire le SVG est un gros travail synchrone qui, lancé pendant la montée
+    // de la feuille, bloque le thread principal → l'animation saute (effet « on/off »).
+    const renderDetailCharts = () => {
       try { window.CORApp.renderSection(card.image.section, !reduceMotion()); } catch (e) {}
-    });
+    };
+    detailChartsRendered = false;
+    pendingDetailRender = renderDetailCharts;
 
     // Verrouille le scroll de fond, masque le carousel.
     document.body.classList.add("detail-open");
@@ -561,6 +579,10 @@
     if (reduceMotion()) {
       detailEl.classList.add("is-open");
       body.style.opacity = "1";
+      // Pas d'animation à concurrencer : on dessine les graphiques tout de suite.
+      detailChartsRendered = true;
+      pendingDetailRender = null;
+      requestAnimationFrame(renderDetailCharts);
       return;
     }
     const sheetAnim = sheet.animate(
@@ -637,6 +659,10 @@
       document.body.classList.remove("detail-open");
       screen.removeAttribute("aria-hidden");
       detailOpen = false;
+      // Annule un éventuel rendu différé non encore déclenché (fermeture rapide
+      // avant la fin de l'ouverture) et réarme l'état pour la prochaine ouverture.
+      detailChartsRendered = false;
+      pendingDetailRender = null;
     };
 
     if (reduceMotion()) { finish(); return; }

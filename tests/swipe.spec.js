@@ -179,3 +179,19 @@ test("après l'ouverture, la feuille est posée et la carte d'origine restaurée
   );
   expect(innerOpacity).toBe("1");
 });
+
+test("le graphique de la section est rendu après l'ouverture (rendu différé)", async ({ page }) => {
+  // Le rendu des graphiques est DIFFÉRÉ à la fin de l'ouverture (sinon il saccade
+  // l'animation, effet « on/off »). On vérifie qu'il a bien eu lieu une fois la
+  // feuille arrivée : le SVG de la section « depenses » est présent et tracé.
+  await page.goto("/");
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.click();
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+
+  // Fin de l'animation de montée (OPEN_DURATION = 440ms) + déclenchement du rendu.
+  const chart = page.locator(".cd-body svg").first();
+  await expect(chart).toBeVisible({ timeout: 2000 });
+});
