@@ -360,6 +360,9 @@
   function setupGestures() {
     let dragging = false, axis = null, downCard = null;
     let startX = 0, startY = 0, startOffset = 0, lastOffset = 0, lastT = 0;
+    // Ouverture au glissement (vertical, vers le haut) : miroir de la fermeture.
+    let openDragActive = false, odRefs = null;
+    let odStartY = 0, odLastY = 0, odLastT = 0, odV = 0;   // suivi de vélocité (px/ms montants)
 
     viewport.addEventListener("pointerdown", e => {
       if (detailOpen) return;
@@ -381,7 +384,8 @@
         if (Math.abs(dx) > 6 || Math.abs(dy) > 6) axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
         else return;
       }
-      if (axis !== "x") return;     // geste vertical : on laisse passer
+      if (axis === "y") { handleOpenDrag(e, dy); return; }   // vertical : glisser-pour-ouvrir
+      if (axis !== "x") return;
       e.preventDefault();
       // Élastique aux extrémités : on freine le débordement.
       let o = startOffset - dx / STEP;
@@ -395,7 +399,103 @@
       applyTransforms(offset);
     });
 
+    // ----- Glisser-pour-ouvrir : inverse de setupSheetDismiss (la feuille MONTE) -----
+    // Amorce dès qu'on reconnaît un geste vertical vers le HAUT sur la carte active :
+    // on construit l'overlay et on positionne la feuille en bas, prête à suivre.
+    function handleOpenDrag(e, dy) {
+      if (!openDragActive) {
+        if (detailOpen) return;
+        if (dy >= 0 || !downCard) return;                 // vers le bas / hors carte : rien
+        const i = +downCard.dataset.index;
+        if (i !== Math.round(offset) || cards[i].noDetail) return;  // pas la carte active / sans détail
+        const refs = buildDetail(i);
+        if (!refs) return;
+        odRefs = refs; openDragActive = true;
+        openDragInner = refs.cardInner;
+        detailEl.classList.add("is-open");
+        refs.sheet.style.transform = "translateY(100%)";
+        refs.sheet.style.borderRadius = "28px";
+        if (refs.scrim) refs.scrim.style.opacity = "0";
+        odStartY = startY;                                // suivi 1:1 depuis le pointerdown
+        odLastY = e.clientY; odLastT = performance.now(); odV = 0;
+      }
+      e.preventDefault();
+      const vh = window.innerHeight;
+      const du = Math.max(0, odStartY - e.clientY);       // déplacement vers le haut (px)
+      const ty = clamp(vh - du, 0, vh);                   // la feuille suit le doigt 1:1
+      const progress = clamp(du / vh, 0, 1);
+      const sheet = odRefs.sheet, scrim = odRefs.scrim, inner = odRefs.cardInner;
+      sheet.style.transform = `translateY(${ty}px)`;
+      sheet.style.borderRadius = (28 * (1 - progress)).toFixed(1) + "px";
+      if (scrim) scrim.style.opacity = String(progress);
+      if (inner) {                                        // fondu de la carte d'origine
+        inner.style.opacity = String(1 - Math.min(1, progress / 0.6));
+        inner.style.transform =
+          `scale(${(1 + 0.06 * progress).toFixed(3)}) translateY(${(-8 * progress).toFixed(1)}px)`;
+      }
+      // Vélocité (px/ms montants) sur un intervalle SIGNIFICATIF : on n'échantillonne
+      // qu'au-delà de ~4 ms pour éviter une fausse pointe juste après buildDetail (qui
+      // consomme du temps réel) et obtenir une vitesse fiable pour le « flick ».
+      const now = performance.now();
+      if (now - odLastT > 4) {
+        odV = (odLastY - e.clientY) / (now - odLastT);
+        odLastY = e.clientY; odLastT = now;
+      }
+    }
+
+    // Confirme l'ouverture : la feuille se cale en plein écran, dans le prolongement
+    // du geste, puis on déclenche le rendu différé des graphiques et la bulle d'aide.
+    function commitOpen(fromTy, v) {
+      const refs = odRefs;
+      odRefs = null;
+      if (!refs) return;
+      const sheet = refs.sheet, scrim = refs.scrim;
+      const settle = () => {
+        sheet.style.transform = "";
+        sheet.style.borderRadius = "";
+        if (scrim) scrim.style.opacity = "1";
+        if (pendingDetailRender && !detailChartsRendered) {
+          detailChartsRendered = true;
+          const render = pendingDetailRender; pendingDetailRender = null;
+          requestAnimationFrame(() => { if (detailOpen) render(); });
+        }
+        startBackHint(refs.backBtn, refs.labelEl);
+      };
+      if (reduceMotion()) { settle(); return; }
+      const r0 = parseFloat(sheet.style.borderRadius) || 0;
+      const s0 = scrim ? (parseFloat(scrim.style.opacity) || 0) : 0;
+      const dur = clamp(v > 0 ? fromTy / v : OPEN_DURATION, 160, OPEN_DURATION);
+      const a = sheet.animate(
+        [
+          { transform: `translateY(${fromTy}px)`, borderRadius: r0 + "px" },
+          { transform: "translateY(0px)", borderRadius: "0px" }
+        ],
+        { duration: dur, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" }
+      );
+      if (scrim) scrim.animate([{ opacity: s0 }, { opacity: 1 }], { duration: dur, fill: "both" });
+      a.onfinish = () => { try { a.cancel(); } catch (err) {} settle(); };
+      a.oncancel = settle;
+    }
+
+    // Annule l'ouverture : la feuille redescend hors écran et on démonte tout, en
+    // réutilisant la fermeture par glissement (cohérence historique + tear-down).
+    function cancelOpen(fromTy) {
+      odRefs = null;
+      closeDetail({ slideDown: true, fromY: fromTy, velocity: 0 });
+    }
+
     function endDrag(e) {
+      if (openDragActive) {
+        openDragActive = false;
+        try { viewport.releasePointerCapture(e.pointerId); } catch (err) {}
+        const vh = window.innerHeight;
+        const du = Math.max(0, odStartY - e.clientY);
+        const fromTy = clamp(vh - du, 0, vh);
+        if (du > 120 || (odV > 0.45 && du > 24)) commitOpen(fromTy, odV);
+        else cancelOpen(fromTy);
+        dragging = false; axis = null; downCard = null;
+        return;
+      }
       if (!dragging) return;
       dragging = false;
       try { viewport.releasePointerCapture(e.pointerId); } catch (err) {}
@@ -445,6 +545,7 @@
   let backHintShown = false; // l'indice texte « cliquez/glissez pour revenir » ne s'affiche qu'à la 1re ouverture
   let openAnims = [];        // animations d'ouverture (WAAPI) à figer avant un drag
   let openCardAnim = null;   // fondu de la carte d'origine pendant l'ouverture (à annuler pour la restaurer)
+  let openDragInner = null;  // .card-inner estompé au doigt pendant l'ouverture-glissement (styles inline à restaurer)
   let detailChartsRendered = false; // a-t-on déjà (re)dessiné les graphiques de la section ?
   let pendingDetailRender = null;   // rendu des graphiques différé jusqu'à la fin de l'ouverture
 
@@ -473,12 +574,16 @@
     }
   }
 
-  function openDetail(i) {
-    if (detailOpen) return;
+  // Construit l'overlay du détail (DOM, déplacement de la section, écouteurs, rendu
+  // différé des graphiques) SANS jouer d'animation ni poser `is-open`. Partagé par
+  // l'ouverture au tap (montée automatique) et par l'ouverture au glissement
+  // (feuille pilotée au doigt). Renvoie les éléments clés, ou null si la carte n'a
+  // pas de détail.
+  function buildDetail(i) {
     const card = cards[i];
-    if (card.noDetail) return;            // carte sans descriptif détaillé
+    if (card.noDetail) return null;       // carte sans descriptif détaillé
     const section = storeyard.querySelector("#" + CSS.escape(card.image.section));
-    if (!section) return;
+    if (!section) return null;
     detailOpen = true;
     index = i;
 
@@ -564,13 +669,30 @@
     const stopHint = () => { backBtn.classList.add("is-still"); backBtn.classList.remove("is-shown"); };
     sheet.addEventListener("scroll", stopHint, { once: true, passive: true });
     sheet.addEventListener("pointerdown", stopHint, { once: true });
-    // Déploiement différé de la bulle (après l'animation d'ouverture) : la flèche
-    // apparaît en pastille, puis s'élargit pour révéler le libellé.
-    if (labelEl) {
-      setTimeout(() => { if (backBtn.isConnected) backBtn.classList.add("is-shown"); },
-        reduceMotion() ? 60 : 480);
-    }
     setupSheetDismiss(sheet);
+
+    const cardInner = cardEls[i] && cardEls[i].querySelector(".card-inner");
+    return { sheet, scrim, body, backBtn, labelEl, cardInner };
+  }
+
+  // Déploiement différé de la bulle de retour (« Cliquez/Glissez pour revenir ») :
+  // la flèche apparaît en pastille, puis s'élargit pour révéler le libellé. Appelé
+  // une fois l'ouverture TERMINÉE (au tap : après le lancement des animations ; au
+  // glissement : à la fin du « settle »).
+  function startBackHint(backBtn, labelEl) {
+    if (!labelEl) return;
+    setTimeout(() => { if (backBtn.isConnected) backBtn.classList.add("is-shown"); },
+      reduceMotion() ? 60 : 480);
+  }
+
+  // Ouverture au TAP : monte la feuille automatiquement (animation), avec fondu de
+  // la carte d'origine. L'ouverture au GLISSEMENT (feuille pilotée au doigt) est
+  // gérée dans setupGestures (commitOpen/cancelOpen), à partir du même buildDetail.
+  function openDetail(i) {
+    if (detailOpen) return;
+    const refs = buildDetail(i);
+    if (!refs) return;
+    const { sheet, scrim, body, backBtn, labelEl, cardInner } = refs;
 
     // Animation d'ouverture : INVERSE de la fermeture par glissement (la feuille
     // MONTE depuis le bas), plus un fondu de la carte d'origine. Même courbe
@@ -580,9 +702,11 @@
       detailEl.classList.add("is-open");
       body.style.opacity = "1";
       // Pas d'animation à concurrencer : on dessine les graphiques tout de suite.
+      const render = pendingDetailRender;
       detailChartsRendered = true;
       pendingDetailRender = null;
-      requestAnimationFrame(renderDetailCharts);
+      if (render) requestAnimationFrame(render);
+      startBackHint(backBtn, labelEl);
       return;
     }
     const sheetAnim = sheet.animate(
@@ -603,7 +727,6 @@
     // transform/opacity posés par applyTransforms sur le <li>. L'opacité tombe à 0
     // tôt (offset .6) puis y reste : à la fin, la feuille recouvre la carte → pas de
     // flash au cancel (lequel restaure la carte, voir closeDetail/onfinish).
-    const cardInner = cardEls[i] && cardEls[i].querySelector(".card-inner");
     if (cardInner) {
       openCardAnim = cardInner.animate(
         [
@@ -622,6 +745,7 @@
     openAnims = [sheetAnim, scrimAnim, bodyAnim];
     sheetAnim.onfinish = freezeOpenAnims;
     detailEl.classList.add("is-open");
+    startBackHint(backBtn, labelEl);
   }
 
   // `opts.slideDown` (avec `fromY`/`velocity`) ⇒ fermeture par glissement : la
@@ -646,6 +770,13 @@
     // Si l'ouverture est encore en cours (fermeture déclenchée tôt), on annule le
     // fondu de la carte pour la restaurer (sinon elle resterait estompée au retour).
     try { if (openCardAnim) { openCardAnim.cancel(); openCardAnim = null; } } catch (e) {}
+    // Ouverture-glissement : la carte d'origine a été estompée via des styles inline
+    // (pas une animation WAAPI) → on les efface pour la restaurer.
+    if (openDragInner) {
+      openDragInner.style.opacity = "";
+      openDragInner.style.transform = "";
+      openDragInner = null;
+    }
 
     const finish = () => {
       // Remet la <section> à sa place dans le réservoir.

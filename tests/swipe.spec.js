@@ -180,6 +180,89 @@ test("après l'ouverture, la feuille est posée et la carte d'origine restaurée
   expect(innerOpacity).toBe("1");
 });
 
+// Dispatch un glissement vertical (pointer events) sur un sélecteur, SANS relâcher
+// par défaut → on peut inspecter la feuille en plein geste. `release: true` ajoute
+// le pointerup final.
+async function pointerDrag(page, selector, { fromY, toY, x = 180, steps = 8, release = true }) {
+  await page.locator(selector).evaluate((el, args) => {
+    const { fromY, toY, x, steps, release } = args;
+    const fire = (type, y) => el.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId: 1, pointerType: "touch",
+      clientX: x, clientY: y
+    }));
+    fire("pointerdown", fromY);
+    for (let i = 1; i <= steps; i++) fire("pointermove", fromY + ((toY - fromY) * i) / steps);
+    if (release) fire("pointerup", toY);
+  }, { fromY, toY, x, steps, release });
+}
+
+test("glisser la carte active vers le haut ouvre le détail (suivi puis confirmation)", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => { window.__noReload = true; });
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+
+  const vh = await page.evaluate(() => window.innerHeight);
+
+  // Glissement vers le HAUT, sans relâcher : la feuille apparaît et SUIT le doigt.
+  await pointerDrag(page, '.card.is-active[data-section="depenses"]',
+    { fromY: vh - 120, toY: 120, release: false });
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+  const tyMid = await page.locator(".cd-sheet").evaluate(
+    el => new DOMMatrixReadOnly(getComputedStyle(el).transform).f
+  );
+  // La feuille a nettement remonté depuis le bas (translateY < hauteur, > 0).
+  expect(tyMid).toBeGreaterThan(0);
+  expect(tyMid).toBeLessThan(vh - 200);
+
+  // On relâche au-delà du seuil → confirmation : la feuille se cale en plein écran.
+  // Le pointerup doit viser un élément DANS le viewport (la carte) : en usage réel,
+  // setPointerCapture le route vers le viewport ; en synthétique, on s'appuie sur le
+  // bubbling jusqu'à #card-screen (la feuille de détail, elle, est hors viewport).
+  await page.locator('.card.is-active[data-section="depenses"]').evaluate(el =>
+    el.dispatchEvent(new PointerEvent("pointerup", {
+      bubbles: true, cancelable: true, pointerId: 1, pointerType: "touch", clientX: 180, clientY: 120
+    })));
+  await page.waitForTimeout(600);
+  await expect(page.locator(".card-detail")).toBeVisible();
+  const tyEnd = await page.locator(".cd-sheet").evaluate(
+    el => new DOMMatrixReadOnly(getComputedStyle(el).transform).f
+  );
+  expect(Math.abs(tyEnd)).toBeLessThan(1);
+  expect(await page.evaluate(() => window.__noReload)).toBe(true);
+});
+
+test("un petit glisser LENT vers le haut puis relâcher annule l'ouverture (retour aux cartes)", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+
+  const vh = await page.evaluate(() => window.innerHeight);
+  const sel = '.card.is-active[data-section="depenses"]';
+  const fire = (type, y) => page.locator(sel).evaluate((el, a) =>
+    el.dispatchEvent(new PointerEvent(a.type, {
+      bubbles: true, cancelable: true, pointerId: 1, pointerType: "touch", clientX: 180, clientY: a.y
+    })), { type, y });
+
+  // Glissement court (< 120px) ET LENT (vraie temporisation entre les moves) : la
+  // vélocité reste sous le seuil de « flick », donc le relâcher ANNULE l'ouverture.
+  const fromY = vh - 120;
+  await fire("pointerdown", fromY);
+  for (let i = 1; i <= 5; i++) { await page.waitForTimeout(45); await fire("pointermove", fromY - i * 10); }
+  await fire("pointerup", fromY - 50);
+
+  await page.waitForTimeout(500);
+  await expect(page.locator(".card-detail")).toHaveCount(0);
+  await expect(page.locator(".card.is-active")).toBeVisible();
+  // La carte d'origine est restaurée (fondu inline effacé) : opacité pleine.
+  const innerOpacity = await page.locator('.card.is-active .card-inner').evaluate(
+    el => getComputedStyle(el).opacity
+  );
+  expect(innerOpacity).toBe("1");
+});
+
 test("le graphique de la section est rendu après l'ouverture (rendu différé)", async ({ page }) => {
   // Le rendu des graphiques est DIFFÉRÉ à la fin de l'ouverture (sinon il saccade
   // l'animation, effet « on/off »). On vérifie qu'il a bien eu lieu une fois la

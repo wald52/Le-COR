@@ -68,7 +68,7 @@ body.mode-carousel .skip-link { display: none !important; }
   position: relative;
   flex: 1 1 auto;
   overflow: hidden;
-  touch-action: pan-y;            /* on gère le swipe horizontal en JS */
+  touch-action: none;             /* swipe horizontal ET glisser-pour-ouvrir vertical gérés en JS */
 }
 .cs-track {
   position: absolute;
