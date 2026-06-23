@@ -1039,6 +1039,15 @@
     // la courbe par-dessus le rendu du carrousel — d'où un double-tracé (clignotement).
     if (window.CORApp.disableLazyCharts) window.CORApp.disableLazyCharts();
 
+    // Pré-rend AU REPOS les graphiques statiques (éventail, comparaison internationale)
+    // hors écran : ainsi ils sont déjà présents à la première ouverture de leur carte,
+    // au lieu d'apparaître après l'animation d'ouverture (rendu différé pour ne pas la
+    // saccader) — sinon « décalage » la 1re fois alors que les réouvertures réutilisent
+    // le SVG. Les courbes ne sont pas pré-rendues : elles gardent leur tracé animé.
+    const prerender = () => { if (window.CORApp.prerenderStaticCharts) window.CORApp.prerenderStaticCharts(); };
+    if (window.requestIdleCallback) window.requestIdleCallback(prerender, { timeout: 2000 });
+    else setTimeout(prerender, 300);
+
     // Libellé d'aide intégré à la flèche « suivante » (comme la bulle de retour
     // du détail). Verbe adapté à la plateforme : « Glissez » au tactile (on fait
     // défiler les cartes), « Cliquez » au pointeur fin (souris).

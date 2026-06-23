@@ -189,7 +189,10 @@
     const container = document.getElementById("chart-prod");
     container.innerHTML = "";
     const NS = "http://www.w3.org/2000/svg";
-    const cw = Math.round(container.getBoundingClientRect().width) || 760;
+    // Repli quand le conteneur n'a pas de largeur (pré-rendu hors écran) : on estime
+    // d'après la fenêtre pour tomber du bon côté du seuil `narrow` (480 px), afin que
+    // la mise en page corresponde à celle du détail (ré-rendu à l'ouverture invisible).
+    const cw = Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const H = Math.round(narrow ? Math.min(W * 0.9, 340) : 360);
@@ -426,7 +429,7 @@
     const NS = "http://www.w3.org/2000/svg";
     const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
     const cs = d.countries;
-    const cw = Math.round(host.getBoundingClientRect().width) || 760;
+    const cw = Math.round(host.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const rowH = narrow ? 34 : 30, top = 16, bottom = 38;
@@ -1225,7 +1228,14 @@
     disableLazyCharts() {
       lazyChartObservers.forEach(io => io.disconnect());
       lazyChartObservers.length = 0;
-    }
+    },
+    // Pré-rend les graphiques STATIQUES (sans animation) hors écran : appelé au repos
+    // par le carrousel pour qu'ils soient déjà tracés à la 1re ouverture d'une carte.
+    // Sans ça, leur rendu n'a lieu qu'APRÈS l'animation d'ouverture (différé pour ne
+    // pas la saccader) : le graphique « se charge » en retard la 1re fois, alors que
+    // les réouvertures réutilisent le SVG déjà présent. Les courbes ne sont PAS
+    // pré-rendues : elles gardent leur tracé animé de première apparition.
+    prerenderStaticCharts() { renderProductivite(); renderInternational(); }
   };
 
   if (document.readyState === "loading") {
