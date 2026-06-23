@@ -413,8 +413,16 @@
       svg.appendChild(el("line", {
         x1: x, y1: xAxisY, x2: x, y2: xAxisY + 5, class: "chart-tick"
       }));
-      const lbl = el("text", { x: x, y: xAxisY + 22, class: "chart-axis-label", "text-anchor": "middle" });
-      lbl.textContent = cats ? String(cats[t]) : String(t).replace(/\s/g, "");
+      const txt = cats ? String(cats[t]) : String(t).replace(/\s/g, "");
+      // Étiquette centrée sur la graduation, SAUF aux extrémités : centrée, la
+      // moitié droite du dernier millésime (ex. « 2025 ») déborde du viewBox et
+      // est rognée (.chart-svg { overflow:hidden }), surtout sur mobile où la
+      // marge droite est minime. On aligne donc la 1re étiquette à gauche et la
+      // dernière à droite lorsqu'elles déborderaient, pour les garder entières.
+      const halfW = (txt.length * CHAR_W) / 2;
+      const anchor = x + halfW > W - 2 ? "end" : x - halfW < 2 ? "start" : "middle";
+      const lbl = el("text", { x: x, y: xAxisY + 22, class: "chart-axis-label", "text-anchor": anchor });
+      lbl.textContent = txt;
       svg.appendChild(lbl);
     });
 
