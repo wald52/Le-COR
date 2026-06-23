@@ -650,34 +650,63 @@
   }
 
   // Fermeture par glissement vers le bas (swipe-down) quand le contenu est en
-  // haut de course. Translate la feuille, ferme au-delà d'un seuil, sinon revient.
+  // haut de course. La feuille SUIT le doigt en continu (1:1) : on peut descendre,
+  // remonter, changer d'avis, tenir à mi-course (geste classique iOS/Android). Au
+  // relâcher : fermeture si on a dépassé le seuil OU sur un « flick » vif, sinon
+  // retour élastique en place.
+  //
+  // Sur écran tactile, le geste est piloté ENTIÈREMENT par les touch events : dans
+  // un `touchmove` NON passif on peut `preventDefault()` dès le premier mouvement
+  // qualifiant, ce qui empêche le navigateur de réclamer le geste comme un
+  // défilement (sinon il émet `pointercancel` et coupe le suivi → effet « on/off »,
+  // plus le « pull-to-refresh » natif). Le même handler bloque le scroll natif ET
+  // fait suivre la feuille.
+  //
+  // Le chemin pointer events ne sert que de repli non tactile (souris, dispatch
+  // programmatique). Il est neutralisé dès qu'un geste tactile est en cours
+  // (`touchDriving`) pour éviter un double pilotage.
   function setupSheetDismiss(sheet) {
-    let dragging = false, startY = 0, dy = 0, axis = null, startX = 0;
+    let dragging = false, startY = 0, startX = 0, dy = 0, axis = null;
     let lastY = 0, lastT = 0, vy = 0;        // suivi de vélocité (px/ms) pour le « flick »
-    sheet.addEventListener("pointerdown", e => {
-      if (sheet.scrollTop > 0) return;       // on ne happe le geste qu'en haut
-      dragging = true; axis = null; startY = e.clientY; startX = e.clientX; dy = 0;
-      lastY = e.clientY; lastT = performance.now(); vy = 0;
-    });
-    sheet.addEventListener("pointermove", e => {
-      if (!dragging) return;
-      const ddy = e.clientY - startY, ddx = e.clientX - startX;
+    let touchDriving = false;                // un geste tactile pilote le drag
+
+    // Amorce un drag : uniquement si le contenu est tout en haut de course.
+    // Renvoie false si on n'amorce pas (le geste reste un défilement normal).
+    function beginDrag(y, x) {
+      if (sheet.scrollTop > 0) return false;
+      dragging = true; axis = null; dy = 0;
+      startY = y; startX = x;
+      lastY = y; lastT = performance.now(); vy = 0;
+      return true;
+    }
+
+    // Met à jour la position selon le doigt/pointeur. Renvoie true si on est bien
+    // sur l'axe vertical descendant (geste de fermeture en cours) → le tactile sait
+    // alors qu'il doit `preventDefault()`.
+    function moveDrag(y, x) {
+      if (!dragging) return false;
+      const ddy = y - startY, ddx = x - startX;
       if (axis === null) {
         if (Math.abs(ddy) > 8 || Math.abs(ddx) > 8) axis = Math.abs(ddy) > Math.abs(ddx) ? "y" : "x";
-        else return;
+        else return false;
       }
-      if (axis !== "y" || ddy < 0) return;   // seulement vers le bas
-      dy = ddy;
+      if (axis !== "y") return false;
+      // Suivi 1:1 même vers le haut : remonter le doigt fait remonter la feuille
+      // jusqu'à sa place (dy = 0), ce qui permet l'aller-retour. On ne dépasse pas
+      // la position d'origine (pas de translation négative).
+      dy = Math.max(0, ddy);
       const now = performance.now();
-      if (now > lastT) vy = (e.clientY - lastY) / (now - lastT);
-      lastY = e.clientY; lastT = now;
-      if (e.cancelable) e.preventDefault();  // le blocage réel vient du touchmove (voir plus bas)
+      if (now > lastT) vy = (y - lastY) / (now - lastT);
+      lastY = y; lastT = now;
       sheet.style.transform = `translateY(${dy}px)`;
       sheet.style.borderRadius = Math.min(22, dy / 6) + "px";
       const scrim = detailEl.querySelector(".cd-scrim");
       if (scrim) scrim.style.opacity = String(clamp(1 - dy / 500, 0, 1));
-    });
-    function up() {
+      return ddy > 0;                        // descendant ⇒ le tactile bloque le natif
+    }
+
+    // Fin du drag : ferme ou revient en place.
+    function endDrag() {
       if (!dragging) return;
       dragging = false;
       // Fermeture si on a dépassé le seuil OU sur un « flick » descendant vif.
@@ -694,23 +723,39 @@
       }
       dy = 0; axis = null; vy = 0;
     }
-    sheet.addEventListener("pointerup", up);
-    sheet.addEventListener("pointercancel", up);
 
-    // Garde tactile : seule façon fiable de supprimer le « pull-to-refresh » natif.
-    // Le preventDefault() d'un pointer event n'est PAS honoré une fois que le
-    // navigateur a classé le geste en défilement ; il faut un touchmove NON passif.
-    // On ne bloque QUE quand le contenu est tout en haut ET que le doigt descend,
-    // pour laisser intact le défilement vertical normal du descriptif.
-    let tStartY = 0;
+    // ----- Chemin tactile : pilote le visuel ET bloque le natif -----
     sheet.addEventListener("touchstart", e => {
-      if (e.touches.length === 1) tStartY = e.touches[0].clientY;
+      if (e.touches.length !== 1) return;    // pinch/zoom : on laisse le natif
+      touchDriving = true;
+      beginDrag(e.touches[0].clientY, e.touches[0].clientX);
     }, { passive: true });
     sheet.addEventListener("touchmove", e => {
-      if (e.touches.length !== 1) return;     // pinch/zoom : on laisse le natif
-      const ddy = e.touches[0].clientY - tStartY;
-      if (sheet.scrollTop <= 0 && ddy > 0 && e.cancelable) e.preventDefault();
+      if (!dragging || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      // `preventDefault()` dès qu'on glisse vers le bas en haut de course : c'est ce
+      // qui empêche le navigateur de transformer le geste en défilement / pull-to-
+      // refresh, donc le suivi reste fluide. Doit précéder le calcul (le scroll natif
+      // est réclamé tôt).
+      const goingDown = t.clientY - startY > 0;
+      if (goingDown && e.cancelable) e.preventDefault();
+      moveDrag(t.clientY, t.clientX);
     }, { passive: false });
+    const touchEnd = () => { endDrag(); touchDriving = false; };
+    sheet.addEventListener("touchend", touchEnd, { passive: true });
+    sheet.addEventListener("touchcancel", touchEnd, { passive: true });
+
+    // ----- Repli pointer (souris / dispatch programmatique) : ignoré sur tactile -----
+    sheet.addEventListener("pointerdown", e => {
+      if (touchDriving) return;
+      beginDrag(e.clientY, e.clientX);
+    });
+    sheet.addEventListener("pointermove", e => {
+      if (touchDriving || !dragging) return;
+      if (moveDrag(e.clientY, e.clientX) && e.cancelable) e.preventDefault();
+    });
+    sheet.addEventListener("pointerup", () => { if (!touchDriving) endDrag(); });
+    sheet.addEventListener("pointercancel", () => { if (!touchDriving) endDrag(); });
   }
 
   // Échap ferme le détail.
