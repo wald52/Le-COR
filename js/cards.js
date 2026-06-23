@@ -1023,6 +1023,13 @@
     while (main.firstChild) storeyard.appendChild(main.firstChild);
     main.appendChild(storeyard);
 
+    // Le carrousel devient le seul à rendre les graphiques (via renderSection, à
+    // l'ouverture d'une carte). On coupe le rendu paresseux au défilement d'app.js :
+    // ses observateurs, restés actifs sur les #chart-* désormais masqués, se
+    // redéclencheraient quand une section reparaît dans la vue détail et retraceraient
+    // la courbe par-dessus le rendu du carrousel — d'où un double-tracé (clignotement).
+    if (window.CORApp.disableLazyCharts) window.CORApp.disableLazyCharts();
+
     // Libellé d'aide intégré à la flèche « suivante » (comme la bulle de retour
     // du détail). Verbe adapté à la plateforme : « Glissez » au tactile (on fait
     // défiler les cartes), « Cliquez » au pointeur fin (souris).

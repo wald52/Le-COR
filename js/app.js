@@ -604,6 +604,9 @@
     { id: "chart-international", draw: () => renderInternational() }
   ];
   const chartsDrawn = new Set();
+  // Observateurs du rendu paresseux au défilement (un par graphique). Conservés
+  // pour pouvoir les couper si le carrousel prend la main (cf. disableLazyCharts).
+  const lazyChartObservers = [];
 
   function idle(fn) {
     if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2000 });
@@ -671,6 +674,7 @@
       entries.forEach(e => { if (e.isIntersecting) { obs.disconnect(); cb(); } });
     }, { rootMargin: "300px 0px" });
     io.observe(el);
+    lazyChartObservers.push(io);
   }
 
   /* ----------------------------------------------------------------------
@@ -1212,7 +1216,16 @@
       setupChartTools();
       reserveTitleSpaceForTools();
     },
-    ensureExplorer
+    ensureExplorer,
+    // Le carrousel (js/cards.js) prend la main sur le rendu des graphiques via
+    // renderSection : on coupe alors le rendu paresseux au défilement. Sans ça, ses
+    // observateurs — restés actifs car les sections sont masquées au montage du
+    // carrousel — se redéclencheraient quand une section reparaît dans la vue détail
+    // et retraceraient le graphique par-dessus, d'où un double-tracé (clignotement).
+    disableLazyCharts() {
+      lazyChartObservers.forEach(io => io.disconnect());
+      lazyChartObservers.length = 0;
+    }
   };
 
   if (document.readyState === "loading") {
