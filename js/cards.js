@@ -317,7 +317,9 @@
     if (!prevBtn) return;
     prevBtn.disabled = active <= 0;
     nextBtn.disabled = active >= cards.length - 1;
-    if (active >= 1) nextBtn.classList.remove("is-hint");
+    // Dès qu'on quitte la 1re carte : on coupe le va-et-vient ET on replie le
+    // libellé d'aide (la bulle redevient une simple pastille-flèche).
+    if (active >= 1) { nextBtn.classList.remove("is-hint"); nextBtn.classList.remove("is-shown"); }
   }
 
   /* ----------------------------------------------------------------------
@@ -746,6 +748,12 @@
     while (main.firstChild) storeyard.appendChild(main.firstChild);
     main.appendChild(storeyard);
 
+    // Libellé d'aide intégré à la flèche « suivante » (comme la bulle de retour
+    // du détail). Verbe adapté à la plateforme : « Glissez » au tactile (on fait
+    // défiler les cartes), « Cliquez » au pointeur fin (souris).
+    const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    const navLabel = coarse ? "Glissez pour explorer" : "Cliquez pour explorer";
+
     // Écran carousel.
     screen = document.createElement("section");
     screen.id = "card-screen";
@@ -761,7 +769,11 @@
       '<button class="cs-nav cs-nav-prev" type="button" aria-label="Carte précédente">' +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>' +
       "</button>" +
+      // Flèche « suivante » : une seule bulle (libellé à gauche + flèche à droite,
+      // tous deux bleus) qui se déploie vers la gauche à la 1re carte, puis se
+      // replie en pastille dès qu'on explore.
       '<button class="cs-nav cs-nav-next is-hint" type="button" aria-label="Carte suivante">' +
+      '<span class="cs-nav-label">' + navLabel + "</span>" +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
       "</button>" +
       "</div>" +
@@ -802,6 +814,19 @@
     offset = 0; index = 0;
     applyTransforms(0);
     drawVisibleMinis();
+
+    // Déploie le libellé d'aide de la flèche « suivante » après un court délai,
+    // puis le replie à la première prise en main (premier appui sur le carrousel,
+    // ou navigation vers une autre carte — voir updateNav). On ne le déploie pas
+    // si l'utilisateur a déjà touché l'écran entre-temps.
+    let navHintArmed = true;
+    viewport.addEventListener("pointerdown", () => {
+      navHintArmed = false;
+      nextBtn.classList.remove("is-shown");
+    }, { once: true });
+    const deployNavHint = () => { if (navHintArmed && index === 0) nextBtn.classList.add("is-shown"); };
+    if (reduceMotion()) deployNavHint();
+    else setTimeout(deployNavHint, 800);
 
     // Redimensionnement (rotation) : les transforms sont en px → on réapplique.
     let rt;

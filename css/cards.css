@@ -249,7 +249,7 @@ body.mode-carousel .skip-link { display: none !important; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px; height: 44px;
+  min-width: 44px; height: 44px;   /* min-width : la flèche « suivante » peut s'élargir (libellé) */
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -259,15 +259,36 @@ body.mode-carousel .skip-link { display: none !important; }
   cursor: pointer;
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
-  transition: opacity .2s ease, transform .15s ease, background .2s ease;
+  transition: opacity .2s ease, transform .15s ease, background .2s ease, padding .38s ease;
 }
-.cs-nav .icon { width: 24px; height: 24px; }
+.cs-nav .icon { width: 24px; height: 24px; flex: none; }
 .cs-nav-prev { left: 10px; }
 .cs-nav-next { right: 10px; }
 .cs-nav:hover { background: #fff; }
 .cs-nav:active { transform: translateY(-50%) scale(0.92); }
 .cs-nav:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }
 .cs-nav:disabled { opacity: 0; pointer-events: none; }  /* masquée au bout */
+
+/* Libellé d'aide intégré à la flèche « suivante » (même principe que la bulle de
+   retour du détail). Replié (largeur 0) par défaut ; il se déploie vers la GAUCHE
+   de la flèche quand .is-shown est posée, puis se replie dès qu'on explore.
+   La flèche reste contre le bord droit : seul le côté gauche s'allonge. */
+.cs-nav-label {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: max-width .4s ease, opacity .3s ease, margin .4s ease;
+}
+.cs-nav-next.is-shown { padding: 0 10px 0 14px; }
+.cs-nav-next.is-shown .cs-nav-label {
+  max-width: min(58vw, 12rem);
+  opacity: 1;
+  margin-right: 6px;
+}
 
 /* Indice d'amorçage : tant que l'utilisateur n'a pas quitté la 1re carte, la
    flèche « suivante » se balance légèrement pour inviter à explorer les cartes
@@ -395,6 +416,6 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   /* Pas de balancement : les indices (carrousel, flèche de retour) sont neutralisés. */
   .cs-nav.is-hint { animation: none; }
   .cd-back { animation: none; }
-  /* Déploiement de la bulle sans transition : changement d'état instantané. */
-  .cd-back, .cd-back-label { transition: none; }
+  /* Déploiement des bulles sans transition : changement d'état instantané. */
+  .cd-back, .cd-back-label, .cs-nav-label { transition: none; }
 }
