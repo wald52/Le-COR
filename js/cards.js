@@ -549,6 +549,10 @@
   let openDragInner = null;  // .card-inner estompé au doigt pendant l'ouverture-glissement (styles inline à restaurer)
   let detailChartsRendered = false; // a-t-on déjà (re)dessiné les graphiques de la section ?
   let pendingDetailRender = null;   // rendu des graphiques différé jusqu'à la fin de l'ouverture
+  // Sections dont le tracé a déjà été animé : la révélation gauche → droite ne joue
+  // qu'à la PREMIÈRE apparition d'un graphique. Rouvrir la même carte le re-rend
+  // (taille réelle, interactivité) mais SANS rejouer le tracé (sinon « rechargement »).
+  const animatedDetailSections = new Set();
   let detailReady = false;          // ouverture TERMINÉE → le voile accepte la fermeture (cf. clic parasite ci-dessous)
 
   // Fige les animations d'ouverture : on écrit leur valeur de fin dans le style
@@ -668,7 +672,12 @@
     // reconstruire le SVG est un gros travail synchrone qui, lancé pendant la montée
     // de la feuille, bloque le thread principal → l'animation saute (effet « on/off »).
     const renderDetailCharts = () => {
-      try { window.CORApp.renderSection(card.image.section, !reduceMotion()); } catch (e) {}
+      const sec = card.image.section;
+      // Animer seulement à la première apparition de la section ; les réouvertures
+      // re-rendent sans rejouer le tracé.
+      const animate = !reduceMotion() && !animatedDetailSections.has(sec);
+      animatedDetailSections.add(sec);
+      try { window.CORApp.renderSection(sec, animate); } catch (e) {}
     };
     detailChartsRendered = false;
     pendingDetailRender = renderDetailCharts;
