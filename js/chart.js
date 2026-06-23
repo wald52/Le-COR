@@ -972,17 +972,9 @@
       "aria-label": cfg.ariaLabel || "Graphique en barres"
     });
 
-    // Révélation animée gauche → droite (comme lineChart).
-    const rnd = Math.random().toString(36).slice(2, 8);
-    const defs = el("defs");
-    const revealId = "reveal-" + rnd;
-    const revealClip = el("clipPath", { id: revealId });
-    const revealW = W - M.left;
-    const revealRect = el("rect", { x: M.left, y: 0, width: revealW, height: H, class: "reveal-rect" });
-    revealClip.appendChild(revealRect);
-    defs.appendChild(revealClip);
-    svg.appendChild(defs);
-    const seriesLayer = el("g", { "clip-path": `url(#${revealId})` });
+    // Pas d'animation pour les diagrammes en barres : seules les courbes (lineChart)
+    // se tracent. Les barres s'affichent d'emblée, sans clip de révélation.
+    const seriesLayer = el("g");
 
     // --- Grille + axe Y ---
     yTicks.forEach(t => {
@@ -1085,33 +1077,6 @@
       seriesNodes.push({ cfg: s, node: g });
     });
     svg.appendChild(seriesLayer);
-
-    // --- Animation « révélation » (réutilise le motif de lineChart) ---
-    if (ANIMATE && !reducedMotion() && cfg.animate !== false) {
-      revealRect.setAttribute("width", 0);
-      const dur = 1000;
-      let raf, obs;
-      const done = () => { running.delete(finish); container.__revealCancel = null; };
-      const finish = () => { if (obs) { obs.disconnect(); obs = null; } revealRect.setAttribute("width", revealW); done(); };
-      finish.cancel = () => { if (obs) { obs.disconnect(); obs = null; } cancelAnimationFrame(raf); };
-      const start = () => {
-        const t0 = performance.now();
-        const step = now => {
-          const k = Math.max(0, Math.min(1, (now - t0) / dur));
-          revealRect.setAttribute("width", revealW * (1 - Math.pow(1 - k, 3)));
-          if (k < 1) raf = requestAnimationFrame(step); else done();
-        };
-        raf = requestAnimationFrame(step);
-      };
-      running.add(finish);
-      container.__revealCancel = () => { finish.cancel(); done(); };
-      if ("IntersectionObserver" in window) {
-        obs = new IntersectionObserver(entries => {
-          if (entries.some(e => e.isIntersecting)) { obs.disconnect(); obs = null; start(); }
-        }, { threshold: 0.15 });
-        obs.observe(svg);
-      } else { start(); }
-    }
 
     // --- Infobulle : survol d'une bande → valeurs de la catégorie ---
     const focusBand = el("rect", { class: "chart-focus-band", y: M.top, height: plotH, x: -10, width: 0, opacity: 0, fill: "#1f2d3d" });
