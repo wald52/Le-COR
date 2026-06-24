@@ -830,6 +830,20 @@
           label.match(/(19|20)\d{2}(\s*→\s*(19|20)\d{2})?/);
         return m ? m[0] : label;
       };
+      // Étiquetage direct : une courbe de projection est déjà repérée par son
+      // année tracée en bout de ligne (endNote). Inutile de la répéter dans la
+      // légende — on y affiche plutôt le détail du scénario (l'hypothèse), seule
+      // information que la courbe ne porte pas. À défaut de détail (« Rapport
+      // 2023 »), on retombe sur l'année pour ne pas laisser une ligne vide. Le
+      // libellé complet reste disponible (title, infobulle, tableau de données).
+      const legendLabel = c => {
+        if (/^\d{4}$/.test(String(c.endNote || ""))) {
+          const m = c.label.match(/^Rapport\s+\d{4}\s*\((.+)\)\s*$/);
+          if (m) return m[1];
+          if (/^Rapport\s+\d{4}\s*$/.test(c.label)) return c.endNote;
+        }
+        return shortFor(c.label);
+      };
       // Quand les libellés sont réduits à l'année, une ligne d'en-tête rappelle
       // que ces courbes sont des projections (et non des données observées).
       let groupDone = false;
@@ -840,7 +854,7 @@
         return d;
       };
       seriesNodes.forEach((sn, idx) => {
-        const text = shortFor(sn.cfg.label);
+        const text = legendLabel(sn.cfg);
         if (text !== sn.cfg.label && !groupDone) {
           legend.appendChild(groupHeader(sn.cfg.label));
           groupDone = true;
