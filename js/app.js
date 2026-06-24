@@ -611,11 +611,31 @@
   // pour pouvoir les couper si le carrousel prend la main (cf. disableLazyCharts).
   const lazyChartObservers = [];
 
-  // Graphiques STATIQUES déjà tracés : rendus une seule fois (pré-rendu au repos OU 1re
-  // ouverture), puis jamais re-tracés — sinon les re-tracer à une largeur différente les
-  // fait « bouger » à l'ouverture. Le viewBox les met à l'échelle du conteneur.
-  const staticRendered = new Set();
-  function drawStaticOnce(id, fn) { if (!staticRendered.has(id)) { fn(); staticRendered.add(id); } }
+  // Sections dont le(s) graphique(s) ont déjà été tracés : rendus une seule fois
+  // (pré-rendu au repos OU 1re ouverture), puis jamais re-tracés — re-tracer à une largeur
+  // différente ferait « bouger »/redimensionner le graphique à l'ouverture. Le viewBox met
+  // le SVG à l'échelle du conteneur ; la révélation des courbes est rejouée séparément
+  // (cf. __revealReset/__revealPlay côté chart.js) sans reconstruire le SVG.
+  const sectionRendered = new Set();
+  // Trace (une seule fois) le(s) graphique(s) d'une section. animate:false partout : le
+  // tracé des courbes n'est PAS lancé ici (pas d'auto-révélation), il est rejoué à
+  // l'ouverture via __revealPlay. Les sections statiques se tracent telles quelles.
+  function renderSectionOnce(id) {
+    if (sectionRendered.has(id)) return;
+    sectionRendered.add(id);
+    switch (id) {
+      case "depenses": renderDepensesPib(false); break;
+      case "deficit": renderSolde(false); renderCiseaux(false); break;
+      case "productivite": renderProductivite(); break;
+      case "realite": renderFecondite(false); renderProductiviteReel(false); break;
+      case "niveau": renderNiveauVie(false); break;
+      case "financement": renderFiscalisation(false); break;
+      case "monde": renderInternational(); break;
+      case "explorer": ensureExplorer(); break;
+      // simulateur / hypotheses / methode : contenu statique ou déjà câblé au chargement.
+      default: break;
+    }
+  }
 
   function idle(fn) {
     if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2000 });
@@ -1207,21 +1227,8 @@
    * sont recâblés. Une seule source de vérité — pas de duplication du rendu.
    * -------------------------------------------------------------------- */
   window.CORApp = {
-    renderSection(id, animate) {
-      const a = animate !== false;
-      switch (id) {
-        case "depenses": renderDepensesPib(a); break;
-        case "deficit": renderSolde(a); renderCiseaux(a); break;
-        case "productivite": drawStaticOnce("productivite", renderProductivite); break;
-        case "realite": renderFecondite(a); renderProductiviteReel(a); break;
-        case "niveau": renderNiveauVie(a); break;
-        case "financement": renderFiscalisation(a); break;
-        case "monde": drawStaticOnce("monde", renderInternational); break;
-        case "explorer": ensureExplorer(); break;
-        // simulateur / hypotheses / methode : contenu statique ou déjà câblé
-        // au chargement (renderLeviers / renderTable / renderSources).
-        default: break;
-      }
+    renderSection(id) {
+      renderSectionOnce(id);   // rendu une seule fois : pas de re-tracé (donc pas de saut)
       setupChartTools();
       reserveTitleSpaceForTools();
     },
@@ -1235,15 +1242,21 @@
       lazyChartObservers.forEach(io => io.disconnect());
       lazyChartObservers.length = 0;
     },
-    // Pré-rend les graphiques STATIQUES (sans animation) hors écran : appelé au repos
-    // par le carrousel pour qu'ils soient déjà tracés à la 1re ouverture d'une carte.
-    // Sans ça, leur rendu n'a lieu qu'APRÈS l'animation d'ouverture (différé pour ne
-    // pas la saccader) : le graphique « se charge » en retard la 1re fois, alors que
-    // les réouvertures réutilisent le SVG déjà présent. Les courbes ne sont PAS
-    // pré-rendues : elles gardent leur tracé animé de première apparition.
-    prerenderStaticCharts() {
-      drawStaticOnce("productivite", renderProductivite);
-      drawStaticOnce("monde", renderInternational);
+    // Pré-rend TOUS les graphiques au repos (échelonné en requestIdleCallback), une seule
+    // fois, pour qu'ils soient déjà à leur taille finale dès la 1re ouverture d'une carte —
+    // sinon le conteneur passe de min-height:300px à la hauteur du SVG au rendu différé
+    // (« redimensionnement » juste avant le tracé). Les courbes gardent leur tracé : il est
+    // rejoué à l'ouverture via __revealReset/__revealPlay, sans reconstruire le SVG.
+    prerenderAllCharts() {
+      const ids = ["depenses", "deficit", "productivite", "realite", "niveau", "financement", "monde"];
+      const ric = window.requestIdleCallback || (fn => setTimeout(fn, 1));
+      let i = 0;
+      const step = () => {
+        if (i >= ids.length) { setupChartTools(); reserveTitleSpaceForTools(); return; }
+        renderSectionOnce(ids[i++]);
+        ric(step);
+      };
+      ric(step);
     }
   };
 

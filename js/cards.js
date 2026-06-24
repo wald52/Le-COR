@@ -667,20 +667,25 @@
     returnBtn.addEventListener("click", () => closeDetail({ slideDown: true }));
     body.appendChild(returnBtn);
 
-    // (Re)dessine le ou les graphiques de la section, à pleine taille et animés.
-    // DIFFÉRÉ jusqu'à la fin de l'ouverture (déclenché par freezeOpenAnims) :
-    // reconstruire le SVG est un gros travail synchrone qui, lancé pendant la montée
-    // de la feuille, bloque le thread principal → l'animation saute (effet « on/off »).
-    const renderDetailCharts = () => {
-      const sec = card.image.section;
-      // Animer seulement à la première apparition de la section ; les réouvertures
-      // re-rendent sans rejouer le tracé.
-      const animate = !reduceMotion() && !animatedDetailSections.has(sec);
-      animatedDetailSections.add(sec);
-      try { window.CORApp.renderSection(sec, animate); } catch (e) {}
-    };
+    // Les graphiques sont pré-rendus au repos (déjà à leur taille finale → pas de
+    // redimensionnement à l'ouverture). renderSection ne fait ici que (re)câbler les outils
+    // — rendu une seule fois, il NE re-trace pas (garde de course : il trace tout de même si
+    // le pré-rendu n'a pas encore eu lieu). Pour la PREMIÈRE apparition d'une section, on
+    // CACHE les courbes AVANT la montée de la feuille (pas de flash) puis on rejoue leur
+    // tracé une fois la feuille arrivée (déclenché par freezeOpenAnims), sur le SVG déjà
+    // rendu → aucune reconstruction, aucun saut. Mouvement réduit / réouverture : pas de
+    // révélation, les courbes s'affichent d'emblée.
+    const sec = card.image.section;
+    try { window.CORApp.renderSection(sec); } catch (e) {}
+    const revealHosts = (!reduceMotion() && !animatedDetailSections.has(sec))
+      ? Array.from(section.querySelectorAll(".chart-host")).filter(h => h.__revealReset)
+      : [];
+    revealHosts.forEach(h => h.__revealReset());
     detailChartsRendered = false;
-    pendingDetailRender = renderDetailCharts;
+    pendingDetailRender = () => {
+      animatedDetailSections.add(sec);
+      revealHosts.forEach(h => h.__revealPlay());
+    };
 
     // Verrouille le scroll de fond, masque le carousel.
     document.body.classList.add("detail-open");
@@ -1039,14 +1044,12 @@
     // la courbe par-dessus le rendu du carrousel — d'où un double-tracé (clignotement).
     if (window.CORApp.disableLazyCharts) window.CORApp.disableLazyCharts();
 
-    // Pré-rend AU REPOS les graphiques statiques (éventail, comparaison internationale)
-    // hors écran : ainsi ils sont déjà présents à la première ouverture de leur carte,
-    // au lieu d'apparaître après l'animation d'ouverture (rendu différé pour ne pas la
-    // saccader) — sinon « décalage » la 1re fois alors que les réouvertures réutilisent
-    // le SVG. Les courbes ne sont pas pré-rendues : elles gardent leur tracé animé.
-    const prerender = () => { if (window.CORApp.prerenderStaticCharts) window.CORApp.prerenderStaticCharts(); };
-    if (window.requestIdleCallback) window.requestIdleCallback(prerender, { timeout: 2000 });
-    else setTimeout(prerender, 300);
+    // Pré-rend AU REPOS (échelonné, hors écran) TOUS les graphiques : ils sont ainsi déjà
+    // à leur taille finale dès la première ouverture de leur carte, au lieu d'être rendus
+    // après la montée de la feuille (le conteneur sauterait de min-height:300px à la hauteur
+    // du SVG → « redimensionnement » juste avant le tracé). Le tracé des courbes est rejoué
+    // à l'ouverture (cf. buildDetail), sur le SVG déjà rendu, sans reconstruction.
+    if (window.CORApp.prerenderAllCharts) window.CORApp.prerenderAllCharts();
 
     // Libellé d'aide intégré à la flèche « suivante » (comme la bulle de retour
     // du détail). Verbe adapté à la plateforme : « Glissez » au tactile (on fait

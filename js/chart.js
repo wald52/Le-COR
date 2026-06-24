@@ -366,6 +366,25 @@
     svg.appendChild(defs);
     const seriesLayer = el("g", { "clip-path": `url(#${revealId})` });
 
+    // Contrôles de révélation exposés sur le conteneur : le carrousel pré-rend le
+    // graphique au repos (à sa taille finale, pas de redimensionnement à l'ouverture)
+    // puis CACHE la courbe avant la montée de la feuille (__revealReset) et la TRACE
+    // une fois la feuille arrivée (__revealPlay) — sur le SVG déjà rendu, sans le
+    // reconstruire. Indépendant du bloc d'animation auto (page à défilement) ci-dessous.
+    let revealRaf;
+    const playReveal = () => {
+      cancelAnimationFrame(revealRaf);
+      const t0 = performance.now();
+      const step = now => {
+        const k = Math.max(0, Math.min(1, (now - t0) / 1100));
+        revealRect.setAttribute("width", revealW * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) revealRaf = requestAnimationFrame(step);
+      };
+      revealRaf = requestAnimationFrame(step);
+    };
+    container.__revealReset = () => { cancelAnimationFrame(revealRaf); revealRect.setAttribute("width", 0); };
+    container.__revealPlay = playReveal;
+
     // --- Grille + axe Y ---
     const yTicks = niceTicks(yMin, yMax, 5);
     yTicks.forEach(t => {
