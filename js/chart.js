@@ -200,7 +200,11 @@
     // Dimensions responsives : on cale le viewBox sur la largeur réelle du
     // conteneur pour que les textes restent à taille lisible (≈ px) partout,
     // au lieu d'un SVG fixe réduit (illisible sur mobile).
-    const cw = Math.round(container.getBoundingClientRect().width) || 760;
+    // Repli quand le conteneur n'a pas de largeur (pré-rendu hors écran, carte
+    // masquée) : on estime d'après la fenêtre pour tomber du bon côté du seuil
+    // `narrow` (480 px) — sinon une constante (ex. 760) forcerait le ratio large
+    // sur mobile et le graphique s'afficherait aplati une fois mis à l'échelle.
+    const cw = Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     // Axe x catégoriel (profils par âge…) : les graduations sont les libellés
@@ -890,7 +894,9 @@
     if (container.__revealCancel) container.__revealCancel();
     container.innerHTML = "";
 
-    const cw = Math.round(container.getBoundingClientRect().width) || 760;
+    // Repli largeur : cf. lineChart — la fenêtre (≈ appareil) plutôt qu'une
+    // constante, pour que le pré-rendu hors écran tombe du bon côté de `narrow`.
+    const cw = Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const cats = cfg.categories || [];
