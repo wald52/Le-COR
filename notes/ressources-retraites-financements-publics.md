@@ -175,14 +175,6 @@ reconstitue via la convention **POV B** (« avant concours publics ») :
   retraités ≈ +30 % vs leurs parents, +20 % vs leurs enfants).
 - Débats au Sénat (séance du 8 oct. 2024 ; question écrite qSEQ241001070).
 
-**Critiques (la phrase serait trompeuse) :**
-- M. Zemmour : le calcul « ne repose sur rien ».
-- Basta! : « la dette publique serait due aux retraites : c'est faux ».
-- Argument de fond (identique au §2 et au §5) : la contribution d'équilibre de
-  l'État est le **coût normal d'un employeur** ; **retirer ce flux ne supprime pas
-  le besoin de financement, il le déplace** — le déficit public global est
-  inchangé.
-
 → Bilan : l'**ordre de grandeur** de Bayrou est défendable sous la convention
 critique, mais en convention COR (POV A) le système est quasi équilibré et la
 phrase n'apparaît pas. Le désaccord porte sur l'**interprétation** (cotisation
