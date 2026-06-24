@@ -611,6 +611,12 @@
   // pour pouvoir les couper si le carrousel prend la main (cf. disableLazyCharts).
   const lazyChartObservers = [];
 
+  // Graphiques STATIQUES déjà tracés : rendus une seule fois (pré-rendu au repos OU 1re
+  // ouverture), puis jamais re-tracés — sinon les re-tracer à une largeur différente les
+  // fait « bouger » à l'ouverture. Le viewBox les met à l'échelle du conteneur.
+  const staticRendered = new Set();
+  function drawStaticOnce(id, fn) { if (!staticRendered.has(id)) { fn(); staticRendered.add(id); } }
+
   function idle(fn) {
     if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2000 });
     else setTimeout(fn, 300);
@@ -1206,11 +1212,11 @@
       switch (id) {
         case "depenses": renderDepensesPib(a); break;
         case "deficit": renderSolde(a); renderCiseaux(a); break;
-        case "productivite": renderProductivite(); break;
+        case "productivite": drawStaticOnce("productivite", renderProductivite); break;
         case "realite": renderFecondite(a); renderProductiviteReel(a); break;
         case "niveau": renderNiveauVie(a); break;
         case "financement": renderFiscalisation(a); break;
-        case "monde": renderInternational(); break;
+        case "monde": drawStaticOnce("monde", renderInternational); break;
         case "explorer": ensureExplorer(); break;
         // simulateur / hypotheses / methode : contenu statique ou déjà câblé
         // au chargement (renderLeviers / renderTable / renderSources).
@@ -1235,7 +1241,10 @@
     // pas la saccader) : le graphique « se charge » en retard la 1re fois, alors que
     // les réouvertures réutilisent le SVG déjà présent. Les courbes ne sont PAS
     // pré-rendues : elles gardent leur tracé animé de première apparition.
-    prerenderStaticCharts() { renderProductivite(); renderInternational(); }
+    prerenderStaticCharts() {
+      drawStaticOnce("productivite", renderProductivite);
+      drawStaticOnce("monde", renderInternational);
+    }
   };
 
   if (document.readyState === "loading") {
