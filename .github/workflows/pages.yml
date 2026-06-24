@@ -86,6 +86,43 @@ jobs:
           uploadArtifacts: true
           artifactName: lighthouse-rapport
 
+      # Scores chiffrés directement lisibles dans l'onglet « Summary » du job,
+      # sans avoir à télécharger l'artefact. lhci écrit un manifest.json dans
+      # .lighthouseci/ : on en extrait le run représentatif de chaque URL et on
+      # affiche un tableau (catégories en %). Permet de suivre la tendance d'un
+      # commit à l'autre. `if: always()` : on veut le tableau même si une
+      # assertion a échoué à l'étape précédente.
+      - name: Résumé des scores Lighthouse
+        if: always()
+        run: |
+          node <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('fs');
+          const path = '.lighthouseci/manifest.json';
+          if (!fs.existsSync(path)) {
+            console.log('## Scores Lighthouse\n\n_Aucun rapport `.lighthouseci/manifest.json` trouvé._');
+            process.exit(0);
+          }
+          const runs = JSON.parse(fs.readFileSync(path, 'utf8'))
+            .filter(r => r.isRepresentativeRun);
+          const cats = [
+            ['performance', 'Performance'],
+            ['accessibility', 'Accessibilité'],
+            ['best-practices', 'Bonnes pratiques'],
+            ['seo', 'SEO'],
+          ];
+          const pct = v => (v == null ? '—' : Math.round(v * 100) + ' %');
+          let out = '## Scores Lighthouse\n\n';
+          out += '| Page | ' + cats.map(c => c[1]).join(' | ') + ' |\n';
+          out += '|------|' + cats.map(() => '------').join('|') + '|\n';
+          for (const r of runs) {
+            const u = r.url.replace('https://wald52.github.io', '');
+            out += '| `' + u + '` | '
+              + cats.map(c => pct(r.summary[c[0]])).join(' | ') + ' |\n';
+          }
+          out += '\nSeuils visés : Performance ≥ 80 %, autres ≥ 90 %.';
+          console.log(out);
+          EOF
+
       - name: Contrôle des liens cassés (lychee)
         uses: lycheeverse/lychee-action@v2
         with:

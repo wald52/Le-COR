@@ -173,7 +173,7 @@
     { id: "methode", chapter: "Aller plus loin", title: "Méthode & sources",
       subtitle: "D'où viennent les données",
       description: "Comment lire ces graphiques, et les fichiers officiels du COR derrière chaque courbe.",
-      image: { section: "methode", theme: "#475569", photo: "./images/sources-logos.png" } }
+      image: { section: "methode", theme: "#475569", photo: "./images/sources-logos.jpg" } }
   ];
 
   /* ======================================================================
@@ -226,7 +226,16 @@
       img.className = "card-photo";
       img.src = card.image.photo;
       img.alt = "";
-      img.loading = "lazy";
+      // La 1re carte est visible d'emblée : c'est l'élément LCP. On la charge en
+      // priorité (eager + fetchpriority) au lieu de `lazy`, qui retarderait son
+      // affichage et pénaliserait le score performance. Les autres cartes,
+      // hors écran au départ, restent en `lazy`.
+      if (i === 0) {
+        img.loading = "eager";
+        img.fetchPriority = "high";
+      } else {
+        img.loading = "lazy";
+      }
       img.decoding = "async";
       chart.appendChild(img);
     } else {
