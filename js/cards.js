@@ -184,7 +184,7 @@
   let vel = 0;           // vitesse de `offset` (unités/seconde)
   let raf = null;        // id rAF de l'animation spring
   let detailOpen = false;
-  const cardEls = [];    // <li.card>
+  const cardEls = [];    // <div.card>
   const chartEls = [];   // calque .card-chart de chaque carte (parallax)
   const dotEls = [];
   const miniDrawn = new Set(); // cartes dont le mini-graphique est déjà tracé
@@ -195,20 +195,27 @@
    * CardItem — construit une carte.
    * -------------------------------------------------------------------- */
   function CardItem(card, i) {
-    const li = document.createElement("li");
-    li.className = "card";
-    li.dataset.index = String(i);
-    li.dataset.section = card.image.section;
-    // Carte sans vue détail (noDetail) : ni rôle bouton, ni libellé « ouvrir ».
-    // La classe `card--no-detail` permet au CSS de retirer l'affordance
-    // « cliquable » (curseur) quand la carte est centrée : un tap n'ouvre rien.
+    // Carte = <div> (et non <li>) : la piste n'est pas une vraie liste ARIA.
+    // Une <ul role="list"> exigerait des enfants `listitem`, incompatibles avec
+    // les cartes interactives qui portent `role="button"` (cf. audits Lighthouse
+    // aria-required-children / aria-allowed-role). Le carousel est un groupe de
+    // boutons, pas une liste.
+    const el = document.createElement("div");
+    el.className = "card";
+    el.dataset.index = String(i);
+    el.dataset.section = card.image.section;
+    // Carte sans vue détail (noDetail) : pas de rôle bouton ni de libellé
+    // « ouvrir ». On lui donne role="img" (un visuel illustré avec un libellé),
+    // rôle qui autorise `aria-label`. La classe `card--no-detail` permet au CSS
+    // de retirer l'affordance « cliquable » (curseur) : un tap n'ouvre rien.
     if (card.noDetail) {
-      li.classList.add("card--no-detail");
-      li.setAttribute("aria-label", card.title);
+      el.classList.add("card--no-detail");
+      el.setAttribute("role", "img");
+      el.setAttribute("aria-label", card.title);
     } else {
-      li.setAttribute("role", "button");
-      li.setAttribute("tabindex", "0");
-      li.setAttribute("aria-label", card.title + " — ouvrir");
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      el.setAttribute("aria-label", card.title + " — ouvrir");
     }
 
     const inner = document.createElement("div");
@@ -259,11 +266,11 @@
     inner.appendChild(chart);
     inner.appendChild(overlay);
     inner.appendChild(text);
-    li.appendChild(inner);
+    el.appendChild(inner);
 
-    cardEls[i] = li;
+    cardEls[i] = el;
     chartEls[i] = chart;
-    return li;
+    return el;
   }
 
   /* ----------------------------------------------------------------------
@@ -773,8 +780,8 @@
     );
     // Fondu de la carte d'accueil : son contenu (.card-inner) se soulève en se
     // dissolvant pendant que le détail apparaît → effet de « passage de relais »
-    // depuis la carte. On anime l'inner (et non le <li>) pour ne pas écraser le
-    // transform/opacity posés par applyTransforms sur le <li>. L'opacité tombe à 0
+    // depuis la carte. On anime l'inner (et non la carte) pour ne pas écraser le
+    // transform/opacity posés par applyTransforms sur la carte. L'opacité tombe à 0
     // tôt (offset .6) puis y reste : à la fin, la feuille recouvre la carte → pas de
     // flash au cancel (lequel restaure la carte, voir closeDetail/onfinish).
     if (cardInner) {
@@ -1077,7 +1084,7 @@
       '<h1 class="cs-title">Ceci est mon COR</h1>' +
       "</header>" +
       '<div class="cs-viewport">' +
-      '<ul class="cs-track" role="list"></ul>' +
+      '<div class="cs-track"></div>' +
       '<button class="cs-nav cs-nav-prev" type="button" aria-label="Carte précédente">' +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>' +
       "</button>" +
