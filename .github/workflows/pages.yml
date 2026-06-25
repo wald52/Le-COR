@@ -120,6 +120,28 @@ jobs:
               + cats.map(c => pct(r.summary[c[0]])).join(' | ') + ' |\n';
           }
           out += '\nSeuils visés : Performance ≥ 80 %, autres ≥ 90 %.';
+
+          // Détail : audits d'accessibilité non parfaits (score < 1), page par
+          // page, pour cibler les corrections sans deviner. On lit le rapport
+          // complet (lhr) du run représentatif via son jsonPath du manifest.
+          const basename = p => (p || '').split('/').pop();
+          out += '\n\n## Accessibilité — audits à corriger\n';
+          for (const r of runs) {
+            const u = r.url.replace('https://wald52.github.io', '');
+            let lhr = null;
+            for (const p of [r.jsonPath, '.lighthouseci/' + basename(r.jsonPath)]) {
+              try { lhr = JSON.parse(fs.readFileSync(p, 'utf8')); break; } catch (e) {}
+            }
+            if (!lhr) { out += '\n### `' + u + '`\n_Rapport détaillé introuvable._\n'; continue; }
+            const cat = lhr.categories && lhr.categories.accessibility;
+            const audits = lhr.audits || {};
+            const refs = (cat && cat.auditRefs) || [];
+            const failed = refs.map(ref => audits[ref.id])
+              .filter(a => a && a.score !== null && a.score < 1);
+            out += '\n### `' + u + '` — ' + pct(cat && cat.score) + '\n';
+            if (!failed.length) { out += '_Aucun audit en échec._\n'; continue; }
+            for (const a of failed) out += '- **' + a.id + '** — ' + a.title + '\n';
+          }
           console.log(out);
           EOF
 
