@@ -142,6 +142,43 @@ jobs:
             if (!failed.length) { out += '_Aucun audit en échec._\n'; continue; }
             for (const a of failed) out += '- **' + a.id + '** — ' + a.title + '\n';
           }
+          // Détail : performance — métriques clés + audits d'opportunité non
+          // parfaits, page par page, pour cibler la cause racine (LCP/TBT/CLS…)
+          // sans deviner. Même lecture manifest→lhr que pour l'accessibilité.
+          const metricIds = [
+            ['largest-contentful-paint', 'LCP'],
+            ['total-blocking-time', 'TBT'],
+            ['cumulative-layout-shift', 'CLS'],
+            ['first-contentful-paint', 'FCP'],
+            ['speed-index', 'Speed Index'],
+          ];
+          const savings = a => (a && a.details && a.details.overallSavingsMs) || 0;
+          out += '\n\n## Performance — métriques & audits à corriger\n';
+          for (const r of runs) {
+            const u = r.url.replace('https://wald52.github.io', '');
+            let lhr = null;
+            for (const p of [r.jsonPath, '.lighthouseci/' + basename(r.jsonPath)]) {
+              try { lhr = JSON.parse(fs.readFileSync(p, 'utf8')); break; } catch (e) {}
+            }
+            if (!lhr) { out += '\n### `' + u + '`\n_Rapport détaillé introuvable._\n'; continue; }
+            const cat = lhr.categories && lhr.categories.performance;
+            const audits = lhr.audits || {};
+            out += '\n### `' + u + '` — ' + pct(cat && cat.score) + '\n';
+            out += metricIds.filter(m => audits[m[0]])
+              .map(m => m[1] + ' : ' + (audits[m[0]].displayValue || '—')).join(' · ') + '\n';
+            const refs = (cat && cat.auditRefs) || [];
+            const failed = refs.map(ref => audits[ref.id])
+              .filter(a => a && a.score !== null && a.score < 1
+                && !metricIds.some(m => m[0] === a.id))
+              .sort((x, y) => savings(y) - savings(x));
+            if (!failed.length) { out += "_Aucun audit d'opportunité en échec._\n"; continue; }
+            for (const a of failed) {
+              const s = savings(a);
+              out += '- **' + a.id + '** — ' + a.title
+                + (a.displayValue ? ' (' + a.displayValue + ')' : '')
+                + (s ? ' — ~' + Math.round(s) + ' ms' : '') + '\n';
+            }
+          }
           console.log(out);
           EOF
 
