@@ -95,7 +95,7 @@ jobs:
       - name: Résumé des scores Lighthouse
         if: always()
         run: |
-          node <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          node <<'EOF' | tee -a "$GITHUB_STEP_SUMMARY"
           const fs = require('fs');
           const path = '.lighthouseci/manifest.json';
           if (!fs.existsSync(path)) {
