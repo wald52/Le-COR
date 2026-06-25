@@ -125,7 +125,7 @@
     { id: "presentation", chapter: "Bienvenue", title: "À quoi sert ce site ?",
       subtitle: "Chaque année, le COR projette nos retraites jusqu'en 2070. Ce site superpose ses rapports de 2001 à 2026 : change-t-il d'avis, et ses prévisions se réalisent-elles ?",
       noDetail: true,
-      image: { section: "presentation", theme: "#1f4e79", photo: "./images/intro-cor.jpg" } },
+      image: { section: "presentation", theme: "#1f4e79", photo: "./images/intro-cor.webp" } },
     { id: "depenses", chapter: "Le constat", title: "La même question, des réponses différentes",
       subtitle: "Dépenses de retraite en % du PIB",
       description: "Chaque rapport du COR reprévoit la même courbe… et change d'avis : de « ça baisse » à « ça monte fortement ».",
@@ -153,7 +153,7 @@
     { id: "dette", chapter: "Comment ça marche", title: "« La moitié de la dette part dans les retraites » ?",
       subtitle: "Vrai ou faux ? — le débat Bayrou / Beaufret",
       description: "Le chiffre avancé par F. Bayrou, et sa lecture « avant concours publics » (Beaufret, Molinari, Fondapol) : ce que disent vraiment les sources.",
-      image: { section: "dette", theme: "#b91c1c", photo: "./images/bayrou.jpg" } },
+      image: { section: "dette", theme: "#b91c1c", photo: "./images/bayrou.webp" } },
     { id: "monde", chapter: "Comment ça marche", title: "La France dans le monde",
       subtitle: "Dépenses de retraite par pays (2021)",
       description: "Parmi les pays qui dépensent le plus, mais des dépenses quasi entièrement publiques : un choix de répartition.",
@@ -161,7 +161,7 @@
     { id: "hypotheses", chapter: "Comment ça marche", title: "Le tableau de bord des hypothèses",
       subtitle: "Toutes les hypothèses, d'un coup d'œil",
       description: "Productivité, fécondité, chômage, immigration… le récapitulatif des hypothèses retenues par chaque rapport du COR.",
-      image: { section: "hypotheses", theme: "#475569", photo: "./images/hypotheses-cockpit.jpg" } },
+      image: { section: "hypotheses", theme: "#475569", photo: "./images/hypotheses-cockpit.webp" } },
     { id: "explorer", chapter: "Aller plus loin", title: "Explorer tous les indicateurs",
       subtitle: "Un thème, un indicateur, un graphique",
       description: "Choisissez un thème puis un indicateur : toutes les projections des rapports se superposent.",
@@ -169,11 +169,11 @@
     { id: "simulateur", chapter: "Que faire ?", title: "Équilibrez le système",
       subtitle: "Le simulateur des 3 leviers",
       description: "Âge, cotisations, pensions : dosez les leviers et voyez si le système revient à l'équilibre en 2070.",
-      image: { section: "simulateur", theme: "#1f4e79", photo: "./images/simulateur-faders.jpg" } },
+      image: { section: "simulateur", theme: "#1f4e79", photo: "./images/simulateur-faders.webp" } },
     { id: "methode", chapter: "Aller plus loin", title: "Méthode & sources",
       subtitle: "D'où viennent les données",
       description: "Comment lire ces graphiques, et les fichiers officiels du COR derrière chaque courbe.",
-      image: { section: "methode", theme: "#475569", photo: "./images/sources-logos.jpg" } }
+      image: { section: "methode", theme: "#475569", photo: "./images/sources-logos.webp" } }
   ];
 
   /* ======================================================================

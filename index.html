@@ -38,6 +38,11 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <!-- Préchargement de l'image LCP (1re carte du carousel). Elle est insérée par
+       JS (js/cards.js) : sans ce preload, le navigateur ne la découvre qu'après
+       l'exécution des scripts, ce qui retarde le Largest Contentful Paint. L'URL
+       doit correspondre exactement à celle posée par cards.js. -->
+  <link rel="preload" as="image" href="./images/intro-cor.webp" fetchpriority="high" />
   <link rel="stylesheet" href="./css/style.css" />
   <link rel="stylesheet" href="./css/cards.css" />
 
