@@ -565,29 +565,6 @@
   }
 
   /* ----------------------------------------------------------------------
-   * Navigation : surlignage de la section active + menu mobile.
-   * -------------------------------------------------------------------- */
-  function setupNav() {
-    const links = Array.from(document.querySelectorAll(".nav-link"));
-    const map = new Map(links.map(l => [l.getAttribute("href").slice(1), l]));
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        if (e.isIntersecting) {
-          links.forEach(l => { l.classList.remove("active"); l.removeAttribute("aria-current"); });
-          const link = map.get(e.target.id);
-          if (link) { link.classList.add("active"); link.setAttribute("aria-current", "page"); }
-        }
-      });
-    }, { rootMargin: "-45% 0px -50% 0px" });
-    document.querySelectorAll("section[id]").forEach(s => obs.observe(s));
-
-    const toggle = document.getElementById("nav-toggle");
-    const menu = document.getElementById("nav-menu");
-    toggle.addEventListener("click", () => menu.classList.toggle("open"));
-    menu.addEventListener("click", e => { if (e.target.matches(".nav-link")) menu.classList.remove("open"); });
-  }
-
-  /* ----------------------------------------------------------------------
    * Rendu différé des graphiques (« lazy »).
    * Construire les neuf graphiques SVG au chargement saturait le thread
    * principal (Total Blocking Time) et enchaînait les reflows. On ne construit
@@ -637,23 +614,7 @@
     }
   }
 
-  function idle(fn) {
-    if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: 2000 });
-    else setTimeout(fn, 300);
-  }
-
-  // Construit un graphique puis câble ses outils (agrandir / télécharger) et
-  // pré-génère son PNG en temps mort.
-  function drawChart(entry, animate) {
-    entry.draw(animate);
-    chartsDrawn.add(entry.id);
-    setupChartTools();
-    const host = document.getElementById(entry.id);
-    const card = host && host.closest(".chart-card");
-    if (card) idle(() => ensureChartPngCache(card));
-  }
-
-  // Re-rend les graphiques DÉJÀ construits (animation rejouée, redimensionnement).
+  // Re-rend les graphiques déjà construits (redimensionnement de fenêtre).
   function renderAllCharts(animate) {
     CHARTS.forEach(entry => { if (chartsDrawn.has(entry.id)) entry.draw(animate); });
   }
@@ -694,20 +655,8 @@
     return explorerPromise;
   }
 
-  // Exécute `cb` quand l'élément approche du viewport (ou tout de suite si
-  // IntersectionObserver est indisponible).
-  function whenVisible(el, cb) {
-    if (!el) return;
-    if (!("IntersectionObserver" in window)) { cb(); return; }
-    const io = new IntersectionObserver((entries, obs) => {
-      entries.forEach(e => { if (e.isIntersecting) { obs.disconnect(); cb(); } });
-    }, { rootMargin: "300px 0px" });
-    io.observe(el);
-    lazyChartObservers.push(io);
-  }
-
   /* ----------------------------------------------------------------------
-   * Finitions : toast, partage, installation PWA, haut de page, export PNG.
+   * Finitions : toast (notifications) et export PNG.
    * -------------------------------------------------------------------- */
   function toast(msg, actionLabel, fn) {
     const t = document.getElementById("toast");
@@ -721,43 +670,6 @@
       setTimeout(() => { t.hidden = true; }, 2600);
     }
     t.hidden = false;
-  }
-
-  function setupShareInstall() {
-    const share = document.getElementById("btn-share");
-    if (share) {
-      share.hidden = false;
-      const data = { title: document.title, text: "Ceci est mon COR — le COR change-t-il d'avis sur nos retraites ?", url: location.href };
-      if (navigator.share) {
-        share.innerHTML = icon("share") + "<span>Partager</span>";
-        share.addEventListener("click", () => navigator.share(data).catch(() => {}));
-      } else {
-        share.innerHTML = icon("link") + "<span>Copier le lien</span>";
-        share.addEventListener("click", async () => {
-          try { await navigator.clipboard.writeText(location.href); toast("Lien copié dans le presse-papier ✓"); }
-          catch (e) { toast("Copie impossible — copiez l'URL manuellement."); }
-        });
-      }
-    }
-    let deferred = null;
-    const install = document.getElementById("btn-install");
-    if (install) install.innerHTML = icon("phone") + "<span>Installer l'app</span>";
-    window.addEventListener("beforeinstallprompt", e => {
-      e.preventDefault(); deferred = e; if (install) install.hidden = false;
-    });
-    if (install) install.addEventListener("click", async () => {
-      if (!deferred) return;
-      deferred.prompt(); await deferred.userChoice; deferred = null; install.hidden = true;
-    });
-    window.addEventListener("appinstalled", () => { if (install) install.hidden = true; });
-  }
-
-  function setupToTop() {
-    const tt = document.getElementById("to-top");
-    if (!tt) return;
-    window.addEventListener("scroll", () => {
-      tt.classList.toggle("show", window.scrollY > 600);
-    }, { passive: true });
   }
 
   // Style minimal embarqué pour que le PNG exporté garde grille, axes et libellés.
@@ -1172,21 +1084,14 @@
   }
 
   function init() {
-    // Aucun graphique n'est au-dessus de la ligne de flottaison : on les
-    // construit tous (y compris le graphique phare) à l'approche du viewport.
-    // Le chargement initial ne dessine ainsi aucun SVG — le thread principal
-    // reste libre (Total Blocking Time bas) et le travail s'étale au défilement.
-    CHARTS.forEach(entry =>
-      whenVisible(document.getElementById(entry.id), () => drawChart(entry, true)));
-    // Données de l'explorateur chargées paresseusement (gros bloc séparé).
-    whenVisible(document.getElementById("chart-explorer"), ensureExplorer);
+    // La présentation est le carrousel (js/cards.js) : il pilote le rendu des
+    // graphiques (prerenderAllCharts au repos, renderSection à l'ouverture d'une
+    // carte). init() prépare ici le contenu des sections et les outils communs ;
+    // le tracé des graphiques est déclenché par le carrousel.
     renderLeviers();
     renderTable();
     renderSources();
-    setupNav();
-    setupShareInstall();
     setupSectionLinks();
-    setupToTop();
     setupChartTools();
     setupDataExports();
     setupPibUnitToggle();

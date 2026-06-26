@@ -67,80 +67,9 @@ a { color: var(--bleu-clair); }
   border-bottom: 1px solid var(--gris-clair);
 }
 .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; margin-right: auto; }
-.brand-logo { height: 66px; width: auto; flex: none; display: block; }
 .brand-text { color: var(--encre); font-size: 1.3rem; font-weight: 600; white-space: nowrap; }
-/* Nav resserrée (gap/padding) : compense la largeur prise par le titre+logo
-   agrandis, pour garder les 9 liens sur une seule ligne en grand écran. */
-.nav-menu { display: flex; gap: 2px; flex-wrap: wrap; }
-.nav-link {
-  text-decoration: none; color: var(--gris); font-size: 0.9rem; font-weight: 600;
-  padding: 6px 8px; border-radius: 8px;
-}
-.nav-link:hover { background: var(--bleu-pale); color: var(--bleu); }
-.nav-link.active { background: var(--bleu); color: #fff; }
-/* Libellé de chapitre dans la nav : repère visuel non interactif.
-   Sur grand écran, un fin séparateur le précède (sauf le premier). */
-.nav-group-title {
-  align-self: center; color: var(--bleu); font-size: 0.7rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7;
-  padding: 0 4px 0 10px; margin-left: 6px; border-left: 1px solid var(--gris-clair);
-  pointer-events: none; user-select: none;
-}
-.nav-group-title:first-child { border-left: 0; margin-left: 0; padding-left: 4px; }
-.nav-toggle {
-  display: none; align-items: center; justify-content: center;
-  width: 42px; height: 42px; background: none; border: 0;
-  font-size: 1.4rem; color: var(--bleu); cursor: pointer; border-radius: 8px;
-}
-.nav-toggle:hover { background: var(--bleu-pale); }
 
-/* ---------- Logo partenaire « Le Modèle Social Français » ---------- */
-.ms-logo {
-  position: relative; flex: none;            /* ne rétrécit jamais */
-  display: inline-flex; align-items: center; justify-content: center;
-  text-decoration: none; transition: transform 0.2s ease;
-}
-.ms-logo:hover { transform: scale(1.08); }
-.ms-logo-img {
-  width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
-  background: #fff; border: 2px solid #d4af37;
-  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35), 0 0 0 2px rgba(212, 175, 55, 0.12);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-.ms-logo:hover .ms-logo-img {
-  border-color: #e6c75a;
-  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.2);
-}
-/* pastille « lien » en haut à droite */
-.ms-logo::before {
-  content: "🔗"; position: absolute; top: -6px; right: -6px;
-  width: 20px; height: 20px; font-size: 11px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--bleu); border: 1px solid #d4af37; border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); z-index: 1;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-.ms-logo:hover::before { transform: scale(1.12); background: var(--bleu-clair); }
-/* infobulle au survol — ancrée à droite pour ne jamais déborder de l'écran */
-.ms-logo-tip {
-  position: absolute; top: calc(100% + 8px); right: 0;
-  background: var(--bleu); color: #fff; font-size: 0.72rem; font-weight: 600;
-  white-space: nowrap; padding: 4px 9px; border-radius: 8px; box-shadow: var(--ombre);
-  opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-}
-.ms-logo:hover .ms-logo-tip { opacity: 1; visibility: visible; transform: translateY(0); }
-
-/* ---------- Hero ---------- */
-.hero {
-  background: linear-gradient(135deg, #1f4e79 0%, #2f6fb0 100%);
-  color: #fff; padding: 64px 20px 72px;
-}
-.hero-inner { max-width: var(--largeur); margin: 0 auto; }
-.kicker { text-transform: uppercase; letter-spacing: 2px; font-size: 0.78rem; opacity: 0.85; margin: 0 0 10px; }
-.hero h1 { color: #fff; font-size: clamp(1.8rem, 4.5vw, 3rem); margin: 0 0 18px; max-width: 16ch; }
-.lede { font-size: 1.15rem; opacity: 0.96; }
-.lede strong { color: #fff; }
+/* ---------- Bouton d'action (pilule) — réutilisé par le bouton de retour du carrousel ---------- */
 .cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   margin-top: 22px; background: #fff; color: var(--bleu);
@@ -156,19 +85,6 @@ a { color: var(--bleu-clair); }
 /* Le texte courant occupe toute la largeur du conteneur, aligné sur les
    graphiques et tableaux (choix assumé : pas de largeur de lecture réduite). */
 .section-intro { font-size: 1.05rem; color: var(--encre); margin: 0 0 26px; }
-
-/* ---------- Intercalaires de chapitre ---------- */
-/* Bandeau qui annonce chacun des trois actes (Le constat / Comment ça marche /
-   Que faire) et donne au lecteur le fil du parcours. */
-.chapter-intro { background: var(--bleu); color: #fff; padding: 40px 0; }
-.chapter-intro .chapter-kicker {
-  margin: 0 0 8px; font-size: 0.8rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 2px; color: #cdddee;
-}
-.chapter-intro .chapter-lede {
-  margin: 0; font-size: 1.2rem; line-height: 1.5; max-width: 62ch; color: #fff;
-}
-.chapter-intro .chapter-lede strong { color: #fff; }
 
 /* ---------- Cartes graphiques ---------- */
 .chart-card {
@@ -269,8 +185,7 @@ a { color: var(--bleu-clair); }
 .struct-legend b { color: var(--encre); font-weight: 800; }
 .struct-legend small { color: var(--gris); }
 
-/* Cartes « chiffres-clés » sur fond clair (la grille `.key-figures` du hero est,
-   elle, pensée pour le fond bleu foncé). */
+/* Cartes « chiffres-clés » sur fond clair. */
 .facts-grid {
   list-style: none; padding: 0; margin: 22px 0 0;
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
@@ -349,30 +264,9 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .method ul { padding-left: 20px; }
 .sources li { margin-bottom: 6px; }
 
-/* ---------- Pied de page ---------- */
-.site-footer { background: var(--encre); color: #cdd6e0; padding: 30px 0; margin-top: 0; }
-.site-footer p { margin: 4px 0; }
-.site-footer strong { color: #fff; }
-.site-footer a { color: #9cc3e5; text-underline-offset: 2px; }
-.site-footer a:hover { color: #fff; }
 .small { font-size: 0.82rem; opacity: 0.8; }
 
-/* ---------- Finitions (hero, partage, glossaire, PWA) ---------- */
-.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 22px; }
-.cta-ghost { background: rgba(255,255,255,0.12); color: #fff; box-shadow: none; border: 1px solid rgba(255,255,255,0.5); }
-.cta-ghost:hover { background: rgba(255,255,255,0.22); }
-
-.key-figures {
-  list-style: none; padding: 0; margin: 30px 0 0;
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
-}
-.key-figures li {
-  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
-  border-radius: 12px; padding: 14px 16px;
-}
-.key-figures strong { display: block; font-size: 1.7rem; line-height: 1.1; color: #fff; }
-.key-figures span { display: block; margin-top: 6px; font-size: 0.82rem; opacity: 0.9; }
-
+/* ---------- Finitions (glossaire, PWA) ---------- */
 .glossary { margin: 6px 0 0; }
 .glossary details {
   border: 1px solid var(--gris-clair); border-radius: 10px; margin-bottom: 8px; background: #fff;
@@ -496,15 +390,6 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
 .anchor-link .icon { width: 0.85em; height: 0.85em; }
 @media (hover: none) { .anchor-link { opacity: 1; } }
 
-/* Bouton « haut de page » */
-.to-top {
-  position: fixed; right: 18px; bottom: 18px; z-index: 60;
-  width: 44px; height: 44px; border-radius: 50%; background: var(--bleu); color: #fff;
-  display: none; align-items: center; justify-content: center; text-decoration: none;
-  font-size: 1.3rem; box-shadow: var(--ombre);
-}
-.to-top.show { display: flex; }
-
 /* Toast (mise à jour / partage) */
 .toast {
   position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 70;
@@ -524,22 +409,8 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
 /* ---------- Responsive ---------- */
 @media (max-width: 760px) {
   .site-header { padding: 6px 14px 6px 8px; gap: 8px; }
-  .nav-toggle { display: flex; }
-  .nav-menu {
-    position: absolute; top: 100%; right: 0; left: 0; flex-direction: column;
-    background: #fff; border-bottom: 1px solid var(--gris-clair); padding: 8px;
-    display: none;
-  }
-  .nav-menu.open { display: flex; }
-  .nav-link { padding: 10px; }
   .brand { gap: 8px; }
-  /* Logo un peu plus compact pour tenir à côté du menu burger */
-  .brand-logo { height: 54px; width: auto; }
-  .ms-logo-img { width: 36px; height: 36px; }
-  .ms-logo-tip { display: none; }            /* pas de survol sur mobile */
   .chart-grid-2 { grid-template-columns: 1fr; }
-  .key-figures { grid-template-columns: 1fr 1fr; }
-  .key-figures strong { font-size: 1.4rem; }
 
   /* Structure des ressources : légende et cartes sur une colonne. La barre
      garde ses segments, mais on masque les libellés trop étroits (cf. seuil
@@ -554,7 +425,6 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
   .container { padding: 0 16px; }
   .band h2 { font-size: 1.4rem; }
   .section-intro { font-size: 1rem; margin-bottom: 18px; }
-  .hero { padding: 48px 16px 52px; }
 
   /* Graphiques : outils déplacés SOUS le graphique (plus de superposition) */
   .chart-card { padding: 14px; }

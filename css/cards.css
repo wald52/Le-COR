@@ -14,15 +14,11 @@
    Chrome Android. L'app étant mono-écran, ce geste n'y est jamais souhaité. */
 html { overscroll-behavior-y: contain; }
 
-/* ---------- Mode carousel : on masque la coquille « page » ---------- */
+/* ---------- Mode carousel : verrouille le défilement de fond ---------- */
 body.mode-carousel {
   overflow: hidden;
   overscroll-behavior: none;
 }
-body.mode-carousel .site-header,
-body.mode-carousel .site-footer,
-body.mode-carousel .to-top,
-body.mode-carousel .skip-link { display: none !important; }
 
 /* Le contenu d'origine sert de réservoir aux vues détail. */
 #story-sections[hidden] { display: none !important; }
