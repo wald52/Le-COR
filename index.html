@@ -87,6 +87,20 @@
 </head>
 <body>
 
+  <!-- Animation d'accueil : met en scène le jeu de mots du site
+       (« ceci est mon corps » → « ceci est mon COR »). Décorative
+       (aria-hidden), 100 % CSS, s'efface seule en ~2 s. Voir .cor-splash
+       dans css/style.css. Respecte prefers-reduced-motion. -->
+  <div id="cor-splash" class="cor-splash" aria-hidden="true">
+    <p class="cor-splash-phrase">
+      <span class="cor-splash-static">Ceci est mon&nbsp;</span>
+      <span class="cor-splash-word">
+        <span class="cor-word-a">corps</span>
+        <span class="cor-word-b">COR</span>
+      </span>
+    </p>
+  </div>
+
   <a class="skip-link" href="#top">Aller au contenu</a>
 
   <header class="site-header">
