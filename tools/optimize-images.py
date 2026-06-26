@@ -30,9 +30,10 @@ PHOTOS = [
 ]
 
 # Largeur d'affichage max ~500 px CSS ; on garde une marge pour les écrans à forte
-# densité (DPR ~2) sans repartir des 1600–2048 px d'origine.
-MAX_WIDTH = 900
-QUALITY = 80
+# densité (DPR ~1,5) sans repartir des 1600–2048 px d'origine. 740 px suffit à la
+# carte tout en supprimant l'audit Lighthouse « uses-responsive-images ».
+MAX_WIDTH = 740
+QUALITY = 72
 
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, "images")
 
