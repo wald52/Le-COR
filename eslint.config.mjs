@@ -5,8 +5,9 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  // Fichiers de données générés automatiquement (volumineux) : non analysés.
-  { ignores: ["data/*.generated.js", "node_modules/**"] },
+  // Fichiers générés automatiquement (data volumineuses, artefacts minifiés) :
+  // non analysés — seules les sources lisibles (js/*.js, css/*.css) le sont.
+  { ignores: ["data/*.generated.js", "**/*.min.js", "node_modules/**"] },
 
   js.configs.recommended,
 
