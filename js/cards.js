@@ -1096,7 +1096,10 @@
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
       "</button>" +
       "</div>" +
-      '<nav class="cs-dots" aria-label="Pagination des cartes"></nav>';
+      '<nav class="cs-dots" aria-label="Pagination des cartes"></nav>' +
+      // Lien légal discret en pied d'écran (LCEN / RGPD) : toujours accessible
+      // depuis l'accueil. legal.html porte aussi la section confidentialité.
+      '<a class="cs-legal" href="./legal.html">Mentions légales</a>';
 
     main.insertBefore(screen, storeyard);
 

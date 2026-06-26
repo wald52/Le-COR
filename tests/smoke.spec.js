@@ -27,6 +27,12 @@ test("un repli <noscript> est présent dans le document", async ({ page }) => {
   await expect(page.locator("noscript")).toHaveCount(1);
 });
 
+test("un lien « Mentions légales » est accessible depuis l'accueil (LCEN/RGPD)", async ({ page }) => {
+  await page.goto("/");
+  const legal = page.locator('.cs-legal[href*="legal.html"]');
+  await expect(legal).toBeVisible();
+});
+
 test("taper la carte active ouvre la vue détail avec son contenu complet", async ({ page }) => {
   await page.goto("/");
   // On va sur la carte « depenses » (la 1re carte est désormais l'intro photo).

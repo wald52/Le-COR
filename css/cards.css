@@ -236,6 +236,21 @@ body.mode-carousel {
 }
 .cs-dot.is-active { width: 22px; background: var(--bleu); }
 
+/* Lien légal en pied d'écran : discret (petit, gris atténué) mais lisible et
+   focalisable au clavier — accessible depuis l'accueil (LCEN / RGPD). */
+.cs-legal {
+  flex: none;
+  text-align: center;
+  margin: 0 auto;
+  padding: 2px 0 0;
+  font-size: 0.66rem;
+  color: var(--gris);
+  opacity: 0.7;
+  text-decoration: none;
+}
+.cs-legal:hover { opacity: 1; text-decoration: underline; }
+.cs-legal:focus-visible { outline: 2px solid var(--bleu); outline-offset: 2px; opacity: 1; }
+
 /* ---------- Flèches de navigation gauche/droite ---------- */
 .cs-nav {
   position: absolute;
