@@ -39,6 +39,14 @@ export default [
     languageOptions: { sourceType: "module", globals: { ...globals.node } }
   },
 
+  // Outils de développement (génération des données, build des assets) :
+  // scripts Node, jamais livrés au navigateur. Le type de module est déduit de
+  // l'extension (.cjs → CommonJS, .mjs → module).
+  {
+    files: ["tools/**/*.{js,cjs,mjs}"],
+    languageOptions: { globals: { ...globals.node } }
+  },
+
   // Tests Playwright : s'exécutent sous Node, mais les rappels page.evaluate()
   // tournent dans le navigateur (globaux browser).
   {

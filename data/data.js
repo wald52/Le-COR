@@ -27,9 +27,10 @@ window.COR_DATA = {
    *    de retraite dans le PIB jusqu'en 2070. En superposant ces projections,
    *    on voit si le COR « change d'avis ».
    *
-   *    Les valeurs de référence (point de départ et point 2070) proviennent des
-   *    synthèses des rapports annuels du COR. Les points intermédiaires (tous
-   *    les 5 ans) sont interpolés pour donner la forme de la courbe.
+   *    Toutes les valeurs (départ, points intermédiaires, point 2070) sont
+   *    reprises des séries officielles extraites des fichiers Excel du COR
+   *    (identiques à window.COR_SERIES, échantillonnées tous les ~5/10 ans).
+   *    Cette copie ne sert que de secours si le fichier généré ne charge pas.
    * ====================================================================== */
   depensesPib: {
     title: "La part des retraites dans le PIB selon les rapports successifs du COR",
@@ -62,59 +63,59 @@ window.COR_DATA = {
         label: "Projection 2019",
         year: 2019,
         color: "#7f7f7f",
-        endNote: "≈13,6 %",
+        endNote: "≈13,0 %",
         source: "COR, rapport annuel juin 2019 — scénario 1,3 % de productivité.",
         points: [
-          { x: 2019, y: 13.5 }, { x: 2025, y: 13.7 }, { x: 2030, y: 13.8 },
-          { x: 2040, y: 13.9 }, { x: 2050, y: 13.8 }, { x: 2060, y: 13.7 },
-          { x: 2070, y: 13.6 }
+          { x: 2019, y: 13.7 }, { x: 2025, y: 13.9 }, { x: 2030, y: 13.9 },
+          { x: 2040, y: 13.7 }, { x: 2050, y: 13.4 }, { x: 2060, y: 13.1 },
+          { x: 2070, y: 13.0 }
         ]
       },
       {
         label: "Projection 2021",
         year: 2021,
         color: "#2ca02c",
-        endNote: "≈12,1 %",
+        endNote: "≈12,3 %",
         source: "COR, rapport annuel juin 2021 — scénario central 1,3 % de productivité (dépenses décroissantes).",
         points: [
-          { x: 2021, y: 13.8 }, { x: 2025, y: 13.7 }, { x: 2030, y: 13.7 },
-          { x: 2040, y: 13.3 }, { x: 2050, y: 12.8 }, { x: 2060, y: 12.4 },
-          { x: 2070, y: 12.1 }
+          { x: 2021, y: 14.2 }, { x: 2025, y: 13.7 }, { x: 2030, y: 13.7 },
+          { x: 2040, y: 13.3 }, { x: 2050, y: 12.9 }, { x: 2060, y: 12.5 },
+          { x: 2070, y: 12.3 }
         ]
       },
       {
         label: "Projection 2022",
         year: 2022,
         color: "#ff7f0e",
-        endNote: "≈12,4 %",
+        endNote: "≈12,8 %",
         source: "COR, rapport annuel sept. 2022 — nouveaux scénarios de productivité (0,7 % à 1,6 %).",
         points: [
-          { x: 2022, y: 13.4 }, { x: 2025, y: 13.5 }, { x: 2030, y: 13.6 },
-          { x: 2040, y: 13.3 }, { x: 2050, y: 12.9 }, { x: 2060, y: 12.6 },
-          { x: 2070, y: 12.4 }
+          { x: 2022, y: 13.7 }, { x: 2025, y: 14.0 }, { x: 2030, y: 14.2 },
+          { x: 2040, y: 13.9 }, { x: 2050, y: 13.5 }, { x: 2060, y: 13.1 },
+          { x: 2070, y: 12.8 }
         ]
       },
       {
         label: "Projection 2023",
         year: 2023,
         color: "#9467bd",
-        endNote: "≈13,5 %",
+        endNote: "≈13,0 %",
         source: "COR, rapport annuel juin 2023 — après la réforme des retraites de 2023.",
         points: [
-          { x: 2023, y: 13.6 }, { x: 2025, y: 13.8 }, { x: 2030, y: 13.9 },
-          { x: 2040, y: 13.8 }, { x: 2050, y: 13.7 }, { x: 2060, y: 13.6 },
-          { x: 2070, y: 13.5 }
+          { x: 2023, y: 13.5 }, { x: 2025, y: 13.8 }, { x: 2030, y: 13.5 },
+          { x: 2040, y: 13.3 }, { x: 2050, y: 13.2 }, { x: 2060, y: 13.0 },
+          { x: 2070, y: 13.0 }
         ]
       },
       {
         label: "Projection 2024",
         year: 2024,
         color: "#d62728",
-        endNote: "≈13,6 %",
+        endNote: "≈13,2 %",
         source: "COR, rapport annuel juin 2024 — scénario de référence.",
         points: [
-          { x: 2024, y: 13.9 }, { x: 2030, y: 13.9 }, { x: 2040, y: 13.8 },
-          { x: 2050, y: 13.7 }, { x: 2060, y: 13.6 }, { x: 2070, y: 13.6 }
+          { x: 2024, y: 13.8 }, { x: 2030, y: 13.7 }, { x: 2040, y: 13.6 },
+          { x: 2050, y: 13.4 }, { x: 2060, y: 13.2 }, { x: 2070, y: 13.2 }
         ]
       },
       {
@@ -124,8 +125,8 @@ window.COR_DATA = {
         endNote: "≈14,2 %",
         source: "COR, rapport annuel juin 2025 — productivité abaissée à 0,7 % : les dépenses repartent à la hausse.",
         points: [
-          { x: 2025, y: 13.9 }, { x: 2030, y: 14.0 }, { x: 2040, y: 14.0 },
-          { x: 2050, y: 14.1 }, { x: 2060, y: 14.1 }, { x: 2070, y: 14.2 }
+          { x: 2025, y: 14.1 }, { x: 2030, y: 14.0 }, { x: 2040, y: 14.1 },
+          { x: 2050, y: 14.2 }, { x: 2060, y: 14.1 }, { x: 2070, y: 14.2 }
         ]
       },
       {
