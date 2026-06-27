@@ -5,6 +5,8 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ## [Non publié]
 
+## [1.0.0] – 2026-06-27
+
 ### Ajouté
 
 - **Section « D'où vient vraiment l'argent des retraites ? »** : structure des
@@ -24,6 +26,11 @@ Toutes les évolutions notables du site. Format inspiré de
   Prettier (optionnel), tests de bout en bout Playwright (`tests/`), et un
   workflow CI `Qualité` (lint bloquant, e2e informatif).
 - Documentation : `CONTRIBUTING.md` (guide de contribution) et ce `CHANGELOG.md`.
+- **Fichier `LICENSE`** : double licence pour une ouverture maximale dans le
+  respect des sources — code sous **MIT**, textes éditoriaux et mise en forme
+  sous **Licence Ouverte 2.0 (Etalab)** (la licence des informations publiques
+  du COR) ; les données sources restent sous la licence de leur producteur et
+  sont réutilisées avec attribution.
 
 ### Modifié
 
@@ -44,7 +51,12 @@ Toutes les évolutions notables du site. Format inspiré de
   graphique « Bénéficiaires de pensions, par type de droit » l'utilise pour la
   part des bénéficiaires d'une réversion (en %), désormais lisible à côté des
   effectifs (en milliers) au lieu d'être écrasée sur l'échelle de gauche.
-- Cache du service worker porté à `v43` (rafraîchissement des assets modifiés).
+- **Métadonnées sociales raccourcies** (anti-troncature) : `<title>` 63→54,
+  `og:title` / `twitter:title` 64→45, `og:description` 157→124 caractères ; le
+  mot-clé « retraites » est conservé dans le titre de page et le titre social.
+- **`legal.html` — « Propriété intellectuelle »** : passe de « reproduction
+  soumise à autorisation » à une réutilisation libre sous Licence Ouverte 2.0.
+- Cache du service worker porté à `v63` (rafraîchissement des assets modifiés).
 
 ### Corrigé
 
