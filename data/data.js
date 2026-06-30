@@ -307,6 +307,57 @@ window.COR_DATA = {
   },
 
   /* =========================================================================
+   * 4 quater. DIAGRAMME DE SANKEY DU FINANCEMENT — sources → régimes (Md€)
+   *    « D'où vient l'argent et où va-t-il ? » Jeu de données figé, pré-calculé
+   *    à partir des séries officielles du COR (structure des ressources Tab 2.2 ;
+   *    masses de dépenses par régime) converties en Md€ via le PIB nominal INSEE.
+   *    Par année observée 2016→2025 + « total » (cumul de la décennie).
+   *    Côté gauche : 6 sources de financement (+ flux de solde si déficit/excédent).
+   *    Côté droit : 7 grands régimes + « Autres régimes » (résidu).
+   *    Voir aussi la section #financement (inchangée) pour le détail 2025.
+   * ====================================================================== */
+  sankeyFinancement: {
+    title: "D’où vient l’argent des retraites, et où va-t-il ?",
+    subtitle: "Sources de financement → régimes qui versent les pensions, en Md€",
+    unit: "Md€",
+    source:
+      "COR, rapports annuels 2016–2026 — structure des ressources (Tab 2.2) et masses de dépenses par régime ; PIB nominal : INSEE (comptes nationaux). Montants en Md€ = (% du PIB) × PIB de l’année ; regroupements pour la lisibilité.",
+    years: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    sources: [
+      { key: "cotisations", short: "Cotisations", label: "Cotisations sociales", color: "#1f4e79" },
+      { key: "equilibreFPE", short: "Équilibre FPE", label: "Contribution d'équilibre (FPE)", color: "#2f6fb0" },
+      { key: "itaf", short: "Impôts & CSG", label: "Impôts & taxes affectés (ITAF, CSG)", color: "#c2185b" },
+      { key: "subvSpeciaux", short: "Subv. spéciaux", label: "Subventions aux régimes spéciaux", color: "#e8731c" },
+      { key: "transferts", short: "Transferts", label: "Transferts d'autres organismes", color: "#6aa84f" },
+      { key: "autresProduits", short: "Autres produits", label: "Autres produits", color: "#9c27b0" },
+    ],
+    regimes: [
+      { key: "cnav", short: "CNAV", label: "CNAV (régime général)", color: "#1f4e79" },
+      { key: "agircArrco", short: "AGIRC-ARRCO", label: "AGIRC-ARRCO (complémentaire privé)", color: "#e8731c" },
+      { key: "fpe", short: "Fonction publique", label: "Fonction publique d'État (FPE)", color: "#6aa84f" },
+      { key: "cnracl", short: "CNRACL", label: "CNRACL (collectivités, hôpitaux)", color: "#c2185b" },
+      { key: "ircantec", short: "IRCANTEC", label: "IRCANTEC (complémentaire public)", color: "#9c27b0" },
+      { key: "msa", short: "MSA", label: "MSA (salariés agricoles)", color: "#2f6fb0" },
+      { key: "rsi", short: "Indépendants", label: "Indépendants (ex-RSI)", color: "#b34700" },
+      { key: "autres", short: "Autres régimes", label: "Autres régimes (SNCF, RATP, CNIEG…)", color: "#8a8f98" },
+    ],
+    soldeLabel: { deficit: "Besoin de financement (déficit)", excedent: "Excédent (mise en réserve)", shortDeficit: "Déficit", shortExcedent: "Excédent" },
+    data: {
+      2016: { sources: { cotisations: 201.5, equilibreFPE: 37.9, itaf: 36.7, subvSpeciaux: 7.7, transferts: 19.4, autresProduits: 3.8 }, regimes: { cnav: 122.9, agircArrco: 80.2, fpe: 52.7, cnracl: 20.3, ircantec: 3.3, msa: 5.9, rsi: 7.9, autres: 18.8 }, solde: -4.8, totRes: 307.2, totDep: 312.0 },
+      2017: { sources: { cotisations: 211.7, equilibreFPE: 38.2, itaf: 36.4, subvSpeciaux: 7.7, transferts: 21.0, autresProduits: 2.5 }, regimes: { cnav: 125.4, agircArrco: 82.0, fpe: 53.4, cnracl: 21.0, ircantec: 3.1, msa: 5.9, rsi: 7.9, autres: 19.8 }, solde: -0.9, totRes: 317.6, totDep: 318.5 },
+      2018: { sources: { cotisations: 213.2, equilibreFPE: 38.6, itaf: 36.7, subvSpeciaux: 7.7, transferts: 21.1, autresProduits: 6.4 }, regimes: { cnav: 129.4, agircArrco: 83.9, fpe: 54.4, cnracl: 21.9, ircantec: 3.3, msa: 5.9, rsi: 8.0, autres: 19.8 }, solde: -2.8, totRes: 323.8, totDep: 326.6 },
+      2019: { sources: { cotisations: 218.1, equilibreFPE: 39.2, itaf: 43.2, subvSpeciaux: 7.5, transferts: 15.9, autresProduits: 8.3 }, regimes: { cnav: 133.9, agircArrco: 86.2, fpe: 55.7, cnracl: 22.8, ircantec: 3.5, msa: 5.9, rsi: 8.2, autres: 16.7 }, solde: -0.9, totRes: 332.2, totDep: 333.1 },
+      2020: { sources: { cotisations: 214.3, equilibreFPE: 41.1, itaf: 45.1, subvSpeciaux: 7.9, transferts: 17.3, autresProduits: 0.2 }, regimes: { cnav: 127.3, agircArrco: 81.9, fpe: 52.3, cnracl: 21.9, ircantec: 3.4, msa: 5.5, rsi: 7.8, autres: 40.6 }, solde: -14.8, totRes: 326.0, totDep: 340.8 },
+      2021: { sources: { cotisations: 226.7, equilibreFPE: 40.4, itaf: 46.1, subvSpeciaux: 7.6, transferts: 18.0, autresProduits: 5.8 }, regimes: { cnav: 137.7, agircArrco: 88.2, fpe: 55.8, cnracl: 23.3, ircantec: 3.9, msa: 5.8, rsi: 8.4, autres: 21.7 }, solde: -0.3, totRes: 344.5, totDep: 344.8 },
+      2022: { sources: { cotisations: 241.7, equilibreFPE: 42.7, itaf: 51.4, subvSpeciaux: 7.6, transferts: 17.9, autresProduits: 4.7 }, regimes: { cnav: 147.2, agircArrco: 93.7, fpe: 58.7, cnracl: 24.9, ircantec: 4.0, msa: 6.1, rsi: 8.8, autres: 19.0 }, solde: 3.7, totRes: 366.0, totDep: 362.3 },
+      2023: { sources: { cotisations: 250.0, equilibreFPE: 43.8, itaf: 53.8, subvSpeciaux: 7.6, transferts: 18.4, autresProduits: 8.4 }, regimes: { cnav: 157.7, agircArrco: 100.3, fpe: 62.1, cnracl: 26.7, ircantec: 4.3, msa: 6.4, rsi: 9.4, autres: 14.9 }, solde: 0.0, totRes: 381.9, totDep: 381.9 },
+      2024: { sources: { cotisations: 264.0, equilibreFPE: 46.2, itaf: 56.8, subvSpeciaux: 8.0, transferts: 19.4, autresProduits: 8.9 }, regimes: { cnav: 165.2, agircArrco: 104.5, fpe: 64.1, cnracl: 28.0, ircantec: 4.6, msa: 6.6, rsi: 9.7, autres: 22.3 }, solde: -1.7, totRes: 403.3, totDep: 405.0 },
+      2025: { sources: { cotisations: 275.5, equilibreFPE: 49.0, itaf: 64.3, subvSpeciaux: 7.6, transferts: 16.4, autresProduits: 7.0 }, regimes: { cnav: 171.8, agircArrco: 108.3, fpe: 65.7, cnracl: 29.1, ircantec: 4.8, msa: 6.7, rsi: 10.0, autres: 28.4 }, solde: -5.1, totRes: 419.8, totDep: 424.9 },
+      total: { sources: { cotisations: 2316.7, equilibreFPE: 417.1, itaf: 470.5, subvSpeciaux: 76.9, transferts: 184.8, autresProduits: 56.0 }, regimes: { cnav: 1418.5, agircArrco: 909.2, fpe: 574.9, cnracl: 239.9, ircantec: 38.2, msa: 60.7, rsi: 86.1, autres: 222.0 }, solde: -27.6, totRes: 3522.3, totDep: 3549.9 }
+    }
+  },
+
+  /* =========================================================================
    * 4 ter. DONNÉES MACRO DE RÉFÉRENCE — pour traduire le « % du PIB » en euros
    *    et en « % de la dépense publique ».
    *

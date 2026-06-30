@@ -6,7 +6,7 @@
   "use strict";
 
   const D = window.COR_DATA;
-  const { lineChart, barChart } = window.CORChart;
+  const { lineChart, barChart, sankeyChart } = window.CORChart;
   let explorerRedraw = null;   // permet de rejouer l'animation du graphe de l'explorateur
 
   /* ----------------------------------------------------------------------
@@ -320,6 +320,95 @@
   }
 
   /* ----------------------------------------------------------------------
+   * Sankey du financement (carte d'accueil) : « d'où vient l'argent, où va-t-il ? »
+   * Sources de financement (gauche) → Système de retraite → régimes qui versent
+   * les pensions (droite), en Md€. Données pré-calculées (D.sankeyFinancement) :
+   * chaque année observée 2016→2025 + un « total » cumulé de la décennie.
+   * -------------------------------------------------------------------- */
+  let sankeyYear = "2025"; // "2016"…"2025" | "total"
+
+  const sankeyYearLabel = year =>
+    year === "total" ? "Total 2016–2025" : String(year);
+
+  // Construit la config du moteur Sankey pour une année (ou "total").
+  // mini:true → version simplifiée pour le fond de la carte (sans libellés).
+  function buildSankeyCfg(year, mini) {
+    const s = D.sankeyFinancement;
+    if (!s) return null;
+    const key = year === "total" ? "total" : Number(year);
+    const d = s.data[key];
+    if (!d) return null;
+    const map = (defs, vals) =>
+      defs.map(def => ({ key: def.key, label: def.label, short: def.short || def.label, color: def.color, value: vals[def.key] || 0 }))
+        .filter(n => n.value > 0);
+    const unit = " " + (s.unit || "Md€");
+    return {
+      sources: map(s.sources, d.sources),
+      regimes: map(s.regimes, d.regimes),
+      solde: d.solde,
+      soldeLabel: s.soldeLabel,
+      centerLabel: "Système de retraite",
+      unit,
+      yearLabel: sankeyYearLabel(year),
+      ariaLabel: "Financement des retraites — " + sankeyYearLabel(year) +
+        " : sources de financement à gauche, régimes qui versent les pensions à droite, en " +
+        (s.unit || "Md€") + ".",
+      mini: !!mini
+    };
+  }
+  // Exposé pour le mini-graphique de fond de carte (js/cards.js).
+  window.CORSankey = { buildCfg: buildSankeyCfg };
+
+  function renderPresentationSankey(year) {
+    const host = document.getElementById("chart-sankey");
+    if (!host) return;
+    if (year) sankeyYear = year;
+    const cfg = buildSankeyCfg(sankeyYear, false);
+    if (!cfg) return;
+    sankeyChart(host, cfg);
+    const lbl = document.getElementById("sankey-year-label");
+    if (lbl) lbl.textContent = sankeyYearLabel(sankeyYear);
+    const tot = document.getElementById("sankey-total");
+    if (tot) {
+      const d = D.sankeyFinancement.data[sankeyYear === "total" ? "total" : Number(sankeyYear)];
+      tot.textContent = d ? Math.round(d.totDep).toLocaleString("fr-FR") + " Md€" : "";
+    }
+  }
+
+  // Sélecteur d'année : rangée de boutons (façon segmented control), sans
+  // ambiguïté — chaque année + un bouton « Total » distinct.
+  function setupSankeyYearPicker() {
+    const wrap = document.getElementById("sankey-year-toggle");
+    if (!wrap || wrap.__built) return;
+    const s = D.sankeyFinancement;
+    if (!s) return;
+    wrap.__built = true;
+    const make = (val, label, extra) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      const on = String(val) === sankeyYear;
+      b.className = "year-btn" + (extra || "") + (on ? " is-active" : "");
+      b.dataset.year = val;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.textContent = label;
+      return b;
+    };
+    s.years.forEach(y => wrap.appendChild(make(String(y), String(y))));
+    wrap.appendChild(make("total", "Total 2016–2025", " year-btn--total"));
+    wrap.addEventListener("click", e => {
+      const b = e.target.closest(".year-btn");
+      if (!b) return;
+      sankeyYear = b.dataset.year;
+      wrap.querySelectorAll(".year-btn").forEach(x => {
+        const on = x === b;
+        x.classList.toggle("is-active", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      renderPresentationSankey(sankeyYear);
+    });
+  }
+
+  /* ----------------------------------------------------------------------
    * Explorateur d'indicateurs : un thème + un indicateur = un graphique.
    * -------------------------------------------------------------------- */
   function renderExplorer() {
@@ -601,6 +690,7 @@
     if (sectionRendered.has(id)) return;
     sectionRendered.add(id);
     switch (id) {
+      case "presentation": setupSankeyYearPicker(); renderPresentationSankey(sankeyYear); break;
       case "depenses": renderDepensesPib(false); break;
       case "deficit": renderSolde(false); renderCiseaux(false); break;
       case "productivite": renderProductivite(); break;
@@ -1153,7 +1243,7 @@
     // (« redimensionnement » juste avant le tracé). Les courbes gardent leur tracé : il est
     // rejoué à l'ouverture via __revealReset/__revealPlay, sans reconstruire le SVG.
     prerenderAllCharts() {
-      const ids = ["depenses", "deficit", "productivite", "realite", "niveau", "financement", "monde"];
+      const ids = ["presentation", "depenses", "deficit", "productivite", "realite", "niveau", "financement", "monde"];
       const ric = window.requestIdleCallback || (fn => setTimeout(fn, 1));
       let i = 0;
       const step = () => {

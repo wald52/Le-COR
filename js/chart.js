@@ -1168,5 +1168,230 @@
     return svg;
   }
 
-  window.CORChart = { lineChart, barChart, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
+  /**
+   * Diagramme de Sankey — SVG pur, sans dépendance.
+   * Trois colonnes : sources de financement (gauche) → Système de retraite
+   * (nœud central) → régimes qui versent les pensions (droite). La hauteur de
+   * chaque nœud et l'épaisseur de chaque ruban sont proportionnelles au montant
+   * (en Md€). Sert à répondre « d'où vient l'argent, où va-t-il ? ».
+   *
+   * @param {HTMLElement} container
+   * @param {Object} cfg
+   *   cfg.sources : [{ key, label, color, value }]   — nœuds de gauche (Md€)
+   *   cfg.regimes : [{ key, label, color, value }]   — nœuds de droite (Md€)
+   *   cfg.solde   : number (signé ; < 0 = déficit)   — bouclage du diagramme
+   *   cfg.soldeLabel : { deficit, excedent }
+   *   cfg.centerLabel : libellé du nœud central
+   *   cfg.unit : " Md€" ; cfg.yearLabel : "2025" | "Total 2016–2025"
+   *   cfg.mini : true → illustration de fond (sans libellés ni tableau)
+   *   cfg.ariaLabel, cfg.table
+   */
+  function sankeyChart(container, cfg) {
+    if (container.__revealCancel) container.__revealCancel();
+    container.innerHTML = "";
+
+    const mini = !!cfg.mini;
+    const unit = cfg.unit || " Md€";
+    const fmt = v => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+    // Côté gauche = sources (+ besoin de financement si déficit) ; côté droit =
+    // régimes (+ excédent si solde positif). Les deux côtés somment au même T.
+    const solde = cfg.solde || 0;
+    const left = cfg.sources.map(s => ({ ...s }));
+    const right = cfg.regimes.map(s => ({ ...s }));
+    const sl = cfg.soldeLabel || {};
+    if (solde < -0.05)
+      left.push({ key: "solde", label: sl.deficit || "Déficit", short: sl.shortDeficit || "Déficit", color: "#d11", value: -solde, isSolde: true });
+    else if (solde > 0.05)
+      right.push({ key: "solde", label: sl.excedent || "Excédent", short: sl.shortExcedent || "Excédent", color: "#2e8b57", value: solde, isSolde: true });
+    const sum = arr => arr.reduce((a, b) => a + b.value, 0);
+    const T = Math.max(sum(left), sum(right)) || 1;
+
+    const cw = Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
+    const W = mini ? 360 : Math.max(300, Math.min(cw, 920));
+    const narrow = W < 480;
+
+    // Marges : place pour les libellés (courts) de part et d'autre (hors mini).
+    const M = mini
+      ? { top: 8, right: 10, bottom: 8, left: 10 }
+      : { top: 30, right: narrow ? 104 : 172, bottom: 16, left: narrow ? 104 : 172 };
+    const FS = narrow ? 9.5 : 11.5;   // taille de police des libellés
+    const NODE_W = mini ? 7 : 12;
+    const GAP = mini ? 5 : (narrow ? 13 : 18);
+    const maxN = Math.max(left.length, right.length);
+    // Hauteur cible de la zone de flux, FIXE : on en déduit l'échelle (px/Md€)
+    // pour que le diagramme tienne quelle que soit l'ampleur de T (une année
+    // ≈ 300–425 Md€ vs le cumul ≈ 3 500 Md€).
+    const plotH = mini ? 150 : (narrow ? 480 : 560);
+    const H = Math.round(plotH + M.top + M.bottom);
+    const scale = (plotH - (maxN - 1) * GAP) / T;     // px SVG par Md€
+    const MIN_H = mini ? 2 : 6;   // hauteur mini d'un nœud (lisibilité des libellés)
+
+    const svg = el("svg", {
+      viewBox: `0 0 ${W} ${H}`,
+      class: mini ? "sankey" : "sankey chart-svg", role: mini ? "presentation" : "img"
+    });
+    if (!mini) svg.setAttribute("aria-label", cfg.ariaLabel || "Diagramme de Sankey du financement des retraites");
+    svg.style.overflow = "visible";
+    container.appendChild(svg);
+
+    const colLeftX = M.left;
+    const colRightX = W - M.right - NODE_W;
+    const centerX = (colLeftX + NODE_W + colRightX) / 2 - NODE_W / 2;
+    const centerH = T * scale;
+    const centerY = M.top;   // tout est aligné en haut (les écarts ne sont que sur les colonnes latérales)
+
+    // Empile une colonne de nœuds, renvoie [{ ...item, y0, y1, h }].
+    function stack(items, x) {
+      let y = M.top;
+      return items.map(it => {
+        const h = Math.max(MIN_H, it.value * scale);
+        const node = { ...it, x, y0: y, y1: y + h, h };
+        y += h + GAP;
+        return node;
+      });
+    }
+    const leftNodes = stack(left, colLeftX);
+    const rightNodes = stack(right, colRightX);
+
+    // Tranches sur les bords du nœud central, dans l'ordre des nœuds latéraux.
+    function slices(nodes, fromY) {
+      let y = fromY;
+      const map = {};
+      nodes.forEach(n => { const h = n.value * scale; map[n.key] = { y0: y, y1: y + h }; y += h; });
+      return map;
+    }
+    const inSlices = slices(leftNodes, centerY);
+    const outSlices = slices(rightNodes, centerY);
+
+    const gRibbons = el("g", { class: "sk-ribbons" });
+    const gNodes = el("g", { class: "sk-nodes" });
+    const gLabels = el("g", { class: "sk-labels" });
+    svg.appendChild(gRibbons); svg.appendChild(gNodes); svg.appendChild(gLabels);
+
+    // Ruban entre deux segments verticaux (bord droit d'un nœud → bord gauche).
+    function ribbon(x0, a0, a1, x1, b0, b1) {
+      const xc = (x0 + x1) / 2;
+      return `M${x0},${a0} C${xc},${a0} ${xc},${b0} ${x1},${b0} ` +
+             `L${x1},${b1} C${xc},${b1} ${xc},${a1} ${x0},${a1} Z`;
+    }
+
+    const ribbonEls = [];
+    function addRibbon(node, slice, side) {
+      // « in »  : bord droit de la source → tranche du bord gauche du centre.
+      // « out » : tranche du bord droit du centre → bord gauche du régime.
+      const d = side === "in"
+        ? ribbon(colLeftX + NODE_W, node.y0, node.y1, centerX, slice.y0, slice.y1)
+        : ribbon(centerX + NODE_W, slice.y0, slice.y1, colRightX, node.y0, node.y1);
+      const p = el("path", {
+        d, fill: node.color, "fill-opacity": mini ? 0.5 : 0.42, stroke: "none"
+      });
+      p.__node = node; p.__side = side;
+      gRibbons.appendChild(p);
+      ribbonEls.push(p);
+    }
+    leftNodes.forEach(n => addRibbon(n, inSlices[n.key], "in"));
+    rightNodes.forEach(n => addRibbon(n, outSlices[n.key], "out"));
+
+    // Nœud central.
+    gNodes.appendChild(el("rect", {
+      x: centerX, y: centerY, width: NODE_W, height: centerH, rx: 2,
+      fill: "#334155"
+    }));
+
+    function drawNodes(nodes) {
+      nodes.forEach(n => {
+        gNodes.appendChild(el("rect", {
+          x: n.x, y: n.y0, width: NODE_W, height: n.h, rx: 2,
+          fill: n.color, "fill-opacity": n.isSolde ? 0.9 : 1
+        }));
+      });
+    }
+    drawNodes(leftNodes); drawNodes(rightNodes);
+
+    if (!mini) {
+      const text = (x, y, str, anchor, cls) => {
+        const t = el("text", { x, y, "text-anchor": anchor, class: cls || "sk-label" });
+        t.textContent = str; return t;
+      };
+      const pct = v => Math.round((v / T) * 100);
+      function label(n, anchor) {
+        const x = anchor === "end" ? n.x - 8 : n.x + NODE_W + 8;
+        const cy = (n.y0 + n.y1) / 2;
+        const g = el("g");
+        const name = text(x, cy - 2, n.short || n.label, anchor, "sk-name" + (n.isSolde ? " is-solde" : ""));
+        name.setAttribute("font-size", FS);
+        const val = text(x, cy + FS + 1, fmt(n.value) + unit + "  ·  " + pct(n.value) + " %", anchor, "sk-val");
+        val.setAttribute("font-size", FS - 1.5);
+        g.appendChild(name); g.appendChild(val);
+        gLabels.appendChild(g);
+      }
+      leftNodes.forEach(n => label(n, "end"));
+      rightNodes.forEach(n => label(n, "start"));
+      // Libellé du nœud central (au-dessus).
+      const ct = text(centerX + NODE_W / 2, centerY - 10, (cfg.centerLabel || "Système de retraite") + " · " + fmt(T) + unit, "middle", "sk-center");
+      gLabels.appendChild(ct);
+      // En-têtes de colonnes (masqués en étroit : ils chevaucheraient le nœud
+      // central ; la légende sous le graphique explique déjà gauche/droite).
+      if (!narrow) {
+        const hL = text(colLeftX + NODE_W / 2, M.top - 14, "D'où vient l'argent", "middle", "sk-head");
+        const hR = text(colRightX + NODE_W / 2, M.top - 14, "Où il va (régimes)", "middle", "sk-head");
+        gLabels.appendChild(hL); gLabels.appendChild(hR);
+      }
+    }
+
+    // Survol : met en évidence un flux, estompe les autres (+ infobulle).
+    if (!mini) {
+      const tip = document.createElement("div");
+      tip.className = "chart-tooltip";
+      tip.hidden = true;
+      container.style.position = container.style.position || "relative";
+      container.appendChild(tip);
+      const highlight = on => p => {
+        ribbonEls.forEach(r => { r.setAttribute("fill-opacity", on ? (r === p ? 0.85 : 0.12) : 0.42); });
+        if (on) {
+          const n = p.__node;
+          const dir = p.__side === "in" ? (n.label + " → Système") : ("Système → " + n.label);
+          tip.innerHTML = tipRow(n.color, dir, fmt(n.value) + unit);
+          tip.hidden = false;
+        } else tip.hidden = true;
+      };
+      ribbonEls.forEach(p => {
+        p.style.cursor = "pointer";
+        p.addEventListener("mouseenter", () => highlight(true)(p));
+        p.addEventListener("mousemove", e => {
+          const rect = container.getBoundingClientRect();
+          placeTip(tip, rect, e.clientX - rect.left);
+        });
+        p.addEventListener("mouseleave", () => highlight(false)(p));
+      });
+    }
+
+    if (!mini && cfg.table !== false) buildSankeyTable(container, cfg, leftNodes, rightNodes, T, unit, fmt);
+
+    container.__zoomRender = target => sankeyChart(target, Object.assign({}, cfg, { table: false }));
+    return svg;
+  }
+
+  // Tableau de données accessible du Sankey (sources / régimes, en Md€).
+  function buildSankeyTable(container, cfg, leftNodes, rightNodes, T, unit, fmt) {
+    const pct = v => Math.round((v / T) * 100);
+    const rows = (nodes, head) => {
+      let h = `<tr><th scope="col">${head}</th><th scope="col">${cfg.unit || "Md€"}</th><th scope="col">Part</th></tr>`;
+      nodes.forEach(n => {
+        h += `<tr><th scope="row">${n.label}</th><td>${fmt(n.value)}</td><td>${pct(n.value)} %</td></tr>`;
+      });
+      return h;
+    };
+    const html = `<details class="data-details"><summary class="data-toggle">Voir les données (tableau)</summary>` +
+      `<div class="data-table-wrap"><table><caption class="visually-hidden">${cfg.ariaLabel || "Financement des retraites"}</caption>` +
+      `<thead>${rows([], "Sources de financement — " + (cfg.yearLabel || ""))}</thead>` +
+      `<tbody>${rows(leftNodes, "").replace(/^<tr>.*?<\/tr>/, "")}</tbody>` +
+      `<thead>${rows([], "Emplois par régime")}</thead>` +
+      `<tbody>${rows(rightNodes, "").replace(/^<tr>.*?<\/tr>/, "")}</tbody>` +
+      `</table></div></details>`;
+    container.insertAdjacentHTML("beforeend", html);
+  }
+
+  window.CORChart = { lineChart, barChart, sankeyChart, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
 })();

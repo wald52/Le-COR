@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 
 test("le carousel d'accueil se charge avec son titre", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle(/Ceci est mon COR/i);
+  await expect(page).toHaveTitle(/Le COR/i);
   await expect(page.locator(".cs-title")).toHaveText(/Ceci est mon COR/i);
   await expect(page.locator("body.mode-carousel")).toBeAttached();
 });
@@ -15,11 +15,29 @@ test("le carousel affiche des cartes, des dots et un graphique sur une carte", a
   const cards = page.locator(".cs-track .card");
   await expect(cards).toHaveCount(13);
   await expect(page.locator(".cs-dots .cs-dot")).toHaveCount(13);
-  // La carte d'intro active affiche sa photo…
-  await expect(page.locator(".card.is-active .card-photo")).toBeVisible();
-  // …et la carte suivante (« depenses ») un vrai mini-graphique SVG.
+  // La carte d'accueil active affiche son mini-diagramme de Sankey…
+  await expect(page.locator(".card.is-active .card-chart svg.sankey")).toBeVisible();
+  // …et la carte suivante (« depenses ») un vrai mini-graphique en courbes.
   await page.keyboard.press("ArrowRight");
   await expect(page.locator(".card.is-active .card-chart .chart-svg")).toBeVisible();
+});
+
+test("la carte d'accueil ouvre le diagramme de Sankey du financement, avec sélecteur d'année", async ({ page }) => {
+  await page.goto("/");
+  const active = page.locator('.card.is-active[data-section="presentation"]');
+  await expect(active).toBeVisible();
+  await active.click();
+
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+  // Le diagramme de Sankey se trace…
+  await expect(page.locator(".cd-body #chart-sankey svg.sankey")).toBeVisible();
+  // …avec un sélecteur d'année (2016→2025 + Total).
+  await expect(page.locator(".cd-body #sankey-year-toggle .year-btn")).toHaveCount(11);
+  await expect(page.locator(".year-btn.is-active")).toHaveText("2025");
+  // Cliquer « Total » met à jour le diagramme et le titre.
+  await page.locator(".year-btn--total").click();
+  await expect(page.locator(".year-btn.is-active")).toContainText("Total");
+  await expect(page.locator("#sankey-year-label")).toContainText("Total");
 });
 
 test("un repli <noscript> est présent dans le document", async ({ page }) => {
@@ -35,7 +53,7 @@ test("un lien « Mentions légales » est accessible depuis l'accueil (LCEN/RGPD
 
 test("taper la carte active ouvre la vue détail avec son contenu complet", async ({ page }) => {
   await page.goto("/");
-  // On va sur la carte « depenses » (la 1re carte est désormais l'intro photo).
+  // On va sur la carte « depenses » (la 1re carte ouvre, elle, le Sankey).
   await page.keyboard.press("ArrowRight");
   const active = page.locator('.card.is-active[data-section="depenses"]');
   await expect(active).toBeVisible();
@@ -50,7 +68,7 @@ test("taper la carte active ouvre la vue détail avec son contenu complet", asyn
 
 test("la touche Échap ferme la vue détail et restitue le carousel", async ({ page }) => {
   await page.goto("/");
-  // La 1re carte (intro) n'a pas de vue détail : on ouvre celle de « depenses ».
+  // On ouvre la vue détail de « depenses ».
   await page.keyboard.press("ArrowRight");
   const active = page.locator('.card.is-active[data-section="depenses"]');
   await expect(active).toBeVisible();

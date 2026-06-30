@@ -38,11 +38,6 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-  <!-- Préchargement de l'image LCP (1re carte du carousel). Elle est insérée par
-       JS (js/cards.js) : sans ce preload, le navigateur ne la découvre qu'après
-       l'exécution des scripts, ce qui retarde le Largest Contentful Paint. L'URL
-       doit correspondre exactement à celle posée par cards.js. -->
-  <link rel="preload" as="image" href="./images/intro-cor.webp" fetchpriority="high" />
   <link rel="stylesheet" href="./css/style.min.css" />
   <link rel="stylesheet" href="./css/cards.min.css" />
 
@@ -112,6 +107,45 @@
         d'orientation des retraites</a>.
       </p>
     </noscript>
+
+    <!-- 0. ACCUEIL — D'OÙ VIENT L'ARGENT, OÙ VA-T-IL ? (diagramme de Sankey) -->
+    <section id="presentation" class="band">
+      <div class="container">
+        <h2>D'où vient l'argent des retraites, et où va-t-il&nbsp;?</h2>
+        <p class="section-intro">
+          Bienvenue. Avant les projections et les débats, voici le tableau d'ensemble&nbsp;:
+          en une image, <strong>d'où vient l'argent</strong> qui paie les retraites
+          (cotisations, impôts, transferts…) et <strong>où il va</strong> — les régimes qui
+          versent réellement les pensions. Choisissez une année, ou le cumul de la décennie.
+        </p>
+
+        <figure class="chart-card sankey-card">
+          <figcaption class="chart-title">
+            <strong>Le financement des retraites, des sources aux régimes — <span id="sankey-year-label">2025</span></strong>
+            <span>Flux annuels, en milliards d'euros (Md€) — total&nbsp;: <span id="sankey-total">425&nbsp;Md€</span></span>
+          </figcaption>
+          <div id="sankey-year-toggle" class="year-toggle" role="group"
+               aria-label="Choisir l'année du diagramme de financement"></div>
+          <div id="chart-sankey" class="chart-host"></div>
+          <ul class="sankey-key">
+            <li><span class="sk-side sk-side--in" aria-hidden="true"></span><span><strong>À gauche, d'où vient l'argent</strong> — les <b>sources</b>&nbsp;: cotisations sur les salaires, impôts et taxes affectés (CSG, ITAF), contributions d'équilibre de l'État, transferts d'autres caisses.</span></li>
+            <li><span class="sk-side sk-side--out" aria-hidden="true"></span><span><strong>À droite, où il va</strong> — les <b>régimes</b> qui versent les pensions&nbsp;: régime général (CNAV), complémentaire du privé (AGIRC-ARRCO), fonction publique, régimes spéciaux, indépendants…</span></li>
+            <li><span class="sk-side sk-side--bal" aria-hidden="true"></span><span>Le <b>solde</b> (besoin de financement ou excédent) referme le diagramme&nbsp;: ressources et emplois ne s'équilibrent jamais exactement.</span></li>
+          </ul>
+          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2016–2026 (structure des ressources «&nbsp;Tab&nbsp;2.2&nbsp;» et masses de dépenses par régime)&nbsp;; PIB nominal&nbsp;: INSEE. Montants en Md€ = (% du PIB) × PIB de l'année&nbsp;; regroupements opérés pour la lisibilité. Le détail 2025 figure à la <a href="#financement">section&nbsp;6</a>.</p>
+        </figure>
+
+        <div class="takeaway">
+          <h3>Ce qu'il faut retenir</h3>
+          <p>
+            Les retraites ne sont pas payées que par les cotisations&nbsp;: <strong>impôts, CSG
+            et transferts publics</strong> en financent une part croissante. Et l'argent se
+            répartit entre une mosaïque de <strong>régimes</strong>. Faites varier l'année
+            pour voir ces équilibres se déformer au fil du temps.
+          </p>
+        </div>
+      </div>
+    </section>
 
     <!-- 1. GRAPHIQUE PHARE -->
     <section id="depenses" class="band">
