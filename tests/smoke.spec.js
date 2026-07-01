@@ -35,13 +35,13 @@ test("la carte d'accueil ouvre le Sankey de la structure des ressources (unité 
   await expect(page.locator(".cd-body #sankey-unit-toggle .unit-btn")).toHaveCount(2);
   await expect(page.locator(".cd-body #sankey-year option")).toHaveCount(22);
   await expect(page.locator("#sankey-year-label")).toHaveText("2025");
-  // Changer d'année : le titre suit et la source signale des montants CALCULÉS.
+  // Par défaut « Parts (%) » : source officielle (aucun calcul).
+  await expect(page.locator("#sankey-source")).toContainText(/officielle/i);
+  // Passer en « Milliards € » sur une année ≠ 2025 : la source signale un CALCUL.
+  await page.locator('.cd-body .unit-btn[data-unit="mds"]').click();
   await page.locator(".cd-body #sankey-year").selectOption("2010");
   await expect(page.locator("#sankey-year-label")).toHaveText("2010");
   await expect(page.locator("#sankey-source")).toContainText(/calcul/i);
-  // Passer en « Parts (%) » : la source redevient officielle.
-  await page.locator('.cd-body .unit-btn[data-unit="pct"]').click();
-  await expect(page.locator("#sankey-source")).toContainText(/officielle/i);
 });
 
 test("un repli <noscript> est présent dans le document", async ({ page }) => {

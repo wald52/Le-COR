@@ -332,7 +332,7 @@
    * ou « Milliards € » (officiel en 2025, calculé ailleurs).
    * -------------------------------------------------------------------- */
   let sankeyYear = 2025;       // 2004 … 2025
-  let sankeyUnit = "mds";      // "mds" (Md€) | "pct" (%)
+  let sankeyUnit = "pct";      // "pct" (%) par défaut : 100 % officiel, toutes années | "mds" (Md€)
 
   // Construit la config du moteur Sankey pour une année et une unité.
   // mini:true → version simplifiée pour le fond de la carte (sans libellés).
