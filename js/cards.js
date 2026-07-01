@@ -80,9 +80,9 @@
   }
 
   const MINI = {
-    // Mini-Sankey de fond de la carte d'accueil : sources → régimes (cumul de
-    // la décennie), version simplifiée sans libellés. Construit via l'API
-    // exposée par js/app.js (window.CORSankey).
+    // Mini-Sankey de fond de la carte d'accueil : sources → régimes (structure
+    // 2025, mêmes données que la vue détaillée), sans barres ni libellés — que
+    // les rubans. Construit via l'API exposée par js/app.js (window.CORSankey).
     presentation: t => {
       const api = window.CORSankey;
       if (!api || !sankeyChart) return;

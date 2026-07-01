@@ -156,6 +156,13 @@ body.mode-carousel {
   display: block;
 }
 
+/* Carte de présentation : le mini-Sankey occupe toute la carte (comme une
+   carte « photo »), et non plus la seule bande du haut. Le SVG « couvre » le
+   cadre (preserveAspectRatio slice côté moteur). Même débord 140% pour le
+   parallax. */
+.card[data-section="presentation"] .card-chart { top: 0; left: -20%; width: 140%; height: 100%; }
+.card[data-section="presentation"] .card-chart svg { width: 100%; height: 100%; }
+
 /* Overlay sombre en bas : lisibilité du texte au-dessus du graphique. */
 .card-overlay {
   position: absolute;

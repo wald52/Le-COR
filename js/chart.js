@@ -1229,7 +1229,7 @@
     // Hauteur cible de la zone de flux, FIXE : on en déduit l'échelle (px/Md€)
     // pour que le diagramme tienne quelle que soit l'ampleur de T (une année
     // ≈ 300–425 Md€ vs le cumul ≈ 3 500 Md€).
-    const plotH = mini ? 150 : (narrow ? 480 : 560);
+    const plotH = mini ? 440 : (narrow ? 480 : 560);
     const H = Math.round(plotH + M.top + M.bottom);
     const scale = (plotH - (maxN - 1) * GAP) / T;     // px SVG par Md€
     const MIN_H = mini ? 2 : 6;   // hauteur mini d'un nœud (lisibilité des libellés)
@@ -1239,13 +1239,15 @@
       class: mini ? "sankey" : "sankey chart-svg", role: mini ? "presentation" : "img"
     });
     if (!mini) svg.setAttribute("aria-label", cfg.ariaLabel || "Diagramme de Sankey du financement des retraites");
+    // Mini (fond de carte) : le SVG « couvre » le conteneur pleine hauteur
+    // (comme object-fit:cover), quitte à rogner légèrement les bords latéraux.
+    if (mini) svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
     svg.style.overflow = "visible";
     container.appendChild(svg);
 
     const colLeftX = M.left;
     const colRightX = W - M.right - NODE_W;
     const centerX = (colLeftX + NODE_W + colRightX) / 2 - NODE_W / 2;
-    const centerH = T * scale;
     const centerY = M.top;   // tout est aligné en haut (les écarts ne sont que sur les colonnes latérales)
     // Destination unique (années sans ventilation par régime) : on fusionne le
     // nœud central et la destination → une seule barre à droite (plus lisible).
@@ -1303,21 +1305,8 @@
     leftNodes.forEach(n => addRibbon(n, inSlices[n.key], "in"));
     if (!singleTarget) rightNodes.forEach(n => addRibbon(n, outSlices[n.key], "out"));
 
-    // Nœud central (omis en destination unique : la barre de droite en tient lieu).
-    if (!singleTarget) gNodes.appendChild(el("rect", {
-      x: centerX, y: centerY, width: NODE_W, height: centerH, rx: 2,
-      fill: "#334155"
-    }));
-
-    function drawNodes(nodes) {
-      nodes.forEach(n => {
-        gNodes.appendChild(el("rect", {
-          x: n.x, y: n.y0, width: NODE_W, height: n.h, rx: 2,
-          fill: n.color, "fill-opacity": n.isSolde ? 0.9 : 1
-        }));
-      });
-    }
-    drawNodes(leftNodes); drawNodes(rightNodes);
+    // Aucune barre (rectangle) : on ne garde que les rubans (traits) et les
+    // libellés. Les nœuds servent uniquement à positionner rubans et libellés.
 
     if (!mini) {
       const text = (x, y, str, anchor, cls) => {
