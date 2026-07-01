@@ -1247,6 +1247,9 @@
     const centerX = (colLeftX + NODE_W + colRightX) / 2 - NODE_W / 2;
     const centerH = T * scale;
     const centerY = M.top;   // tout est aligné en haut (les écarts ne sont que sur les colonnes latérales)
+    // Destination unique (années sans ventilation par régime) : on fusionne le
+    // nœud central et la destination → une seule barre à droite (plus lisible).
+    const singleTarget = !!cfg.singleTarget;
 
     // Empile une colonne de nœuds, renvoie [{ ...item, y0, y1, h }].
     function stack(items, x) {
@@ -1268,8 +1271,8 @@
       nodes.forEach(n => { const h = n.value * scale; map[n.key] = { y0: y, y1: y + h }; y += h; });
       return map;
     }
-    const inSlices = slices(leftNodes, centerY);
-    const outSlices = slices(rightNodes, centerY);
+    const inSlices = slices(leftNodes, singleTarget ? rightNodes[0].y0 : centerY);
+    const outSlices = singleTarget ? null : slices(rightNodes, centerY);
 
     const gRibbons = el("g", { class: "sk-ribbons" });
     const gNodes = el("g", { class: "sk-nodes" });
@@ -1288,7 +1291,7 @@
       // « in »  : bord droit de la source → tranche du bord gauche du centre.
       // « out » : tranche du bord droit du centre → bord gauche du régime.
       const d = side === "in"
-        ? ribbon(colLeftX + NODE_W, node.y0, node.y1, centerX, slice.y0, slice.y1)
+        ? ribbon(colLeftX + NODE_W, node.y0, node.y1, singleTarget ? colRightX : centerX, slice.y0, slice.y1)
         : ribbon(centerX + NODE_W, slice.y0, slice.y1, colRightX, node.y0, node.y1);
       const p = el("path", {
         d, fill: node.color, "fill-opacity": mini ? 0.5 : 0.42, stroke: "none"
@@ -1298,10 +1301,10 @@
       ribbonEls.push(p);
     }
     leftNodes.forEach(n => addRibbon(n, inSlices[n.key], "in"));
-    rightNodes.forEach(n => addRibbon(n, outSlices[n.key], "out"));
+    if (!singleTarget) rightNodes.forEach(n => addRibbon(n, outSlices[n.key], "out"));
 
-    // Nœud central.
-    gNodes.appendChild(el("rect", {
+    // Nœud central (omis en destination unique : la barre de droite en tient lieu).
+    if (!singleTarget) gNodes.appendChild(el("rect", {
       x: centerX, y: centerY, width: NODE_W, height: centerH, rx: 2,
       fill: "#334155"
     }));
@@ -1336,14 +1339,16 @@
       }
       leftNodes.forEach(n => label(n, "end"));
       rightNodes.forEach(n => label(n, "start"));
-      // Libellé du nœud central (au-dessus).
-      const ct = text(centerX + NODE_W / 2, centerY - 10, (cfg.centerLabel || "Système de retraite") + " · " + fmt(T) + unit, "middle", "sk-center");
-      gLabels.appendChild(ct);
+      // Libellé du nœud central (au-dessus) — omis en destination unique.
+      if (!singleTarget) {
+        const ct = text(centerX + NODE_W / 2, centerY - 10, (cfg.centerLabel || "Système de retraite") + " · " + fmt(T) + unit, "middle", "sk-center");
+        gLabels.appendChild(ct);
+      }
       // En-têtes de colonnes (masqués en étroit : ils chevaucheraient le nœud
       // central ; la légende sous le graphique explique déjà gauche/droite).
       if (!narrow) {
         const hL = text(colLeftX + NODE_W / 2, M.top - 14, "D'où vient l'argent", "middle", "sk-head");
-        const hR = text(colRightX + NODE_W / 2, M.top - 14, "Où il va (régimes)", "middle", "sk-head");
+        const hR = text(colRightX + NODE_W / 2, M.top - 14, singleTarget ? "Où il va" : "Où il va (régimes)", "middle", "sk-head");
         gLabels.appendChild(hL); gLabels.appendChild(hR);
       }
     }

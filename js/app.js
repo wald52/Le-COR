@@ -344,20 +344,22 @@
     if (!shares) return null;
     const total = s.totalMds[y];
     const pct = unit === "pct";
+    // En %, on garde la valeur NON arrondie (le moteur arrondit pour l'affichage) :
+    // sommer des parts déjà arrondies donnerait un total faux (ex. 100,1 %).
     const sources = s.sources.map(d => ({
       key: d.key, label: d.label, short: d.short, color: d.color,
-      value: pct ? +shares[d.key].toFixed(1) : Math.round((shares[d.key] / 100) * total)
+      value: pct ? shares[d.key] : Math.round((shares[d.key] / 100) * total)
     })).filter(n => n.value > 0);
 
     // Côté « où va l'argent ». Officiel par groupe de régimes en 2025 (rapport
     // 2026) ; pour les autres années, aucune ventilation officielle → un seul
     // nœud agrégé « prestations versées » (= total, officiel en % du PIB).
-    let regimes, solde = 0;
+    let regimes, solde = 0, singleTarget = false;
     if (y === s.officialYear && s.regimes2025) {
       const sumMds = s.regimes2025.reduce((a, b) => a + b.mds, 0);
       regimes = s.regimes2025.map(r => ({
         key: r.key, label: r.label, short: r.short, color: r.color,
-        value: pct ? +((r.mds / sumMds) * 100).toFixed(1) : Math.round(r.mds)
+        value: pct ? (r.mds / sumMds) * 100 : Math.round(r.mds)
       }));
       if (!pct) {
         const sumSrc = sources.reduce((a, b) => a + b.value, 0);
@@ -365,6 +367,10 @@
         solde = sumSrc - sumReg;   // < 0 ⇒ besoin de financement (déficit)
       }
     } else {
+      // Pas de ventilation officielle par régime : une seule destination.
+      // singleTarget ⇒ le moteur fusionne le nœud central et la destination
+      // (une seule barre à droite, plus lisible).
+      singleTarget = true;
       regimes = [{
         key: "pensions", label: "Prestations versées (dépenses du système)",
         short: "Pensions versées", color: "#334155",
@@ -373,7 +379,7 @@
     }
 
     return {
-      sources, regimes, solde,
+      sources, regimes, solde, singleTarget,
       soldeLabel: { deficit: "Besoin de financement", shortDeficit: "Déficit", excedent: "Excédent", shortExcedent: "Excédent" },
       centerLabel: "Système de retraite",
       unit: pct ? " %" : " Md€",
