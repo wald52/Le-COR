@@ -307,54 +307,88 @@ window.COR_DATA = {
   },
 
   /* =========================================================================
-   * 4 quater. DIAGRAMME DE SANKEY DU FINANCEMENT — sources → régimes (Md€)
-   *    « D'où vient l'argent et où va-t-il ? » Jeu de données figé, pré-calculé
-   *    à partir des séries officielles du COR (structure des ressources Tab 2.2 ;
-   *    masses de dépenses par régime) converties en Md€ via le PIB nominal INSEE.
-   *    Par année observée 2016→2025 + « total » (cumul de la décennie).
-   *    Côté gauche : 6 sources de financement (+ flux de solde si déficit/excédent).
-   *    Côté droit : 7 grands régimes + « Autres régimes » (résidu).
+   * 4 quater. STRUCTURE DES RESSOURCES — « d'où vient l'argent des retraites ? »
+   *    Sankey de la carte d'accueil. Distinction stricte officiel / calculé :
+   *    - Parts (%) par année 2004→2025 : OFFICIELLES (COR, rapport 2026, fig. 2.11).
+   *    - Montants 2025 en Md€ : OFFICIELS (COR, tableau 2.2 = 422,23 Md€).
+   *    - Montants des autres années en Md€ : CALCULÉS (parts × PIB nominal INSEE),
+   *      NON publiés tels quels par le COR — signalé dans la source du graphique.
+   *    - Dépenses par groupe de régimes 2025 : COR, rapport 2026 (% du PIB).
    *    Voir aussi la section #financement (inchangée) pour le détail 2025.
    * ====================================================================== */
   sankeyFinancement: {
-    title: "D’où vient l’argent des retraites, et où va-t-il ?",
-    subtitle: "Sources de financement → régimes qui versent les pensions, en Md€",
-    unit: "Md€",
-    source:
-      "COR, rapports annuels 2016–2026 — structure des ressources (Tab 2.2) et masses de dépenses par régime ; PIB nominal : INSEE (comptes nationaux). Montants en Md€ = (% du PIB) × PIB de l’année ; regroupements pour la lisibilité.",
-    years: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    title: "D’où vient l’argent des retraites ?",
+    subtitle: "Structure des ressources du système de retraite",
+    years: [2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    defaultYear: 2025,
     sources: [
-      { key: "cotisations", short: "Cotisations", label: "Cotisations sociales", color: "#1f4e79" },
-      { key: "equilibreFPE", short: "Équilibre FPE", label: "Contribution d'équilibre (FPE)", color: "#2f6fb0" },
-      { key: "itaf", short: "Impôts & CSG", label: "Impôts & taxes affectés (ITAF, CSG)", color: "#c2185b" },
-      { key: "subvSpeciaux", short: "Subv. spéciaux", label: "Subventions aux régimes spéciaux", color: "#e8731c" },
-      { key: "transferts", short: "Transferts", label: "Transferts d'autres organismes", color: "#6aa84f" },
-      { key: "autresProduits", short: "Autres produits", label: "Autres produits", color: "#9c27b0" },
+      { key: "cotisations", label: "Cotisations sociales", short: "Cotisations", color: "#1f4e79" },
+      { key: "equilibreFPE", label: "Contribution d'équilibre (FPE)", short: "Équilibre FPE", color: "#2f6fb0" },
+      { key: "itaf", label: "Impôts & taxes affectés (ITAF, CSG)", short: "Impôts & CSG", color: "#c2185b" },
+      { key: "subvSpeciaux", label: "Subventions aux régimes spéciaux", short: "Subv. spéciaux", color: "#e8731c" },
+      { key: "transferts", label: "Transferts d'autres organismes", short: "Transferts", color: "#6aa84f" },
+      { key: "autresProduits", label: "Produits financiers & autres", short: "Autres produits", color: "#9c27b0" },
     ],
-    regimes: [
-      { key: "cnav", short: "CNAV", label: "CNAV (régime général)", color: "#1f4e79" },
-      { key: "agircArrco", short: "AGIRC-ARRCO", label: "AGIRC-ARRCO (complémentaire privé)", color: "#e8731c" },
-      { key: "fpe", short: "Fonction publique", label: "Fonction publique d'État (FPE)", color: "#6aa84f" },
-      { key: "cnracl", short: "CNRACL", label: "CNRACL (collectivités, hôpitaux)", color: "#c2185b" },
-      { key: "ircantec", short: "IRCANTEC", label: "IRCANTEC (complémentaire public)", color: "#9c27b0" },
-      { key: "msa", short: "MSA", label: "MSA (salariés agricoles)", color: "#2f6fb0" },
-      { key: "rsi", short: "Indépendants", label: "Indépendants (ex-RSI)", color: "#b34700" },
-      { key: "autres", short: "Autres régimes", label: "Autres régimes (SNCF, RATP, CNIEG…)", color: "#8a8f98" },
+    // Parts officielles de la structure des ressources — COR, rapport 2026
+    // (figure 2.11, « rapports à la CCSS 2002-2025 »), en %. Officiel, chaque année.
+    sharesPct: {
+      2004: { cotisations: 65.593, equilibreFPE: 14.01, itaf: 7.125, subvSpeciaux: 2.365, transferts: 8.485, autresProduits: 2.422 },
+      2005: { cotisations: 65.226, equilibreFPE: 14.117, itaf: 7.737, subvSpeciaux: 1.988, transferts: 8.173, autresProduits: 2.759 },
+      2006: { cotisations: 64.669, equilibreFPE: 14.261, itaf: 9.859, subvSpeciaux: 2.377, transferts: 5.716, autresProduits: 3.118 },
+      2007: { cotisations: 64.345, equilibreFPE: 14.237, itaf: 10.174, subvSpeciaux: 2.42, transferts: 5.114, autresProduits: 3.711 },
+      2008: { cotisations: 66.358, equilibreFPE: 12.65, itaf: 10.984, subvSpeciaux: 2.507, transferts: 5.566, autresProduits: 1.935 },
+      2009: { cotisations: 66.412, equilibreFPE: 12.785, itaf: 10.267, subvSpeciaux: 2.435, transferts: 5.407, autresProduits: 2.694 },
+      2010: { cotisations: 67.55, equilibreFPE: 12.943, itaf: 9.985, subvSpeciaux: 2.637, transferts: 5.132, autresProduits: 1.754 },
+      2011: { cotisations: 66.872, equilibreFPE: 13.097, itaf: 11.655, subvSpeciaux: 2.734, transferts: 4.949, autresProduits: 0.693 },
+      2012: { cotisations: 65.15, equilibreFPE: 13.012, itaf: 11.549, subvSpeciaux: 2.763, transferts: 5.43, autresProduits: 2.096 },
+      2013: { cotisations: 64.675, equilibreFPE: 12.617, itaf: 12.066, subvSpeciaux: 2.669, transferts: 5.763, autresProduits: 2.21 },
+      2014: { cotisations: 65.036, equilibreFPE: 12.518, itaf: 12.141, subvSpeciaux: 2.593, transferts: 6.064, autresProduits: 1.649 },
+      2015: { cotisations: 65.11, equilibreFPE: 12.325, itaf: 11.936, subvSpeciaux: 2.576, transferts: 6.382, autresProduits: 1.67 },
+      2016: { cotisations: 65.615, equilibreFPE: 12.334, itaf: 11.964, subvSpeciaux: 2.523, transferts: 6.319, autresProduits: 1.244 },
+      2017: { cotisations: 66.656, equilibreFPE: 12.027, itaf: 11.459, subvSpeciaux: 2.429, transferts: 6.627, autresProduits: 0.801 },
+      2018: { cotisations: 65.828, equilibreFPE: 11.925, itaf: 11.343, subvSpeciaux: 2.392, transferts: 6.522, autresProduits: 1.989 },
+      2019: { cotisations: 65.655, equilibreFPE: 11.792, itaf: 13.002, subvSpeciaux: 2.271, transferts: 4.781, autresProduits: 2.499 },
+      2020: { cotisations: 65.749, equilibreFPE: 12.596, itaf: 13.846, subvSpeciaux: 2.432, transferts: 5.302, autresProduits: 0.076 },
+      2021: { cotisations: 65.815, equilibreFPE: 11.718, itaf: 13.385, subvSpeciaux: 2.196, transferts: 5.213, autresProduits: 1.672 },
+      2022: { cotisations: 66.045, equilibreFPE: 11.659, itaf: 14.033, subvSpeciaux: 2.074, transferts: 4.899, autresProduits: 1.289 },
+      2023: { cotisations: 65.461, equilibreFPE: 11.457, itaf: 14.081, subvSpeciaux: 1.988, transferts: 4.817, autresProduits: 2.196 },
+      2024: { cotisations: 65.461, equilibreFPE: 11.457, itaf: 14.081, subvSpeciaux: 1.988, transferts: 4.817, autresProduits: 2.196 },
+      2025: { cotisations: 65.614, equilibreFPE: 11.676, itaf: 15.322, subvSpeciaux: 1.82, transferts: 3.898, autresProduits: 1.669 },
+    },
+    // Total des ressources en Md€. 2025 = OFFICIEL (COR, tableau 2.2 = 422,23).
+    // Autres années = CALCULÉ (ressources en % du PIB officielles × PIB nominal INSEE).
+    totalMds: { 2004: 209.3, 2005: 217.2, 2006: 227.0, 2007: 237.0, 2008: 246.1, 2009: 255.6, 2010: 251.6, 2011: 261.4, 2012: 275.7, 2013: 287.3, 2014: 295.6, 2015: 300.1, 2016: 307.2, 2017: 317.6, 2018: 323.8, 2019: 332.2, 2020: 326.0, 2021: 344.5, 2022: 366.0, 2023: 381.9, 2024: 403.3, 2025: 422.23 },
+    officialYear: 2025,
+    // Côté « où va l’argent » : dépenses par groupe de régimes en 2025 —
+    // COR, rapport 2026 (% du PIB officiels ; Md€ = × PIB INSEE, donc calculés).
+    regimes2025: [
+      { key: "lura", label: "Régime général (LURA : CNAV + indép.)", short: "Régime général", color: "#1f4e79", pctPib: 6.002, mds: 180.7 },
+      { key: "comp", label: "Régimes complémentaires (AGIRC-ARRCO…)", short: "Complémentaires", color: "#e8731c", pctPib: 4.026, mds: 121.2 },
+      { key: "fpe", label: "Fonction publique d'État (FPE)", short: "Fonction publ. État", color: "#6aa84f", pctPib: 2.154, mds: 64.8 },
+      { key: "cnracl", label: "CNRACL (collectivités, hôpitaux)", short: "CNRACL", color: "#c2185b", pctPib: 0.973, mds: 29.3 },
+      { key: "special", label: "Régimes spéciaux", short: "Régimes spéciaux", color: "#9c27b0", pctPib: 0.636, mds: 19.1 },
+      { key: "nonsal", label: "Non-salariés (base)", short: "Non-salariés", color: "#2f6fb0", pctPib: 0.326, mds: 9.8 },
     ],
-    soldeLabel: { deficit: "Besoin de financement (déficit)", excedent: "Excédent (mise en réserve)", shortDeficit: "Déficit", shortExcedent: "Excédent" },
-    data: {
-      2016: { sources: { cotisations: 201.5, equilibreFPE: 37.9, itaf: 36.7, subvSpeciaux: 7.7, transferts: 19.4, autresProduits: 3.8 }, regimes: { cnav: 122.9, agircArrco: 80.2, fpe: 52.7, cnracl: 20.3, ircantec: 3.3, msa: 5.9, rsi: 7.9, autres: 18.8 }, solde: -4.8, totRes: 307.2, totDep: 312.0 },
-      2017: { sources: { cotisations: 211.7, equilibreFPE: 38.2, itaf: 36.4, subvSpeciaux: 7.7, transferts: 21.0, autresProduits: 2.5 }, regimes: { cnav: 125.4, agircArrco: 82.0, fpe: 53.4, cnracl: 21.0, ircantec: 3.1, msa: 5.9, rsi: 7.9, autres: 19.8 }, solde: -0.9, totRes: 317.6, totDep: 318.5 },
-      2018: { sources: { cotisations: 213.2, equilibreFPE: 38.6, itaf: 36.7, subvSpeciaux: 7.7, transferts: 21.1, autresProduits: 6.4 }, regimes: { cnav: 129.4, agircArrco: 83.9, fpe: 54.4, cnracl: 21.9, ircantec: 3.3, msa: 5.9, rsi: 8.0, autres: 19.8 }, solde: -2.8, totRes: 323.8, totDep: 326.6 },
-      2019: { sources: { cotisations: 218.1, equilibreFPE: 39.2, itaf: 43.2, subvSpeciaux: 7.5, transferts: 15.9, autresProduits: 8.3 }, regimes: { cnav: 133.9, agircArrco: 86.2, fpe: 55.7, cnracl: 22.8, ircantec: 3.5, msa: 5.9, rsi: 8.2, autres: 16.7 }, solde: -0.9, totRes: 332.2, totDep: 333.1 },
-      2020: { sources: { cotisations: 214.3, equilibreFPE: 41.1, itaf: 45.1, subvSpeciaux: 7.9, transferts: 17.3, autresProduits: 0.2 }, regimes: { cnav: 127.3, agircArrco: 81.9, fpe: 52.3, cnracl: 21.9, ircantec: 3.4, msa: 5.5, rsi: 7.8, autres: 40.6 }, solde: -14.8, totRes: 326.0, totDep: 340.8 },
-      2021: { sources: { cotisations: 226.7, equilibreFPE: 40.4, itaf: 46.1, subvSpeciaux: 7.6, transferts: 18.0, autresProduits: 5.8 }, regimes: { cnav: 137.7, agircArrco: 88.2, fpe: 55.8, cnracl: 23.3, ircantec: 3.9, msa: 5.8, rsi: 8.4, autres: 21.7 }, solde: -0.3, totRes: 344.5, totDep: 344.8 },
-      2022: { sources: { cotisations: 241.7, equilibreFPE: 42.7, itaf: 51.4, subvSpeciaux: 7.6, transferts: 17.9, autresProduits: 4.7 }, regimes: { cnav: 147.2, agircArrco: 93.7, fpe: 58.7, cnracl: 24.9, ircantec: 4.0, msa: 6.1, rsi: 8.8, autres: 19.0 }, solde: 3.7, totRes: 366.0, totDep: 362.3 },
-      2023: { sources: { cotisations: 250.0, equilibreFPE: 43.8, itaf: 53.8, subvSpeciaux: 7.6, transferts: 18.4, autresProduits: 8.4 }, regimes: { cnav: 157.7, agircArrco: 100.3, fpe: 62.1, cnracl: 26.7, ircantec: 4.3, msa: 6.4, rsi: 9.4, autres: 14.9 }, solde: 0.0, totRes: 381.9, totDep: 381.9 },
-      2024: { sources: { cotisations: 264.0, equilibreFPE: 46.2, itaf: 56.8, subvSpeciaux: 8.0, transferts: 19.4, autresProduits: 8.9 }, regimes: { cnav: 165.2, agircArrco: 104.5, fpe: 64.1, cnracl: 28.0, ircantec: 4.6, msa: 6.6, rsi: 9.7, autres: 22.3 }, solde: -1.7, totRes: 403.3, totDep: 405.0 },
-      2025: { sources: { cotisations: 275.5, equilibreFPE: 49.0, itaf: 64.3, subvSpeciaux: 7.6, transferts: 16.4, autresProduits: 7.0 }, regimes: { cnav: 171.8, agircArrco: 108.3, fpe: 65.7, cnracl: 29.1, ircantec: 4.8, msa: 6.7, rsi: 10.0, autres: 28.4 }, solde: -5.1, totRes: 419.8, totDep: 424.9 },
-      total: { sources: { cotisations: 2316.7, equilibreFPE: 417.1, itaf: 470.5, subvSpeciaux: 76.9, transferts: 184.8, autresProduits: 56.0 }, regimes: { cnav: 1418.5, agircArrco: 909.2, fpe: 574.9, cnracl: 239.9, ircantec: 38.2, msa: 60.7, rsi: 86.1, autres: 222.0 }, solde: -27.6, totRes: 3522.3, totDep: 3549.9 }
-    }
+    // Détail officiel des ressources 2025 en Md€ — COR, tableau 2.2 (pour le tableau).
+    detail2025: [
+      { label: "Cotisations salariés", mds: 100.88 },
+      { label: "Cotisations employeurs (hors opérateurs État)", mds: 154.58 },
+      { label: "Cotisations non-salariés", mds: 14.51 },
+      { label: "Cotisations des opérateurs de l'État", mds: 7.07 },
+      { label: "Contributions d'équilibre", mds: 49.3 },
+      { label: "Subventions d'équilibre (régimes spéciaux)", mds: 7.69 },
+      { label: "CSG", mds: 21.94 },
+      { label: "ITAF sur revenus d'activité", mds: 17.94 },
+      { label: "ITAF sur la consommation", mds: 17.43 },
+      { label: "Autres ITAF", mds: 7.39 },
+      { label: "Transferts CNAF", mds: 11.25 },
+      { label: "Transferts Unédic", mds: 3.88 },
+      { label: "Autres transferts externes", mds: 1.34 },
+      { label: "Produits financiers", mds: 5.64 },
+      { label: "Autres produits", mds: 1.41 },
+    ],
+    source:
+      "Parts (%) : COR, rapport 2026 (figure 2.11, structure des ressources 2004–2025, d’après les rapports à la CCSS). Montants 2025 en Md€ : COR, tableau 2.2 (422,23 Md€, officiels). Montants des AUTRES années en Md€ : CALCULÉS (parts officielles × PIB nominal INSEE), NON publiés tels quels par le COR. Dépenses par régime 2025 : COR, rapport 2026.",
   },
 
   /* =========================================================================

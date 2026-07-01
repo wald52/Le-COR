@@ -320,92 +320,127 @@
   }
 
   /* ----------------------------------------------------------------------
-   * Sankey du financement (carte d'accueil) : « d'où vient l'argent, où va-t-il ? »
-   * Sources de financement (gauche) → Système de retraite → régimes qui versent
-   * les pensions (droite), en Md€. Données pré-calculées (D.sankeyFinancement) :
-   * chaque année observée 2016→2025 + un « total » cumulé de la décennie.
+   * Sankey de la carte d'accueil : « D'où vient l'argent des retraites ? »
+   * Structure des ressources (gauche) → Système de retraite → emplois (droite).
+   *
+   * DISTINCTION OFFICIEL / CALCULÉ (exigence : ne montrer que des chiffres
+   * officiels, et signaler tout calcul) — cf. D.sankeyFinancement :
+   *   - Parts (%) par année 2004→2025  : OFFICIELLES (COR, fig. 2.11).
+   *   - Montants 2025 en Md€           : OFFICIELS (COR, tableau 2.2).
+   *   - Montants des autres années Md€ : CALCULÉS (parts × PIB INSEE) → signalés.
+   * L'unité est au choix du lecteur : « Parts (%) » (officiel, toutes années)
+   * ou « Milliards € » (officiel en 2025, calculé ailleurs).
    * -------------------------------------------------------------------- */
-  let sankeyYear = "2025"; // "2016"…"2025" | "total"
+  let sankeyYear = 2025;       // 2004 … 2025
+  let sankeyUnit = "mds";      // "mds" (Md€) | "pct" (%)
 
-  const sankeyYearLabel = year =>
-    year === "total" ? "Total 2016–2025" : String(year);
-
-  // Construit la config du moteur Sankey pour une année (ou "total").
+  // Construit la config du moteur Sankey pour une année et une unité.
   // mini:true → version simplifiée pour le fond de la carte (sans libellés).
-  function buildSankeyCfg(year, mini) {
+  function buildSankeyCfg(year, unit, mini) {
     const s = D.sankeyFinancement;
     if (!s) return null;
-    const key = year === "total" ? "total" : Number(year);
-    const d = s.data[key];
-    if (!d) return null;
-    const map = (defs, vals) =>
-      defs.map(def => ({ key: def.key, label: def.label, short: def.short || def.label, color: def.color, value: vals[def.key] || 0 }))
-        .filter(n => n.value > 0);
-    const unit = " " + (s.unit || "Md€");
+    const y = Number(year);
+    const shares = s.sharesPct[y];
+    if (!shares) return null;
+    const total = s.totalMds[y];
+    const pct = unit === "pct";
+    const sources = s.sources.map(d => ({
+      key: d.key, label: d.label, short: d.short, color: d.color,
+      value: pct ? +shares[d.key].toFixed(1) : Math.round((shares[d.key] / 100) * total)
+    })).filter(n => n.value > 0);
+
+    // Côté « où va l'argent ». Officiel par groupe de régimes en 2025 (rapport
+    // 2026) ; pour les autres années, aucune ventilation officielle → un seul
+    // nœud agrégé « prestations versées » (= total, officiel en % du PIB).
+    let regimes, solde = 0;
+    if (y === s.officialYear && s.regimes2025) {
+      const sumMds = s.regimes2025.reduce((a, b) => a + b.mds, 0);
+      regimes = s.regimes2025.map(r => ({
+        key: r.key, label: r.label, short: r.short, color: r.color,
+        value: pct ? +((r.mds / sumMds) * 100).toFixed(1) : Math.round(r.mds)
+      }));
+      if (!pct) {
+        const sumSrc = sources.reduce((a, b) => a + b.value, 0);
+        const sumReg = regimes.reduce((a, b) => a + b.value, 0);
+        solde = sumSrc - sumReg;   // < 0 ⇒ besoin de financement (déficit)
+      }
+    } else {
+      regimes = [{
+        key: "pensions", label: "Prestations versées (dépenses du système)",
+        short: "Pensions versées", color: "#334155",
+        value: pct ? 100 : Math.round(total)
+      }];
+    }
+
     return {
-      sources: map(s.sources, d.sources),
-      regimes: map(s.regimes, d.regimes),
-      solde: d.solde,
-      soldeLabel: s.soldeLabel,
+      sources, regimes, solde,
+      soldeLabel: { deficit: "Besoin de financement", shortDeficit: "Déficit", excedent: "Excédent", shortExcedent: "Excédent" },
       centerLabel: "Système de retraite",
-      unit,
-      yearLabel: sankeyYearLabel(year),
-      ariaLabel: "Financement des retraites — " + sankeyYearLabel(year) +
-        " : sources de financement à gauche, régimes qui versent les pensions à droite, en " +
-        (s.unit || "Md€") + ".",
-      mini: !!mini
+      unit: pct ? " %" : " Md€",
+      decimals: pct ? 1 : 0,
+      showShare: !pct,
+      yearLabel: String(y),
+      mini: !!mini,
+      ariaLabel: "Structure des ressources des retraites — " + y +
+        (pct ? " (parts en %)" : " (en milliards d’euros)")
     };
   }
   // Exposé pour le mini-graphique de fond de carte (js/cards.js).
   window.CORSankey = { buildCfg: buildSankeyCfg };
 
-  function renderPresentationSankey(year) {
+  // Source dynamique : dit clairement ce qui est officiel et ce qui est calculé.
+  function sankeySourceNote(year, unit) {
+    if (unit === "pct")
+      return "Parts officielles — COR, rapport 2026 (figure 2.11, structure des ressources 2004–2025, d’après les rapports à la CCSS).";
+    if (Number(year) === D.sankeyFinancement.officialYear)
+      return "Montants officiels — COR, tableau 2.2 (ressources 2025 = 422,23 Md€). Dépenses par groupe de régimes : COR, rapport 2026.";
+    return "⚠️ Montants CALCULÉS, non publiés tels quels par le COR : parts officielles (COR) × PIB nominal INSEE de l’année. " +
+      "Seules les parts en % (et l’année 2025 en Md€) sont des chiffres officiels du COR.";
+  }
+
+  function renderPresentationSankey() {
     const host = document.getElementById("chart-sankey");
     if (!host) return;
-    if (year) sankeyYear = year;
-    const cfg = buildSankeyCfg(sankeyYear, false);
+    const cfg = buildSankeyCfg(sankeyYear, sankeyUnit, false);
     if (!cfg) return;
     sankeyChart(host, cfg);
     const lbl = document.getElementById("sankey-year-label");
-    if (lbl) lbl.textContent = sankeyYearLabel(sankeyYear);
-    const tot = document.getElementById("sankey-total");
-    if (tot) {
-      const d = D.sankeyFinancement.data[sankeyYear === "total" ? "total" : Number(sankeyYear)];
-      tot.textContent = d ? Math.round(d.totDep).toLocaleString("fr-FR") + " Md€" : "";
-    }
+    if (lbl) lbl.textContent = String(sankeyYear);
+    const src = document.getElementById("sankey-source");
+    if (src) src.textContent = sankeySourceNote(sankeyYear, sankeyUnit);
   }
 
-  // Sélecteur d'année : rangée de boutons (façon segmented control), sans
-  // ambiguïté — chaque année + un bouton « Total » distinct.
-  function setupSankeyYearPicker() {
-    const wrap = document.getElementById("sankey-year-toggle");
-    if (!wrap || wrap.__built) return;
+  // Contrôles : sélecteur d'unité (Parts % / Milliards €) + liste déroulante
+  // d'année (2004→2025). Choix volontairement sans ambiguïté (une seule année
+  // affichée à la fois, unité explicite).
+  function setupSankeyControls() {
     const s = D.sankeyFinancement;
     if (!s) return;
-    wrap.__built = true;
-    const make = (val, label, extra) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      const on = String(val) === sankeyYear;
-      b.className = "year-btn" + (extra || "") + (on ? " is-active" : "");
-      b.dataset.year = val;
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-      b.textContent = label;
-      return b;
-    };
-    s.years.forEach(y => wrap.appendChild(make(String(y), String(y))));
-    wrap.appendChild(make("total", "Total 2016–2025", " year-btn--total"));
-    wrap.addEventListener("click", e => {
-      const b = e.target.closest(".year-btn");
-      if (!b) return;
-      sankeyYear = b.dataset.year;
-      wrap.querySelectorAll(".year-btn").forEach(x => {
-        const on = x === b;
-        x.classList.toggle("is-active", on);
-        x.setAttribute("aria-pressed", on ? "true" : "false");
+    const unitWrap = document.getElementById("sankey-unit-toggle");
+    if (unitWrap && !unitWrap.__built) {
+      unitWrap.__built = true;
+      unitWrap.addEventListener("click", e => {
+        const b = e.target.closest(".unit-btn");
+        if (!b) return;
+        sankeyUnit = b.dataset.unit;
+        unitWrap.querySelectorAll(".unit-btn").forEach(x => {
+          const on = x === b;
+          x.classList.toggle("is-active", on);
+          x.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        renderPresentationSankey();
       });
-      renderPresentationSankey(sankeyYear);
-    });
+    }
+    const sel = document.getElementById("sankey-year");
+    if (sel && !sel.__built) {
+      sel.__built = true;
+      sel.innerHTML = s.years.map(y =>
+        `<option value="${y}"${y === sankeyYear ? " selected" : ""}>${y}</option>`).join("");
+      sel.addEventListener("change", () => {
+        sankeyYear = Number(sel.value);
+        renderPresentationSankey();
+      });
+    }
   }
 
   /* ----------------------------------------------------------------------
@@ -690,7 +725,7 @@
     if (sectionRendered.has(id)) return;
     sectionRendered.add(id);
     switch (id) {
-      case "presentation": setupSankeyYearPicker(); renderPresentationSankey(sankeyYear); break;
+      case "presentation": setupSankeyControls(); renderPresentationSankey(); break;
       case "depenses": renderDepensesPib(false); break;
       case "deficit": renderSolde(false); renderCiseaux(false); break;
       case "productivite": renderProductivite(); break;

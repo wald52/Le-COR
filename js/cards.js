@@ -86,7 +86,7 @@
     presentation: t => {
       const api = window.CORSankey;
       if (!api || !sankeyChart) return;
-      const cfg = api.buildCfg("total", true);
+      const cfg = api.buildCfg(2025, "pct", true);
       if (cfg) sankeyChart(t, cfg);
     },
     depenses: t => miniOverlay(t, S.depensesPib || D.depensesPib, "projections", " %"),

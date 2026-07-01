@@ -316,31 +316,21 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 /* ----------------------------------------------------------------------
  * Diagramme de Sankey du financement (carte d'accueil) + sélecteur d'année.
  * -------------------------------------------------------------------- */
-/* Sélecteur d'année : rangée façon « segmented control », sans ambiguïté. */
-.year-toggle {
-  display: flex; flex-wrap: wrap; gap: 4px;
-  margin: 4px 0 14px; padding: 4px;
-  background: var(--bleu-pale); border-radius: 10px;
+/* Contrôles du Sankey : sélecteur d'unité (Parts % / Milliards €) + année. */
+.sankey-controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  margin: 4px 0 14px;
 }
-.year-btn {
-  font: inherit; font-size: 0.82rem; cursor: pointer;
-  color: var(--gris); background: transparent;
-  border: 1px solid transparent; border-radius: 7px; padding: 6px 12px;
-  flex: 1 1 auto; text-align: center; min-width: 52px;
+.sankey-year-pick {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.85rem; color: var(--gris);
 }
-.year-btn:hover { color: var(--bleu); }
-.year-btn.is-active {
-  color: #fff; background: var(--bleu); font-weight: 600;
-  border-color: var(--bleu); box-shadow: 0 1px 3px rgba(31, 78, 121, 0.18);
+#sankey-year {
+  font: inherit; font-size: 0.9rem; font-weight: 600; color: var(--bleu);
+  padding: 6px 10px; border: 1px solid var(--gris-clair); border-radius: 8px;
+  background: #fff; cursor: pointer;
 }
-.year-btn:focus-visible { outline: 2px solid var(--bleu-clair); outline-offset: 2px; }
-/* Le bouton « Total » est mis à part (séparateur + accent) pour le distinguer
-   nettement des années individuelles. */
-.year-btn--total {
-  flex: 0 0 auto; font-weight: 600; margin-left: 6px;
-  border-left: 2px solid var(--gris-clair); border-radius: 7px;
-}
-.year-btn--total.is-active { background: var(--encre); border-color: var(--encre); }
+#sankey-year:focus-visible { outline: 2px solid var(--bleu-clair); outline-offset: 2px; }
 
 /* Texte du SVG Sankey. */
 .sankey { font-family: var(--police); display: block; width: 100%; height: auto; }
@@ -362,9 +352,8 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .sankey-key .sk-side--bal { background: var(--rouge); }
 
 @media (max-width: 480px) {
-  .year-toggle { gap: 3px; padding: 3px; }
-  .year-btn { font-size: 0.78rem; padding: 6px 8px; min-width: 44px; }
-  .year-btn--total { width: 100%; flex-basis: 100%; margin-left: 0; border-left: 0; margin-top: 3px; }
+  .sankey-controls { gap: 8px 12px; }
+  .sankey-controls .unit-toggle { width: 100%; }
 }
 
 @media (max-width: 480px) {

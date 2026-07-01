@@ -115,33 +115,41 @@
         <p class="section-intro">
           Bienvenue. Avant les projections et les débats, voici le tableau d'ensemble&nbsp;:
           en une image, <strong>d'où vient l'argent</strong> qui paie les retraites
-          (cotisations, impôts, transferts…) et <strong>où il va</strong> — les régimes qui
-          versent réellement les pensions. Choisissez une année, ou le cumul de la décennie.
+          (cotisations, impôts, transferts…) et <strong>où il va</strong>. Choisissez l'unité
+          et l'année. <strong>Uniquement des chiffres officiels du COR</strong>&nbsp;; ce qui est
+          calculé (les montants en euros hors 2025) est signalé sous le graphique.
         </p>
 
         <figure class="chart-card sankey-card">
           <figcaption class="chart-title">
-            <strong>Le financement des retraites, des sources aux régimes — <span id="sankey-year-label">2025</span></strong>
-            <span>Flux annuels, en milliards d'euros (Md€) — total&nbsp;: <span id="sankey-total">425&nbsp;Md€</span></span>
+            <strong>Structure des ressources du système de retraite — <span id="sankey-year-label">2025</span></strong>
+            <span>D'où vient l'argent des retraites, et où il va</span>
           </figcaption>
-          <div id="sankey-year-toggle" class="year-toggle" role="group"
-               aria-label="Choisir l'année du diagramme de financement"></div>
+          <div class="sankey-controls">
+            <div id="sankey-unit-toggle" class="unit-toggle" role="group" aria-label="Unité d'affichage">
+              <button type="button" class="unit-btn is-active" data-unit="mds" aria-pressed="true">Milliards €</button>
+              <button type="button" class="unit-btn" data-unit="pct" aria-pressed="false">Parts (%)</button>
+            </div>
+            <label class="sankey-year-pick">Année&nbsp;:
+              <select id="sankey-year" aria-label="Choisir l'année"></select>
+            </label>
+          </div>
           <div id="chart-sankey" class="chart-host"></div>
           <ul class="sankey-key">
             <li><span class="sk-side sk-side--in" aria-hidden="true"></span><span><strong>À gauche, d'où vient l'argent</strong> — les <b>sources</b>&nbsp;: cotisations sur les salaires, impôts et taxes affectés (CSG, ITAF), contributions d'équilibre de l'État, transferts d'autres caisses.</span></li>
-            <li><span class="sk-side sk-side--out" aria-hidden="true"></span><span><strong>À droite, où il va</strong> — les <b>régimes</b> qui versent les pensions&nbsp;: régime général (CNAV), complémentaire du privé (AGIRC-ARRCO), fonction publique, régimes spéciaux, indépendants…</span></li>
-            <li><span class="sk-side sk-side--bal" aria-hidden="true"></span><span>Le <b>solde</b> (besoin de financement ou excédent) referme le diagramme&nbsp;: ressources et emplois ne s'équilibrent jamais exactement.</span></li>
+            <li><span class="sk-side sk-side--out" aria-hidden="true"></span><span><strong>À droite, où il va</strong> — les <b>régimes</b> qui versent les pensions&nbsp;: régime général, complémentaires, fonction publique, régimes spéciaux… (ventilation officielle disponible pour&nbsp;2025).</span></li>
           </ul>
-          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2016–2026 (structure des ressources «&nbsp;Tab&nbsp;2.2&nbsp;» et masses de dépenses par régime)&nbsp;; PIB nominal&nbsp;: INSEE. Montants en Md€ = (% du PIB) × PIB de l'année&nbsp;; regroupements opérés pour la lisibilité. Le détail 2025 figure à la <a href="#financement">section&nbsp;6</a>.</p>
+          <p class="chart-source"><span id="sankey-source">Montants officiels — COR, tableau 2.2 (ressources 2025 = 422,23 Md€). Dépenses par groupe de régimes : COR, rapport 2026.</span> Le détail 2025 figure à la <a href="#financement">section&nbsp;6</a>.</p>
         </figure>
 
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>
           <p>
             Les retraites ne sont pas payées que par les cotisations&nbsp;: <strong>impôts, CSG
-            et transferts publics</strong> en financent une part croissante. Et l'argent se
-            répartit entre une mosaïque de <strong>régimes</strong>. Faites varier l'année
-            pour voir ces équilibres se déformer au fil du temps.
+            et transferts publics</strong> en financent une part croissante — la part de l'impôt
+            est passée d'environ <strong>7&nbsp;% en 2004 à 15&nbsp;% en 2025</strong>. Passez en
+            «&nbsp;Parts (%)&nbsp;» et faites défiler les années pour voir cette bascule, sur des
+            chiffres officiels du COR.
           </p>
         </div>
       </div>

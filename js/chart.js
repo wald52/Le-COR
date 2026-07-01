@@ -1192,7 +1192,14 @@
 
     const mini = !!cfg.mini;
     const unit = cfg.unit || " Md€";
-    const fmt = v => String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    const dec = cfg.decimals || 0;          // 0 pour Md€, 1 pour %
+    const showShare = cfg.showShare !== false && !cfg.hideShare; // « · X % » à côté du montant
+    const fmt = v => {
+      const s = dec ? v.toFixed(dec) : String(Math.round(v));
+      const [ip, dp] = s.split(".");
+      const ipg = ip.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+      return dp ? ipg + "," + dp : ipg;
+    };
 
     // Côté gauche = sources (+ besoin de financement si déficit) ; côté droit =
     // régimes (+ excédent si solde positif). Les deux côtés somment au même T.
@@ -1321,7 +1328,8 @@
         const g = el("g");
         const name = text(x, cy - 2, n.short || n.label, anchor, "sk-name" + (n.isSolde ? " is-solde" : ""));
         name.setAttribute("font-size", FS);
-        const val = text(x, cy + FS + 1, fmt(n.value) + unit + "  ·  " + pct(n.value) + " %", anchor, "sk-val");
+        const valTxt = fmt(n.value) + unit + (showShare ? "  ·  " + pct(n.value) + " %" : "");
+        const val = text(x, cy + FS + 1, valTxt, anchor, "sk-val");
         val.setAttribute("font-size", FS - 1.5);
         g.appendChild(name); g.appendChild(val);
         gLabels.appendChild(g);

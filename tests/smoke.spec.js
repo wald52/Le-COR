@@ -22,7 +22,7 @@ test("le carousel affiche des cartes, des dots et un graphique sur une carte", a
   await expect(page.locator(".card.is-active .card-chart .chart-svg")).toBeVisible();
 });
 
-test("la carte d'accueil ouvre le diagramme de Sankey du financement, avec sélecteur d'année", async ({ page }) => {
+test("la carte d'accueil ouvre le Sankey de la structure des ressources (unité + année)", async ({ page }) => {
   await page.goto("/");
   const active = page.locator('.card.is-active[data-section="presentation"]');
   await expect(active).toBeVisible();
@@ -31,13 +31,17 @@ test("la carte d'accueil ouvre le diagramme de Sankey du financement, avec séle
   await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
   // Le diagramme de Sankey se trace…
   await expect(page.locator(".cd-body #chart-sankey svg.sankey")).toBeVisible();
-  // …avec un sélecteur d'année (2016→2025 + Total).
-  await expect(page.locator(".cd-body #sankey-year-toggle .year-btn")).toHaveCount(11);
-  await expect(page.locator(".year-btn.is-active")).toHaveText("2025");
-  // Cliquer « Total » met à jour le diagramme et le titre.
-  await page.locator(".year-btn--total").click();
-  await expect(page.locator(".year-btn.is-active")).toContainText("Total");
-  await expect(page.locator("#sankey-year-label")).toContainText("Total");
+  // …avec un sélecteur d'unité (Milliards € / Parts %) et une liste d'années 2004→2025.
+  await expect(page.locator(".cd-body #sankey-unit-toggle .unit-btn")).toHaveCount(2);
+  await expect(page.locator(".cd-body #sankey-year option")).toHaveCount(22);
+  await expect(page.locator("#sankey-year-label")).toHaveText("2025");
+  // Changer d'année : le titre suit et la source signale des montants CALCULÉS.
+  await page.locator(".cd-body #sankey-year").selectOption("2010");
+  await expect(page.locator("#sankey-year-label")).toHaveText("2010");
+  await expect(page.locator("#sankey-source")).toContainText(/calcul/i);
+  // Passer en « Parts (%) » : la source redevient officielle.
+  await page.locator('.cd-body .unit-btn[data-unit="pct"]').click();
+  await expect(page.locator("#sankey-source")).toContainText(/officielle/i);
 });
 
 test("un repli <noscript> est présent dans le document", async ({ page }) => {
