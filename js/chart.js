@@ -1299,13 +1299,13 @@
     function addRibbon(node, slice, side) {
       // « in »  : bord droit de la source → axe central (centerX).
       // « out » : axe central (centerX) → bord gauche du régime.
-      // Les rubans « out » démarrent 1 px À GAUCHE de centerX pour chevaucher
-      // les « in » : les rubans étant OPAQUES (la translucidité est sur le
-      // groupe), ce recouvrement ne fonce pas — il masque simplement tout
-      // raccord, donc ni trou blanc ni liseré sombre au centre.
+      // Les deux côtés partagent EXACTEMENT le bord vertical x = centerX (aucun
+      // recouvrement). Les rubans étant OPAQUES (la translucidité est portée par
+      // le groupe), ce bord jointif est « étanche » : ni trou blanc, ni liseré,
+      // et rien ne franchit l'axe quand un ruban est mis en évidence au survol.
       const d = side === "in"
         ? ribbon(colLeftX + NODE_W, node.y0, node.y1, singleTarget ? colRightX : centerX, slice.y0, slice.y1)
-        : ribbon(centerX - 1, slice.y0, slice.y1, colRightX, node.y0, node.y1);
+        : ribbon(centerX, slice.y0, slice.y1, colRightX, node.y0, node.y1);
       const p = el("path", {
         d, fill: node.color, "fill-opacity": 1, stroke: "none"
       });
