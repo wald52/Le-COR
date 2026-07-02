@@ -1229,7 +1229,7 @@
     // Hauteur cible de la zone de flux, FIXE : on en déduit l'échelle (px/Md€)
     // pour que le diagramme tienne quelle que soit l'ampleur de T (une année
     // ≈ 300–425 Md€ vs le cumul ≈ 3 500 Md€).
-    const plotH = mini ? 440 : (narrow ? 480 : 560);
+    const plotH = mini ? 300 : (narrow ? 480 : 560);
     const H = Math.round(plotH + M.top + M.bottom);
     const scale = (plotH - (maxN - 1) * GAP) / T;     // px SVG par Md€
     const MIN_H = mini ? 2 : 6;   // hauteur mini d'un nœud (lisibilité des libellés)
@@ -1239,9 +1239,10 @@
       class: mini ? "sankey" : "sankey chart-svg", role: mini ? "presentation" : "img"
     });
     if (!mini) svg.setAttribute("aria-label", cfg.ariaLabel || "Diagramme de Sankey du financement des retraites");
-    // Mini (fond de carte) : le SVG « couvre » le conteneur pleine hauteur
-    // (comme object-fit:cover), quitte à rogner légèrement les bords latéraux.
-    if (mini) svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    // Mini (fond de carte) : le SVG tient ENTIER dans le conteneur (comme
+    // object-fit:contain), sans rogner — on veut voir tout le diagramme (fan
+    // sources → régimes) pour comprendre d'un coup d'œil de quoi il s'agit.
+    if (mini) svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     svg.style.overflow = "visible";
     container.appendChild(svg);
 
@@ -1290,11 +1291,15 @@
 
     const ribbonEls = [];
     function addRibbon(node, slice, side) {
-      // « in »  : bord droit de la source → tranche du bord gauche du centre.
-      // « out » : tranche du bord droit du centre → bord gauche du régime.
+      // « in »  : bord droit de la source → axe central (centerX).
+      // « out » : axe central (centerX) → bord gauche du régime.
+      // Les deux groupes se rejoignent sur l'axe centerX. On fait démarrer les
+      // rubans « out » 1 px À GAUCHE de centerX pour qu'ils CHEVAUCHENT les
+      // rubans « in » : sinon un liseré clair (fond de carte) transparaîtrait
+      // au raccord (antialiasing de deux bords translucides jointifs).
       const d = side === "in"
         ? ribbon(colLeftX + NODE_W, node.y0, node.y1, singleTarget ? colRightX : centerX, slice.y0, slice.y1)
-        : ribbon(centerX + NODE_W, slice.y0, slice.y1, colRightX, node.y0, node.y1);
+        : ribbon(centerX - 1, slice.y0, slice.y1, colRightX, node.y0, node.y1);
       const p = el("path", {
         d, fill: node.color, "fill-opacity": mini ? 0.5 : 0.42, stroke: "none"
       });
