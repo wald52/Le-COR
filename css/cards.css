@@ -156,11 +156,11 @@ body.mode-carousel {
   display: block;
 }
 
-/* Carte de présentation : le mini-Sankey occupe la zone HAUTE de la carte
-   (le texte s'affiche en dessous, sur le fond dégradé). Le SVG tient ENTIER
-   dans le cadre (preserveAspectRatio meet côté moteur) : on voit tout le
-   diagramme, non rogné, pour comprendre d'emblée de quoi il s'agit. */
-.card[data-section="presentation"] .card-chart { top: 20px; left: 0; width: 100%; height: 62%; }
+/* Carte de présentation : le mini-Sankey occupe TOUTE la carte (le texte se lit
+   par-dessus l'overlay sombre du bas, comme les cartes « photo »). Le viewBox
+   du mini est au ratio de la carte, donc le SVG (preserveAspectRatio meet) la
+   remplit entièrement sans rogner. */
+.card[data-section="presentation"] .card-chart { top: 0; left: 0; width: 100%; height: 100%; }
 .card[data-section="presentation"] .card-chart svg { width: 100%; height: 100%; }
 
 /* Overlay sombre en bas : lisibilité du texte au-dessus du graphique. */

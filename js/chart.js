@@ -1229,7 +1229,10 @@
     // Hauteur cible de la zone de flux, FIXE : on en déduit l'échelle (px/Md€)
     // pour que le diagramme tienne quelle que soit l'ampleur de T (une année
     // ≈ 300–425 Md€ vs le cumul ≈ 3 500 Md€).
-    const plotH = mini ? 300 : (narrow ? 480 : 560);
+    // Mini : viewBox au ratio de la carte (340×520 ≈ 0,654) pour qu'il remplisse
+    // TOUTE la carte (W=360 ⇒ H≈551 ⇒ plotH≈535, un peu plus « portrait » pour
+    // garantir le plein-hauteur ; marge latérale résiduelle < 2 px, invisible).
+    const plotH = mini ? 540 : (narrow ? 480 : 560);
     const H = Math.round(plotH + M.top + M.bottom);
     const scale = (plotH - (maxN - 1) * GAP) / T;     // px SVG par Md€
     const MIN_H = mini ? 2 : 6;   // hauteur mini d'un nœud (lisibilité des libellés)
@@ -1277,7 +1280,10 @@
     const inSlices = slices(leftNodes, singleTarget ? rightNodes[0].y0 : centerY);
     const outSlices = singleTarget ? null : slices(rightNodes, centerY);
 
-    const gRibbons = el("g", { class: "sk-ribbons" });
+    // Translucidité portée par le GROUPE (et non par chaque ruban) : ainsi le
+    // léger recouvrement des rubans « in »/« out » au centre ne cumule pas les
+    // opacités (pas de liseré sombre) et le raccord reste propre.
+    const gRibbons = el("g", { class: "sk-ribbons", opacity: mini ? 0.5 : 0.42 });
     const gNodes = el("g", { class: "sk-nodes" });
     const gLabels = el("g", { class: "sk-labels" });
     svg.appendChild(gRibbons); svg.appendChild(gNodes); svg.appendChild(gLabels);
@@ -1293,15 +1299,15 @@
     function addRibbon(node, slice, side) {
       // « in »  : bord droit de la source → axe central (centerX).
       // « out » : axe central (centerX) → bord gauche du régime.
-      // Les deux groupes se rejoignent sur l'axe centerX. On fait démarrer les
-      // rubans « out » 1 px À GAUCHE de centerX pour qu'ils CHEVAUCHENT les
-      // rubans « in » : sinon un liseré clair (fond de carte) transparaîtrait
-      // au raccord (antialiasing de deux bords translucides jointifs).
+      // Les rubans « out » démarrent 1 px À GAUCHE de centerX pour chevaucher
+      // les « in » : les rubans étant OPAQUES (la translucidité est sur le
+      // groupe), ce recouvrement ne fonce pas — il masque simplement tout
+      // raccord, donc ni trou blanc ni liseré sombre au centre.
       const d = side === "in"
         ? ribbon(colLeftX + NODE_W, node.y0, node.y1, singleTarget ? colRightX : centerX, slice.y0, slice.y1)
         : ribbon(centerX - 1, slice.y0, slice.y1, colRightX, node.y0, node.y1);
       const p = el("path", {
-        d, fill: node.color, "fill-opacity": mini ? 0.5 : 0.42, stroke: "none"
+        d, fill: node.color, "fill-opacity": 1, stroke: "none"
       });
       p.__node = node; p.__side = side;
       gRibbons.appendChild(p);
@@ -1355,7 +1361,12 @@
       container.style.position = container.style.position || "relative";
       container.appendChild(tip);
       const highlight = on => p => {
-        ribbonEls.forEach(r => { r.setAttribute("fill-opacity", on ? (r === p ? 0.85 : 0.12) : 0.42); });
+        // Au survol, l'opacité passe sur chaque ruban (groupe à 1) pour
+        // pouvoir accentuer le survolé et estomper les autres ; au repos, on
+        // rend les rubans opaques et on rétablit l'opacité du groupe (raccord
+        // central propre, sans liseré).
+        gRibbons.setAttribute("opacity", on ? 1 : 0.42);
+        ribbonEls.forEach(r => { r.setAttribute("fill-opacity", on ? (r === p ? 0.85 : 0.12) : 1); });
         if (on) {
           const n = p.__node;
           const dir = p.__side === "in" ? (n.label + " → Système") : ("Système → " + n.label);
