@@ -582,3 +582,8 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .cor-splash { display: none; }
 }
+
+/* Arrivée par lien profond (…/#section) : on ouvre directement la vue détail,
+   sans passer par l'animation d'accueil. La classe est posée avant le premier
+   rendu par le script inline de index.html (voir aussi js/cards.js). */
+.cor-deeplink .cor-splash { display: none; }

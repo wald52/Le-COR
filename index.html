@@ -7,7 +7,10 @@
        `img-src … data:` est requis par l'export PNG des graphiques (SVG rendu
        via une image data:). `frame-ancestors`/`report-uri` ne sont pas posables
        en <meta> (nécessitent des en-têtes HTTP, indisponibles sur GitHub Pages). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+  <!-- Le hash 'sha256-…' de script-src autorise l'UNIQUE script inline (détection
+       de lien profond, plus bas dans le <head>). Si ce script change, recalculer
+       le hash : node -e 'const f=require("fs"),c=require("crypto");const b=f.readFileSync("index.html","utf8").match(/<script>([\s\S]*?)<\/script>/)[1];console.log("sha256-"+c.createHash("sha256").update(b).digest("base64"))' -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-iNxds61oUJq+wI8GyVXFrNoFM45pXMHjE3/J2Vpubpc='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Le COR et l'évolution des hypothèses sur les retraites</title>
   <meta name="description" content="Un outil citoyen pour visualiser comment les hypothèses du Conseil d'orientation des retraites (COR) évoluent dans le temps, et si ses prévisions se sont réalisées." />
@@ -40,6 +43,17 @@
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./css/style.min.css" />
   <link rel="stylesheet" href="./css/cards.min.css" />
+
+  <!-- Lien profond (…/#depenses) : on marque le document AVANT le premier rendu
+       pour supprimer l'animation d'accueil bleue « Ceci est mon COR ». Sans ce
+       script en <head>, le splash (rendu dès le parsing du <body>) apparaîtrait
+       un bref instant avant que le JS différé puisse le masquer. La règle
+       `.cor-deeplink .cor-splash { display:none }` (css/style.css) fait le reste.
+       Le routage vers la vue détail correspondante est géré par js/cards.js. -->
+  <script>
+    if (location.hash && location.hash !== "#top")
+      document.documentElement.classList.add("cor-deeplink");
+  </script>
 
   <!-- Les scripts sont chargés en fin de page avec `defer` (voir avant
        </body>). On NE les précharge PAS : un `rel="preload" as="script"` les

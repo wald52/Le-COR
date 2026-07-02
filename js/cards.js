@@ -1165,6 +1165,32 @@
       clearTimeout(rt);
       rt = setTimeout(() => { if (!detailOpen) applyTransforms(offset); }, 150);
     });
+
+    // Lien profond : une URL du type …/#depenses (celle que copie le bouton
+    // « copier le lien » de chaque section) doit amener DIRECTEMENT sur la vue
+    // détail de la section demandée, et non sur la 1re carte. On mappe le hash
+    // sur l'`id` de section d'une carte (cards[].image.section) et, si elle a un
+    // détail, on positionne le carousel sur cette carte (pour que la fermeture y
+    // revienne) puis on ouvre son détail via le pipeline existant (openDetail).
+    // Le splash bleu, lui, est déjà neutralisé avant le 1er rendu par le script
+    // inline de index.html (classe `cor-deeplink`, voir css/style.css).
+    openDeepLink();
+  }
+
+  function openDeepLink() {
+    const raw = (location.hash || "").replace(/^#/, "");
+    if (!raw || raw === "top") return;
+    let id;
+    try { id = decodeURIComponent(raw); } catch (e) { id = raw; }
+    const i = cards.findIndex(c => c.image.section === id);
+    if (i < 0 || cards[i].noDetail) return;
+    // Positionne le carousel sur la carte cible sans animation (la fermeture du
+    // détail doit retrouver cette carte), puis ouvre le détail au prochain frame
+    // pour ne pas entrer en concurrence avec le premier applyTransforms.
+    offset = i; index = i;
+    applyTransforms(offset);
+    drawVisibleMinis();
+    requestAnimationFrame(() => { if (!detailOpen) openDetail(i); });
   }
 
   // L'API CORApp est posée à la fin de app.js (même cycle de scripts `defer`,

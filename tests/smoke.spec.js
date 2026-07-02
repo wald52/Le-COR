@@ -120,3 +120,25 @@ test("la navigation au clavier change de carte active", async ({ page }) => {
     .poll(async () => page.locator(".card.is-active .card-title").textContent())
     .not.toBe(titleBefore);
 });
+
+test("un lien profond (#depenses) ouvre directement la vue détail, sans splash", async ({ page }) => {
+  await page.goto("/#depenses");
+  // Le document est marqué « lien profond » → l'animation d'accueil est masquée.
+  await expect(page.locator("html.cor-deeplink")).toBeAttached();
+  await expect(page.locator("#cor-splash")).toBeHidden();
+  // On arrive DIRECTEMENT sur la description détaillée de la section « dépenses ».
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+  await expect(page.locator(".cd-body #chart-pib .chart-svg")).toBeVisible();
+  await expect(page.locator(".cd-body .takeaway")).toContainText(/retenir/i);
+  // Fermer (Échap) revient au carousel, sur la carte « dépenses ».
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".card-detail")).toHaveCount(0);
+  await expect(page.locator('.card.is-active[data-section="depenses"]')).toBeVisible();
+});
+
+test("sans hash, l'accueil normal se charge (splash présent dans le DOM)", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("html.cor-deeplink")).toHaveCount(0);
+  await expect(page.locator("#cor-splash")).toBeAttached();
+  await expect(page.locator(".card-detail")).toHaveCount(0);
+});
