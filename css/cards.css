@@ -211,18 +211,46 @@ body.mode-carousel {
   color: rgba(255, 255, 255, 0.92);
   /* La description complète n'apparaît qu'en plein (la carte active est lisible). */
 }
+/* Appel à l'action « Voir le détail › » : présenté comme une PASTILLE tactile
+   (verre dépoli) et non un simple texte, pour que les visiteurs comprennent qu'on
+   ouvre ici la description détaillée. Même vocabulaire visuel que la bulle de
+   retour .cd-back (fond translucide + flou + ombre douce), mais en blanc pour
+   ressortir sur les photos sombres des cartes. */
 .card-cta {
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  font-size: 0.82rem;
   font-weight: 700;
   color: #fff;
-  opacity: 0.92;
+  opacity: 0.96;
 }
 
 /* Cartes inactives : on atténue le texte (la profondeur vient surtout du JS). */
 .card:not(.is-active) .card-desc,
 .card:not(.is-active) .card-cta { opacity: 0; transition: opacity .2s ease; }
-.card.is-active .card-desc,
-.card.is-active .card-cta { opacity: 1; transition: opacity .25s ease .05s; }
+.card.is-active .card-desc { opacity: 1; transition: opacity .25s ease .05s; }
+.card.is-active .card-cta { opacity: 0.96; transition: opacity .25s ease .05s; }
+
+/* Pulsation d'amorçage : tant qu'aucun détail n'a été ouvert (classe posée en JS
+   à la 1re ouverture, cf. buildDetail), la pastille de la carte active « respire »
+   doucement pour attirer l'œil et inviter au tap. Calquée sur le nudge de la bulle
+   de retour (.cd-back). Se fige définitivement dès la première ouverture. */
+body:not(.cards-detail-seen) .card.is-active .card-cta {
+  animation: card-cta-pulse 1.6s ease-in-out .8s infinite;
+}
+@keyframes card-cta-pulse {
+  0%, 60%, 100% { transform: scale(1); }
+  30%           { transform: scale(1.045); }
+}
 
 /* ---------- Pagination (dots) ---------- */
 .cs-dots {
@@ -493,9 +521,10 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   .card { will-change: auto; }
   .card-chart { will-change: auto; }
   .card-detail.is-open .cd-sheet { animation: none; }
-  /* Pas de balancement : les indices (carrousel, flèche de retour) sont neutralisés. */
+  /* Pas de balancement : les indices (carrousel, flèche de retour, pastille) sont neutralisés. */
   .cs-nav.is-hint { animation: none; }
   .cd-back { animation: none; }
+  .card-cta { animation: none; }
   /* Déploiement des bulles sans transition : changement d'état instantané. */
   .cd-back, .cd-back-label, .cs-nav-label { transition: none; }
 }

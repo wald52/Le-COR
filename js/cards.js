@@ -618,6 +618,9 @@
     if (!section) return null;
     detailOpen = true;
     detailReady = false;           // réarmé à chaque ouverture (voir garde du voile plus bas)
+    // Un détail a été ouvert au moins une fois : on fige définitivement la
+    // pulsation d'amorçage de la pastille « Voir le détail › » (cf. cards.css).
+    document.body.classList.add("cards-detail-seen");
     index = i;
 
     // Empile une entrée d'historique (sans changer l'URL) pour que le bouton
