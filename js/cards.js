@@ -360,6 +360,11 @@
    * -------------------------------------------------------------------- */
   function springTo(target) {
     target = clamp(target, 0, cards.length - 1);
+    // Signale une « interaction » quand l'utilisateur passe réellement à une
+    // autre carte (navigation clavier, dots, fin de swipe). Sert à décider,
+    // côté app.js, quand proposer l'installation de la PWA. On déduplique sur
+    // le changement d'index pour ignorer les recalages sur la même carte.
+    if (target !== index) document.dispatchEvent(new CustomEvent("cor:interaction"));
     index = target;
     drawVisibleMinis();
     if (reduceMotion()) {
@@ -797,6 +802,9 @@
     if (detailOpen) return;
     const refs = buildDetail(i);
     if (!refs) return;
+    // Ouvrir une carte en détail compte comme une « interaction » (cf. springTo)
+    // pour décider quand proposer l'installation de la PWA (voir js/app.js).
+    document.dispatchEvent(new CustomEvent("cor:interaction"));
     const { sheet, scrim, body, backBtn, labelEl, cardInner } = refs;
 
     // Animation d'ouverture : INVERSE de la fermeture par glissement (la feuille

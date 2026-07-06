@@ -1252,6 +1252,133 @@
         navigator.serviceWorker.register("./sw.js").catch(() => {});
       });
     }
+
+    setupInstallPrompt();
+  }
+
+  /* ----------------------------------------------------------------------
+   * Invite d'installation de la PWA, après engagement du visiteur.
+   * On attend 4 « interactions » — ouvertures de carte ou navigations, via
+   * l'événement « cor:interaction » émis par js/cards.js — avant de proposer
+   * l'installation, pour ne pas harceler dès l'arrivée. L'UI est construite en
+   * DOM (aucun <script> inline → conforme à la CSP de la page).
+   * -------------------------------------------------------------------- */
+  function setupInstallPrompt() {
+    const INSTALL_THRESHOLD = 4;
+    let deferredPrompt = null;   // l'événement beforeinstallprompt mis de côté
+    let banner = null;           // la bannière affichée, ou null
+
+    const isStandalone = () =>
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+    // iOS/iPadOS : pas de beforeinstallprompt → on affichera des instructions.
+    // iPadOS 13+ se présente comme un Mac tactile, d'où le second test.
+    const isIOS = () =>
+      /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+    const flag = key => {
+      try { return localStorage.getItem(key) === "1"; } catch { return false; }
+    };
+    const setFlag = key => {
+      try { localStorage.setItem(key, "1"); } catch { /* stockage indisponible */ }
+    };
+    const count = () => {
+      try { return parseInt(localStorage.getItem("cor-interactions") || "0", 10) || 0; }
+      catch { return 0; }
+    };
+
+    document.addEventListener("cor:interaction", () => {
+      const n = count() + 1;
+      try { localStorage.setItem("cor-interactions", String(n)); } catch { /* ignore */ }
+      if (n >= INSTALL_THRESHOLD) maybeShow();
+    });
+
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();        // on garde la main sur le moment d'afficher l'invite
+      deferredPrompt = e;
+      maybeShow();
+    });
+
+    window.addEventListener("appinstalled", () => {
+      setFlag("cor-install-done");
+      hide();
+    });
+
+    function maybeShow() {
+      if (banner) return;                                   // déjà affichée
+      if (isStandalone() || flag("cor-install-done") || flag("cor-install-dismissed")) return;
+      if (count() < INSTALL_THRESHOLD) return;
+      // On a besoin soit de l'invite native différée, soit d'être sur iOS
+      // (où l'installation se fait manuellement, via des instructions).
+      if (!deferredPrompt && !isIOS()) return;
+      show(!deferredPrompt && isIOS());
+    }
+
+    function show(iosMode) {
+      banner = document.createElement("div");
+      banner.className = "cor-install";
+      banner.setAttribute("role", "dialog");
+      banner.setAttribute("aria-label", "Installer l'application");
+
+      const logo = document.createElement("img");
+      logo.className = "cor-install-logo";
+      logo.src = "./icons/icon-192.png";
+      logo.alt = "";
+      logo.width = 40;
+      logo.height = 40;
+
+      const text = document.createElement("div");
+      text.className = "cor-install-text";
+      const tagline = iosMode
+        ? "Appuyez sur " + icon("share") + " Partager, puis « Sur l'écran d'accueil »."
+        : "Accès rapide et consultation hors-ligne, même en avion.";
+      text.innerHTML = "<strong>Installer l'application</strong><span>" + tagline + "</span>";
+
+      const actions = document.createElement("div");
+      actions.className = "cor-install-actions";
+      if (!iosMode) {
+        const installBtn = document.createElement("button");
+        installBtn.type = "button";
+        installBtn.className = "cor-install-btn";
+        installBtn.textContent = "Installer";
+        installBtn.addEventListener("click", async () => {
+          if (!deferredPrompt) { hide(); return; }
+          deferredPrompt.prompt();
+          try { await deferredPrompt.userChoice; } catch { /* ignore */ }
+          deferredPrompt = null;
+          hide();
+        });
+        actions.appendChild(installBtn);
+      }
+
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "cor-install-close";
+      closeBtn.setAttribute("aria-label", "Fermer");
+      closeBtn.innerHTML = icon("close");
+      closeBtn.addEventListener("click", () => {
+        setFlag("cor-install-dismissed");   // ne plus solliciter
+        hide();
+      });
+
+      banner.append(logo, text, actions, closeBtn);
+      document.body.appendChild(banner);
+      requestAnimationFrame(() => banner && banner.classList.add("is-visible"));
+    }
+
+    function hide() {
+      if (!banner) return;
+      const el = banner;
+      banner = null;
+      el.classList.remove("is-visible");
+      el.addEventListener("transitionend", () => el.remove(), { once: true });
+      setTimeout(() => el.remove(), 400);   // filet si transitionend ne se déclenche pas
+    }
+
+    // Seuil déjà atteint lors d'une visite précédente : on retentera dès que
+    // beforeinstallprompt arrive (ou immédiatement sur iOS).
+    maybeShow();
   }
 
   /* ----------------------------------------------------------------------

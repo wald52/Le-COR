@@ -587,3 +587,47 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
    sans passer par l'animation d'accueil. La classe est posée avant le premier
    rendu par le script inline de index.html (voir aussi js/cards.js). */
 .cor-deeplink .cor-splash { display: none; }
+
+/* ---------- Invite d'installation de la PWA (js/app.js) ----------
+   Bannière discrète en bas d'écran, proposée après quelques interactions.
+   Construite en DOM par setupInstallPrompt() ; masquée par défaut hors PWA. */
+.cor-install {
+  position: fixed; left: 50%; bottom: 18px; z-index: 80;
+  transform: translate(-50%, 140%);
+  display: flex; align-items: center; gap: 12px;
+  width: min(560px, calc(100vw - 24px));
+  padding: 12px 14px;
+  background: var(--fond); color: var(--encre);
+  border: 1px solid var(--gris-clair); border-radius: var(--rayon);
+  box-shadow: 0 10px 30px rgba(31, 78, 121, 0.18);
+  opacity: 0; transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+}
+.cor-install.is-visible { transform: translate(-50%, 0); opacity: 1; }
+.cor-install-logo { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 9px; }
+.cor-install-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cor-install-text strong { font-size: 0.95rem; }
+.cor-install-text span { font-size: 0.82rem; color: var(--gris); }
+.cor-install-text .icon { width: 1em; height: 1em; vertical-align: -0.15em; stroke: var(--bleu); }
+.cor-install-actions { flex: 0 0 auto; }
+.cor-install-btn {
+  font: inherit; font-weight: 700; cursor: pointer;
+  background: var(--bleu); color: #fff; border: 0;
+  border-radius: 9px; padding: 9px 16px;
+}
+.cor-install-btn:hover { background: var(--bleu-clair); }
+.cor-install-close {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0; cursor: pointer;
+  background: transparent; border: 0; border-radius: 8px; color: var(--gris);
+}
+.cor-install-close:hover { background: var(--fond-alt); color: var(--encre); }
+.cor-install-close .icon { width: 18px; height: 18px; }
+.cor-install :focus-visible { outline: 2px solid var(--bleu-clair); outline-offset: 2px; }
+
+@media (max-width: 480px) {
+  .cor-install { gap: 10px; padding: 10px 12px; }
+  .cor-install-btn { padding: 9px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cor-install { transition: opacity 0.2s ease; transform: translate(-50%, 0); }
+}

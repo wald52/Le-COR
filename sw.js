@@ -4,7 +4,7 @@
  * dernière version (le navigateur revalide via ETag, donc 304 quasi gratuit
  * si rien n'a changé), avec repli sur le cache si le réseau est absent.
  */
-const CACHE = "le-cor-citoyen-v69";
+const CACHE = "le-cor-citoyen-v70";
 const NETWORK_TIMEOUT_MS = 5000;
 const ASSETS = [
   "./",
@@ -25,7 +25,20 @@ const ASSETS = [
   "./icons/icon.svg",
   "./icons/cor-logo.png",
   // Logo partenaire affiché sur l'accueil : précaché pour l'affichage hors-ligne.
-  "./icons/le-modele-social-francais.png"
+  "./icons/le-modele-social-francais.png",
+  // Icônes du manifest : précachées pour que l'installation et l'affichage de
+  // l'app fonctionnent aussi hors-ligne (dès la première visite).
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable.png",
+  // Images du carrousel (js/cards.js) : chargées seulement à l'ouverture d'une
+  // carte. Précachées ici pour rester disponibles hors-ligne (« mode avion »)
+  // même si les cartes n'ont jamais été ouvertes lors de la première visite.
+  "./images/bayrou.webp",
+  "./images/hypotheses-cockpit.webp",
+  "./images/simulateur-faders.webp",
+  "./images/sources-logos.webp",
+  "./images/explorer-cards.svg"
 ];
 
 self.addEventListener("install", event => {
