@@ -388,6 +388,19 @@
   }
 
   /* ----------------------------------------------------------------------
+   * Recentre INSTANTANÉMENT la carte active (offset entier = `index`).
+   * Ouvrir un détail annule le ressort au pointerdown : `offset` peut alors être
+   * figé sur une position INTERMÉDIAIRE (carte décentrée). On appelle ceci quand
+   * la feuille recouvre le carrousel (fin d'ouverture) → le recentrage est
+   * invisible, et la carte est en position normale au retour, jamais « bloquée ».
+   * -------------------------------------------------------------------- */
+  function centerActiveCard() {
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    offset = index; vel = 0;
+    applyTransforms(offset);
+  }
+
+  /* ----------------------------------------------------------------------
    * Gestes : drag horizontal (swipe), tap (ouvrir), clavier.
    * -------------------------------------------------------------------- */
   function setupGestures() {
@@ -485,6 +498,7 @@
       const sheet = refs.sheet, scrim = refs.scrim;
       const settle = () => {
         detailReady = true;        // ouverture confirmée : le voile peut fermer
+        centerActiveCard();        // recentre la carte sous la feuille (recentrage invisible)
         sheet.style.transform = "";
         sheet.style.borderRadius = "";
         if (scrim) scrim.style.opacity = "1";
@@ -609,6 +623,7 @@
   function freezeOpenAnims() {
     detailReady = true;            // ouverture posée : le voile peut désormais fermer
     setDetailWillChange(false);    // animations d'ouverture terminées → libère les calques
+    centerActiveCard();            // recentre la carte sous la feuille (recentrage invisible)
     openAnims.forEach(a => {
       if (!a) return;
       try { a.commitStyles(); } catch (e) {}
@@ -791,6 +806,7 @@
     if (reduceMotion()) {
       detailEl.classList.add("is-open");
       detailReady = true;          // ouverture immédiate : le voile peut fermer
+      centerActiveCard();          // recentre la carte (pas d'animation à concurrencer)
       body.style.opacity = "1";
       // Pas d'animation à concurrencer : on dessine les graphiques tout de suite.
       const render = pendingDetailRender;
@@ -887,6 +903,11 @@
       // avant la fin de l'ouverture) et réarme l'état pour la prochaine ouverture.
       detailChartsRendered = false;
       pendingDetailRender = null;
+      // Filet de sécurité : si l'ouverture a été interrompue avant le recentrage
+      // (fermeture pendant l'ouverture, ou glissement d'ouverture annulé), `offset`
+      // peut être resté intermédiaire. On resettle en douceur vers la carte active
+      // pour ne jamais laisser une carte figée hors-centre au retour.
+      if (Math.abs(offset - index) > 0.001) springTo(index);
     };
 
     if (reduceMotion()) { finish(); return; }
