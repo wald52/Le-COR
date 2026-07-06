@@ -266,7 +266,7 @@ body.mode-carousel {
    au-dessus car .card-screen (z-index:40) forme son propre contexte d'empilement. */
 .ms-logo {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 28px);
+  top: calc(env(safe-area-inset-top, 0px) + 32px);
   right: 14px;
   z-index: 210;
   flex: none;
