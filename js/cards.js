@@ -197,6 +197,7 @@
   const chartEls = [];   // calque .card-chart de chaque carte (parallax)
   const dotEls = [];
   const miniDrawn = new Set(); // cartes dont le mini-graphique est déjà tracé
+  let lastActive = -1;         // dernier indice actif poussé aux points/flèches
 
   let screen, viewport, track, dotsWrap, prevBtn, nextBtn;
 
@@ -323,8 +324,15 @@
       }
       el.classList.toggle("is-active", i === Math.round(off));
     }
-    updateDots(Math.round(off));
-    updateNav(Math.round(off));
+    // Points/flèches : n'écrire dans le DOM que quand l'indice actif arrondi
+    // change réellement (une seule fois par ressort), pas à chaque frame — sinon
+    // on force un recalcul de style inutile qui saccade légèrement l'animation.
+    const active = Math.round(off);
+    if (active !== lastActive) {
+      lastActive = active;
+      updateDots(active);
+      updateNav(active);
+    }
   }
 
   function updateDots(active) {
@@ -585,8 +593,22 @@
   // en `fill: "both"` garde la priorité sur le style inline dans la cascade et
   // écrase le `transform`/`opacity` posés par le drag → la feuille ne suit pas le
   // doigt (effet « on/off »). Les valeurs commit = valeurs de fin ⇒ aucun saut.
+  // Promotion en calque du voile (.cd-scrim, opacité) et du corps (.cd-body,
+  // transform + opacité, gros sous-arbre) JUSTE avant leurs animations WAAPI, puis
+  // retrait ensuite. `.cd-sheet` garde son `will-change: transform` permanent (CSS).
+  // Sans ça, le calque est créé sur la 1re frame de l'animation → léger à-coup à
+  // l'ouverture/fermeture du détail.
+  function setDetailWillChange(on) {
+    if (!detailEl) return;
+    const scrim = detailEl.querySelector(".cd-scrim");
+    const body = detailEl.querySelector(".cd-body");
+    if (scrim) scrim.style.willChange = on ? "opacity" : "";
+    if (body) body.style.willChange = on ? "transform, opacity" : "";
+  }
+
   function freezeOpenAnims() {
     detailReady = true;            // ouverture posée : le voile peut désormais fermer
+    setDetailWillChange(false);    // animations d'ouverture terminées → libère les calques
     openAnims.forEach(a => {
       if (!a) return;
       try { a.commitStyles(); } catch (e) {}
@@ -778,6 +800,7 @@
       startBackHint(backBtn, labelEl);
       return;
     }
+    setDetailWillChange(true);     // promeut voile + corps avant leurs animations
     const sheetAnim = sheet.animate(
       [
         { transform: "translateY(100%)", borderRadius: "28px" },
@@ -867,6 +890,8 @@
     };
 
     if (reduceMotion()) { finish(); return; }
+
+    setDetailWillChange(true);     // promeut voile + corps avant l'animation de fermeture
 
     // ----- Fermeture par glissement : continuité avec le doigt -----
     // On repart EXACTEMENT de la position courante de la feuille (translateY du
@@ -1161,6 +1186,14 @@
     offset = 0; index = 0;
     applyTransforms(0);
     drawVisibleMinis();
+
+    // Pré-trace les minis hors écran quand le navigateur est libre : plus aucun
+    // mini n'est construit sur la 1re frame d'un changement de carte (fin des
+    // micro-saccades au premier passage sur une carte). `drawMini` est idempotent
+    // (garde `miniDrawn`) → sans effet s'il est déjà tracé.
+    const idlePrefetch = window.requestIdleCallback
+      || (cb => setTimeout(() => cb({ timeRemaining: () => 0 }), 200));
+    idlePrefetch(() => { for (let i = 0; i < cards.length; i++) drawMini(i); });
 
     // Déploie le libellé d'aide de la flèche « suivante » après un court délai,
     // puis le replie à la première prise en main (premier appui sur le carrousel,
