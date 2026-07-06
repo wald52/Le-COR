@@ -1250,8 +1250,6 @@
     // sur l'`id` de section d'une carte (cards[].image.section) et, si elle a un
     // détail, on positionne le carousel sur cette carte (pour que la fermeture y
     // revienne) puis on ouvre son détail via le pipeline existant (openDetail).
-    // Le splash bleu, lui, est déjà neutralisé avant le 1er rendu par le script
-    // inline de index.html (classe `cor-deeplink`, voir css/style.css).
     openDeepLink();
   }
 
