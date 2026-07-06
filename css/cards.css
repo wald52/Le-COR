@@ -266,7 +266,7 @@ body.mode-carousel {
    au-dessus car .card-screen (z-index:40) forme son propre contexte d'empilement. */
 .ms-logo {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  top: calc(env(safe-area-inset-top, 0px) + 28px);
   right: 14px;
   z-index: 210;
   flex: none;
@@ -276,7 +276,7 @@ body.mode-carousel {
 }
 .ms-logo:hover { transform: scale(1.08); }
 .ms-logo-img {
-  width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+  width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
   background: #fff; border: 2px solid #d4af37;
   box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35), 0 0 0 2px rgba(212, 175, 55, 0.12);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
@@ -306,7 +306,7 @@ body.mode-carousel {
 .ms-logo:hover .ms-logo-tip { opacity: 1; visibility: visible; transform: translateY(0); }
 .ms-logo:focus-visible { outline: 3px solid var(--bleu); outline-offset: 3px; border-radius: 50%; }
 @media (max-width: 760px) {
-  .ms-logo-img { width: 36px; height: 36px; }
+  .ms-logo-img { width: 44px; height: 44px; }
   .ms-logo-tip { display: none; }            /* pas de survol sur mobile */
 }
 
