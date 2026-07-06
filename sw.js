@@ -4,7 +4,7 @@
  * dernière version (le navigateur revalide via ETag, donc 304 quasi gratuit
  * si rien n'a changé), avec repli sur le cache si le réseau est absent.
  */
-const CACHE = "le-cor-citoyen-v64";
+const CACHE = "le-cor-citoyen-v65";
 const NETWORK_TIMEOUT_MS = 5000;
 const ASSETS = [
   "./",
@@ -23,7 +23,9 @@ const ASSETS = [
   "./data/cor-explorer.generated.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
-  "./icons/cor-logo.png"
+  "./icons/cor-logo.png",
+  // Logo partenaire affiché sur l'accueil : précaché pour l'affichage hors-ligne.
+  "./icons/le-modele-social-francais.png"
 ];
 
 self.addEventListener("install", event => {

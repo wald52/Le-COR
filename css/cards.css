@@ -258,6 +258,58 @@ body.mode-carousel {
 .cs-legal:hover { opacity: 1; text-decoration: underline; }
 .cs-legal:focus-visible { outline: 2px solid var(--bleu); outline-offset: 2px; opacity: 1; }
 
+/* ---------- Logo partenaire « Le Modèle Social Français » ----------
+   Pastille ronde dorée fixée en haut à droite de l'accueil (carrousel), reprise
+   de l'ancien en-tête et alignée sur le rendu du site partenaire (joursderetraite).
+   Enfant absolu de .card-screen ; z-index au-dessus des cartes (z-index inline
+   ~100) et des flèches (200). Les vues détail (.card-detail, z-index:80) restent
+   au-dessus car .card-screen (z-index:40) forme son propre contexte d'empilement. */
+.ms-logo {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  right: 14px;
+  z-index: 210;
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none; transition: transform 0.2s ease;
+  pointer-events: auto;
+}
+.ms-logo:hover { transform: scale(1.08); }
+.ms-logo-img {
+  width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+  background: #fff; border: 2px solid #d4af37;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35), 0 0 0 2px rgba(212, 175, 55, 0.12);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.ms-logo:hover .ms-logo-img {
+  border-color: #e6c75a;
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+/* pastille « lien externe » en haut à droite du logo */
+.ms-logo::before {
+  content: "🔗"; position: absolute; top: -6px; right: -6px;
+  width: 20px; height: 20px; font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bleu); border: 1px solid #d4af37; border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); z-index: 1;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.ms-logo:hover::before { transform: scale(1.12); background: var(--bleu-clair); }
+/* infobulle au survol — ancrée à droite pour ne jamais déborder de l'écran */
+.ms-logo-tip {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--bleu); color: #fff; font-size: 0.72rem; font-weight: 600;
+  white-space: nowrap; padding: 4px 9px; border-radius: 8px; box-shadow: var(--ombre);
+  opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.ms-logo:hover .ms-logo-tip { opacity: 1; visibility: visible; transform: translateY(0); }
+.ms-logo:focus-visible { outline: 3px solid var(--bleu); outline-offset: 3px; border-radius: 50%; }
+@media (max-width: 760px) {
+  .ms-logo-img { width: 36px; height: 36px; }
+  .ms-logo-tip { display: none; }            /* pas de survol sur mobile */
+}
+
 /* ---------- Flèches de navigation gauche/droite ---------- */
 .cs-nav {
   position: absolute;

@@ -55,6 +55,14 @@ test("un lien « Mentions légales » est accessible depuis l'accueil (LCEN/RGPD
   await expect(legal).toBeVisible();
 });
 
+test("le logo/lien « Le Modèle Social Français » est visible sur l'accueil", async ({ page }) => {
+  await page.goto("/");
+  const ms = page.locator('.ms-logo[href*="linktr.ee"]');
+  await expect(ms).toBeVisible();
+  await expect(ms).toHaveAttribute("target", "_blank");
+  await expect(ms.locator("img.ms-logo-img")).toBeVisible();
+});
+
 test("taper la carte active ouvre la vue détail avec son contenu complet", async ({ page }) => {
   await page.goto("/");
   // On va sur la carte « depenses » (la 1re carte ouvre, elle, le Sankey).

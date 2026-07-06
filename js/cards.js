@@ -1088,6 +1088,19 @@
     screen.className = "card-screen";
     screen.setAttribute("aria-label", "Carousel — Ceci est mon COR");
     screen.innerHTML =
+      // Logo/lien partenaire « Le Modèle Social Français » — pastille ronde dorée
+      // fixée en haut à droite de l'accueil (badge 🔗 + infobulle), pointant vers
+      // le Linktree. Enfant direct de l'écran (hors .cs-viewport) : le clic n'est
+      // pas capté par les gestes du carrousel. Rendu identique au site partenaire
+      // (joursderetraite). Ouvre dans un nouvel onglet (target=_blank + rel de
+      // sécurité). Masqué avec l'accueil (aria-hidden) quand un détail est ouvert.
+      '<a class="ms-logo" href="https://linktr.ee/lemodelesocialfrancais" ' +
+      'target="_blank" rel="noopener noreferrer" ' +
+      'title="Le Modèle Social Français — voir mon Linktree">' +
+      '<img class="ms-logo-img" src="./icons/le-modele-social-francais.png" ' +
+      'alt="Le Modèle Social Français" width="40" height="40" decoding="async" />' +
+      '<span class="ms-logo-tip">🔗 Mon Linktree</span>' +
+      "</a>" +
       '<header class="cs-head">' +
       '<p class="cs-kicker">Outil citoyen · données publiques du COR</p>' +
       '<h1 class="cs-title">Ceci est mon COR</h1>' +
