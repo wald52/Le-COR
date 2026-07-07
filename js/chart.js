@@ -1344,12 +1344,18 @@
       // Les branches trop fines pour héberger deux lignes reçoivent un libellé
       // COMPACT sur une seule ligne (« Nom · X % ») : deux fois moins haut, ce
       // qui évite l'empilement illisible des petites branches du bas. Le texte
-      // est posé relativement au centre `cy` du nœud, puis une passe d'écartement
-      // vertical (ci-dessous) sépare les libellés qui se chevaucheraient encore.
+      // est posé relativement à la hauteur `cy` de la branche, puis une passe
+      // d'écartement vertical (ci-dessous) sépare les libellés qui se
+      // chevaucheraient encore.
       const valStr = n => fmt(n.value) + unit + (showShare ? "  ·  " + pct(n.value) + " %" : "");
-      function buildLabel(n, anchor) {
+      function buildLabel(n, anchor, slice) {
         const x = anchor === "end" ? n.x - 8 : n.x + NODE_W + 8;
-        const cy = (n.y0 + n.y1) / 2;
+        // Hauteur MOYENNE de la branche : milieu entre son extrémité (le nœud,
+        // sur la colonne) et le centre (sa tranche sur le nœud central). Comme
+        // les branches sont inclinées, le libellé se cale ainsi sur le milieu du
+        // ruban plutôt que sur son extrémité.
+        const nodeCy = (n.y0 + n.y1) / 2;
+        const cy = slice ? (nodeCy + (slice.y0 + slice.y1) / 2) / 2 : nodeCy;
         const oneLine = n.h < 2 * lineH;
         const g = el("g");
         const nameCls = "sk-name" + (n.isSolde ? " is-solde" : "");
@@ -1410,8 +1416,8 @@
           }
         });
       }
-      spread(leftNodes.map(n => buildLabel(n, "start")));
-      spread(rightNodes.map(n => buildLabel(n, "end")));
+      spread(leftNodes.map(n => buildLabel(n, "start", inSlices[n.key])));
+      spread(rightNodes.map(n => buildLabel(n, "end", outSlices ? outSlices[n.key] : null)));
       // Libellé du nœud central (au-dessus) — omis en destination unique.
       if (!singleTarget) {
         // Titre du nœud central maintenu en haut du cadre (le nœud, lui, est
