@@ -1350,13 +1350,20 @@
       const valStr = n => fmt(n.value) + unit + (showShare ? "  ·  " + pct(n.value) + " %" : "");
       function buildLabel(n, anchor, slice) {
         const x = anchor === "end" ? n.x - 8 : n.x + NODE_W + 8;
+        const oneLine = n.h < 2 * lineH;
+        const blockH = oneLine ? lineH : 2 * lineH;
         // Hauteur MOYENNE de la branche : milieu entre son extrémité (le nœud,
         // sur la colonne) et le centre (sa tranche sur le nœud central). Comme
         // les branches sont inclinées, le libellé se cale ainsi sur le milieu du
         // ruban plutôt que sur son extrémité.
         const nodeCy = (n.y0 + n.y1) / 2;
-        const cy = slice ? (nodeCy + (slice.y0 + slice.y1) / 2) / 2 : nodeCy;
-        const oneLine = n.h < 2 * lineH;
+        let cy = slice ? (nodeCy + (slice.y0 + slice.y1) / 2) / 2 : nodeCy;
+        // ...mais on borne cette hauteur à la bande du nœud (marge 2 px) pour que
+        // le libellé reste dans SA branche et n'empiète pas sur les voisines :
+        // grandes branches (bande large) → moyenne appliquée ; petites branches
+        // (bande plus fine que le libellé) → retour au centre du nœud.
+        const room = n.h / 2 - blockH / 2 - 2;
+        cy = room > 0 ? Math.min(Math.max(cy, nodeCy - room), nodeCy + room) : nodeCy;
         const g = el("g");
         const nameCls = "sk-name" + (n.isSolde ? " is-solde" : "");
         if (oneLine) {
@@ -1377,7 +1384,7 @@
           g.appendChild(name); g.appendChild(val);
         }
         gLabels.appendChild(g);
-        return { n, x, anchor, cy, g, blockH: oneLine ? lineH : 2 * lineH };
+        return { n, x, anchor, cy, g, blockH };
       }
 
       // Passe d'écartement vertical d'un côté (gauche ou droite) : les libellés
