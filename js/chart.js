@@ -1328,25 +1328,83 @@
         t.textContent = str; return t;
       };
       const pct = v => Math.round((v / T) * 100);
+      const lineH = FS + 3;                 // interligne d'une ligne de libellé
       // Libellé posé À L'INTÉRIEUR de la branche, par-dessus le ruban :
       //  - source (gauche, anchor "start") : le texte part du bord droit du
       //    nœud et s'étend vers la droite, sur le ruban ;
       //  - régime (droite, anchor "end") : le texte finit au bord gauche du
       //    nœud et s'étend vers la gauche, sur le ruban.
-      function label(n, anchor) {
+      // Les branches trop fines pour héberger deux lignes reçoivent un libellé
+      // COMPACT sur une seule ligne (« Nom · X % ») : deux fois moins haut, ce
+      // qui évite l'empilement illisible des petites branches du bas. Le texte
+      // est posé relativement au centre `cy` du nœud, puis une passe d'écartement
+      // vertical (ci-dessous) sépare les libellés qui se chevaucheraient encore.
+      const valStr = n => fmt(n.value) + unit + (showShare ? "  ·  " + pct(n.value) + " %" : "");
+      function buildLabel(n, anchor) {
         const x = anchor === "end" ? n.x - 8 : n.x + NODE_W + 8;
         const cy = (n.y0 + n.y1) / 2;
+        const oneLine = n.h < 2 * lineH;
         const g = el("g");
-        const name = text(x, cy - 2, n.short || n.label, anchor, "sk-name" + (n.isSolde ? " is-solde" : ""));
-        name.setAttribute("font-size", FS);
-        const valTxt = fmt(n.value) + unit + (showShare ? "  ·  " + pct(n.value) + " %" : "");
-        const val = text(x, cy + FS + 1, valTxt, anchor, "sk-val");
-        val.setAttribute("font-size", FS - 1.5);
-        g.appendChild(name); g.appendChild(val);
+        const nameCls = "sk-name" + (n.isSolde ? " is-solde" : "");
+        if (oneLine) {
+          // Nom + valeur sur une seule ligne, via deux tspans (le nom garde son
+          // style ; la valeur reste grise et légèrement plus petite).
+          const t = text(x, cy + FS / 2 - 1, "", anchor, nameCls);
+          t.setAttribute("font-size", FS);
+          const ts1 = el("tspan"); ts1.textContent = n.short || n.label;
+          const ts2 = el("tspan", { class: "sk-val", dx: 6, "font-size": FS - 1.5 });
+          ts2.textContent = "·  " + (showShare ? pct(n.value) + " %" : fmt(n.value) + unit);
+          t.appendChild(ts1); t.appendChild(ts2);
+          g.appendChild(t);
+        } else {
+          const name = text(x, cy - 2, n.short || n.label, anchor, nameCls);
+          name.setAttribute("font-size", FS);
+          const val = text(x, cy + FS + 1, valStr(n), anchor, "sk-val");
+          val.setAttribute("font-size", FS - 1.5);
+          g.appendChild(name); g.appendChild(val);
+        }
         gLabels.appendChild(g);
+        return { n, x, anchor, cy, g, blockH: oneLine ? lineH : 2 * lineH };
       }
-      leftNodes.forEach(n => label(n, "start"));
-      rightNodes.forEach(n => label(n, "end"));
+
+      // Passe d'écartement vertical d'un côté (gauche ou droite) : les libellés
+      // triés par centre sont repoussés pour respecter un écart minimal (demi-
+      // hauteurs de blocs + marge), d'abord vers le bas puis, si le paquet
+      // dépasse en bas, en remontant dans l'espace libre au-dessus (laissé par
+      // les grandes branches). Chaque libellé déplacé nettement est relié à son
+      // ruban par un fin trait. Même idiome que les étiquettes de `lineChart`.
+      function spread(items) {
+        if (!items.length) return;
+        items.sort((a, b) => a.cy - b.cy);
+        const PAD = 3;
+        const gapBetween = (a, b) => (a.blockH + b.blockH) / 2 + PAD;
+        const topY = M.top + items[0].blockH / 2;
+        const botY = M.top + plotH + M.bottom - 4;
+        const y = items.map(it => it.cy);
+        for (let i = 1; i < items.length; i++)
+          if (y[i] - y[i - 1] < gapBetween(items[i - 1], items[i]))
+            y[i] = y[i - 1] + gapBetween(items[i - 1], items[i]);
+        for (let i = items.length - 1; i >= 0; i--) {
+          const lo = botY - items[i].blockH / 2;
+          if (y[i] > lo) y[i] = lo;
+          if (i < items.length - 1 && y[i + 1] - y[i] < gapBetween(items[i], items[i + 1]))
+            y[i] = y[i + 1] - gapBetween(items[i], items[i + 1]);
+        }
+        items.forEach((it, i) => {
+          const dy = Math.max(y[i], topY) - it.cy;
+          if (Math.abs(dy) > 0.5) it.g.setAttribute("transform", `translate(0, ${dy.toFixed(1)})`);
+          // Trait de liaison quand le libellé a dû s'éloigner nettement du ruban.
+          if (Math.abs(dy) > 10) {
+            const above = dy < 0;
+            gLabels.insertBefore(el("line", {
+              x1: it.x, y1: it.cy, x2: it.x, y2: it.cy + dy + (above ? lineH / 2 : -lineH / 2),
+              stroke: it.n.color, "stroke-width": 1, opacity: 0.55
+            }), it.g);
+          }
+        });
+      }
+      spread(leftNodes.map(n => buildLabel(n, "start")));
+      spread(rightNodes.map(n => buildLabel(n, "end")));
       // Libellé du nœud central (au-dessus) — omis en destination unique.
       if (!singleTarget) {
         const ct = text(centerX + NODE_W / 2, centerY - 10, (cfg.centerLabel || "Système de retraite") + " · " + fmt(T) + unit, "middle", "sk-center");
