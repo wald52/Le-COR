@@ -1348,22 +1348,42 @@
       // d'écartement vertical (ci-dessous) sépare les libellés qui se
       // chevaucheraient encore.
       const valStr = n => fmt(n.value) + unit + (showShare ? "  ·  " + pct(n.value) + " %" : "");
+      const CHAR_W = FS * 0.56;             // largeur moyenne d'un caractère (px)
+      // Ordonnée de la ligne médiane d'un ruban à l'abscisse `xT`. Même cubique
+      // de Bézier que `ribbon()` : abscisses de contrôle au milieu, ordonnées
+      // tenues (yA puis yB). On inverse x(t) par bissection puis on évalue y(t).
+      function bezierCenterY(xA, yA, xB, yB, xT) {
+        const xc = (xA + xB) / 2;
+        const xAt = t => { const m = 1 - t; return m*m*m*xA + 3*m*m*t*xc + 3*m*t*t*xc + t*t*t*xB; };
+        let lo = 0, hi = 1;
+        const incr = xB >= xA;
+        for (let k = 0; k < 30; k++) {
+          const t = (lo + hi) / 2, xt = xAt(t);
+          if (incr ? xt < xT : xt > xT) lo = t; else hi = t;
+        }
+        const t = (lo + hi) / 2, m = 1 - t;
+        return m*m*m*yA + 3*m*m*t*yA + 3*m*t*t*yB + t*t*t*yB;
+      }
       function buildLabel(n, anchor, slice) {
         const x = anchor === "end" ? n.x - 8 : n.x + NODE_W + 8;
         const oneLine = n.h < 2 * lineH;
         const blockH = oneLine ? lineH : 2 * lineH;
-        // Hauteur MOYENNE de la branche : milieu entre son extrémité (le nœud,
-        // sur la colonne) et le centre (sa tranche sur le nœud central). Comme
-        // les branches sont inclinées, le libellé se cale ainsi sur le milieu du
-        // ruban plutôt que sur son extrémité.
+        // Caler le libellé sur la LIGNE MÉDIANE de SON ruban, évaluée à l'abscisse
+        // du milieu du texte : le libellé straddle ainsi son propre ruban là où il
+        // est écrit (et non à l'extrémité, où il s'écarterait du ruban incliné et
+        // finirait sur la branche voisine). Grandes branches → bien centrées ;
+        // petites branches → sur leur propre ruban fin.
         const nodeCy = (n.y0 + n.y1) / 2;
-        let cy = slice ? (nodeCy + (slice.y0 + slice.y1) / 2) / 2 : nodeCy;
-        // ...mais on borne cette hauteur à la bande du nœud (marge 2 px) pour que
-        // le libellé reste dans SA branche et n'empiète pas sur les voisines :
-        // grandes branches (bande large) → moyenne appliquée ; petites branches
-        // (bande plus fine que le libellé) → retour au centre du nœud.
-        const room = n.h / 2 - blockH / 2 - 2;
-        cy = room > 0 ? Math.min(Math.max(cy, nodeCy - room), nodeCy + room) : nodeCy;
+        const nChars = (n.short || n.label).length + (oneLine ? 7 : 0);
+        const xMid = anchor === "end" ? x - nChars * CHAR_W / 2 : x + nChars * CHAR_W / 2;
+        let cy;
+        if (!slice) cy = nodeCy;
+        else {
+          const sliceCy = (slice.y0 + slice.y1) / 2;
+          cy = anchor === "end"
+            ? bezierCenterY(centerX, sliceCy, colRightX, nodeCy, xMid)          // ruban « out »
+            : bezierCenterY(colLeftX + NODE_W, nodeCy, centerX, sliceCy, xMid); // ruban « in »
+        }
         const g = el("g");
         const nameCls = "sk-name" + (n.isSolde ? " is-solde" : "");
         if (oneLine) {
