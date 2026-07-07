@@ -1255,14 +1255,14 @@
     const colLeftX = M.left;
     const colRightX = W - M.right - NODE_W;
     const centerX = (colLeftX + NODE_W + colRightX) / 2 - NODE_W / 2;
-    // Nœud central aligné sur le BAS des colonnes latérales (et non le haut).
-    // Les colonnes de nœuds sont plus hautes que le nœud central de la somme des
-    // écarts entre nœuds — (maxN − 1)·GAP. En alignant le centre en bas, ce jeu
-    // est absorbé par les GRANDES branches du haut, qui s'inclinent doucement
-    // (l'inclinaison est imperceptible sur un ruban épais), tandis que les
-    // PETITES branches du bas — les plus sensibles — restent quasi horizontales.
-    // (mini : illustration de fond, comportement d'origine conservé.)
-    const centerY = M.top + (mini ? 0 : (maxN - 1) * GAP);
+    // Nœud central aligné au MILIEU des colonnes latérales. Les colonnes de
+    // nœuds sont plus hautes que le nœud central de la somme des écarts entre
+    // nœuds — (maxN − 1)·GAP. En centrant le nœud central (moitié du jeu en haut,
+    // moitié en bas), la torsion des flux se répartit symétriquement : grandes
+    // branches du haut inclinées vers le bas, petites branches du bas remontant
+    // un peu, et la branche médiane reste la plus droite — le « pivot » est au
+    // centre. (mini : illustration de fond, comportement d'origine conservé.)
+    const centerY = M.top + (mini ? 0 : (maxN - 1) * GAP / 2);
     // Destination unique (années sans ventilation par régime) : on fusionne le
     // nœud central et la destination → une seule barre à droite (plus lisible).
     const singleTarget = !!cfg.singleTarget;
