@@ -1218,11 +1218,14 @@
     const W = mini ? 360 : Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
 
-    // Marges : place pour les libellés (courts) de part et d'autre (hors mini).
+    // Marges : les libellés sont désormais posés À L'INTÉRIEUR des branches
+    // (par-dessus les rubans, près de chaque nœud), on ne réserve donc plus de
+    // large marge latérale pour un libellé extérieur — juste un petit retrait.
+    // Résultat : les rubans s'étendent quasi bord à bord (branches plus larges).
     const M = mini
       ? { top: 8, right: 10, bottom: 8, left: 10 }
-      : { top: 30, right: narrow ? 104 : 172, bottom: 16, left: narrow ? 104 : 172 };
-    const FS = narrow ? 9.5 : 11.5;   // taille de police des libellés
+      : { top: 30, right: narrow ? 16 : 28, bottom: 16, left: narrow ? 16 : 28 };
+    const FS = narrow ? 11.5 : 14;   // taille de police des libellés
     const NODE_W = mini ? 7 : 12;
     const GAP = mini ? 5 : (narrow ? 13 : 18);
     const maxN = Math.max(left.length, right.length);
@@ -1325,6 +1328,11 @@
         t.textContent = str; return t;
       };
       const pct = v => Math.round((v / T) * 100);
+      // Libellé posé À L'INTÉRIEUR de la branche, par-dessus le ruban :
+      //  - source (gauche, anchor "start") : le texte part du bord droit du
+      //    nœud et s'étend vers la droite, sur le ruban ;
+      //  - régime (droite, anchor "end") : le texte finit au bord gauche du
+      //    nœud et s'étend vers la gauche, sur le ruban.
       function label(n, anchor) {
         const x = anchor === "end" ? n.x - 8 : n.x + NODE_W + 8;
         const cy = (n.y0 + n.y1) / 2;
@@ -1337,8 +1345,8 @@
         g.appendChild(name); g.appendChild(val);
         gLabels.appendChild(g);
       }
-      leftNodes.forEach(n => label(n, "end"));
-      rightNodes.forEach(n => label(n, "start"));
+      leftNodes.forEach(n => label(n, "start"));
+      rightNodes.forEach(n => label(n, "end"));
       // Libellé du nœud central (au-dessus) — omis en destination unique.
       if (!singleTarget) {
         const ct = text(centerX + NODE_W / 2, centerY - 10, (cfg.centerLabel || "Système de retraite") + " · " + fmt(T) + unit, "middle", "sk-center");
@@ -1346,9 +1354,12 @@
       }
       // En-têtes de colonnes (masqués en étroit : ils chevaucheraient le nœud
       // central ; la légende sous le graphique explique déjà gauche/droite).
+      // En-têtes ancrés vers l'intérieur du cadre (start à gauche, end à
+      // droite) : avec les marges latérales réduites, un centrage « middle »
+      // ferait déborder ces libellés hors du viewBox.
       if (!narrow) {
-        const hL = text(colLeftX + NODE_W / 2, M.top - 14, "D'où vient l'argent", "middle", "sk-head");
-        const hR = text(colRightX + NODE_W / 2, M.top - 14, singleTarget ? "Où il va" : "Où il va (régimes)", "middle", "sk-head");
+        const hL = text(colLeftX, M.top - 14, "D'où vient l'argent", "start", "sk-head");
+        const hR = text(colRightX + NODE_W, M.top - 14, singleTarget ? "Où il va" : "Où il va (régimes)", "end", "sk-head");
         gLabels.appendChild(hL); gLabels.appendChild(hR);
       }
     }
