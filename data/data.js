@@ -326,8 +326,8 @@ window.COR_DATA = {
       { key: "equilibreFPE", label: "Contribution d'équilibre (FPE)", short: "Équilibre FPE", color: "#2f6fb0" },
       { key: "itaf", label: "Impôts & taxes affectés (ITAF, CSG)", short: "Impôts & CSG", color: "#c2185b" },
       { key: "subvSpeciaux", label: "Subventions aux régimes spéciaux", short: "Subv. spéciaux", color: "#e8731c" },
-      { key: "transferts", label: "Transferts d'autres organismes", short: "Transferts", color: "#6aa84f", labelDy: 8 },
-      { key: "autresProduits", label: "Produits financiers & autres", short: "Autres produits", color: "#9c27b0" },
+      { key: "transferts", label: "Transferts d'autres organismes", short: "Transferts", color: "#6aa84f", labelDy: 2 },
+      { key: "autresProduits", label: "Produits financiers & autres", short: "Autres produits", color: "#9c27b0", labelDy: 7 },
     ],
     // Parts officielles de la structure des ressources — COR, rapport 2026
     // (figure 2.11, « rapports à la CCSS 2002-2025 »), en %. Officiel, chaque année.

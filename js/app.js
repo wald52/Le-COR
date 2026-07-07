@@ -388,7 +388,7 @@
       centerLabel: "Système de retraite",
       unit: pct ? " %" : " Md€",
       decimals: pct ? 1 : 0,
-      showShare: !pct,
+      showShare: false,   // jamais de « · X % » en plus du montant (Md€ = Md€ seul)
       yearLabel: String(y),
       mini: !!mini,
       ariaLabel: "Structure des ressources des retraites — " + y +
