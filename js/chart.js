@@ -1364,26 +1364,48 @@
         const t = (lo + hi) / 2, m = 1 - t;
         return m*m*m*yA + 3*m*m*t*yA + 3*m*t*t*yB + t*t*t*yB;
       }
-      function buildLabel(n, anchor, slice) {
+      // Ordonnée de la ligne médiane du ruban d'une entrée à l'abscisse `x`.
+      const centerAt = (e, x) => !e.slice ? e.cyNode
+        : e.anchor === "end"
+          ? bezierCenterY(centerX, e.cySlice, colRightX, e.cyNode, x)           // ruban « out »
+          : bezierCenterY(colLeftX + NODE_W, e.cyNode, centerX, e.cySlice, x);  // ruban « in »
+      // Construit les libellés d'un côté : chaque libellé est calé sur la médiane
+      // de SON ruban (au milieu du texte), puis borné dans le COULOIR entre le
+      // bord bas du voisin du dessus et le bord haut du voisin du dessous, mesuré
+      // sur toute l'emprise du texte → il ne recouvre jamais une autre branche.
+      function buildSide(nodes, anchor, sliceMap) {
+        const col = nodes.map(n => ({
+          n, anchor,
+          slice: sliceMap ? sliceMap[n.key] : null,
+          cyNode: (n.y0 + n.y1) / 2,
+          cySlice: sliceMap && sliceMap[n.key] ? (sliceMap[n.key].y0 + sliceMap[n.key].y1) / 2 : (n.y0 + n.y1) / 2,
+          h: n.h,
+        }));
+        return col.map((e, i) => buildLabel(e, i, col));
+      }
+      function buildLabel(e, i, col) {
+        const n = e.n, anchor = e.anchor;
         const x = anchor === "end" ? n.x - 8 : n.x + NODE_W + 8;
         const oneLine = n.h < 2 * lineH;
         const blockH = oneLine ? lineH : 2 * lineH;
-        // Caler le libellé sur la LIGNE MÉDIANE de SON ruban, évaluée à l'abscisse
-        // du milieu du texte : le libellé straddle ainsi son propre ruban là où il
-        // est écrit (et non à l'extrémité, où il s'écarterait du ruban incliné et
-        // finirait sur la branche voisine). Grandes branches → bien centrées ;
-        // petites branches → sur leur propre ruban fin.
-        const nodeCy = (n.y0 + n.y1) / 2;
+        // Emprise horizontale du texte et cible = médiane du ruban en son milieu.
         const nChars = (n.short || n.label).length + (oneLine ? 7 : 0);
-        const xMid = anchor === "end" ? x - nChars * CHAR_W / 2 : x + nChars * CHAR_W / 2;
-        let cy;
-        if (!slice) cy = nodeCy;
-        else {
-          const sliceCy = (slice.y0 + slice.y1) / 2;
-          cy = anchor === "end"
-            ? bezierCenterY(centerX, sliceCy, colRightX, nodeCy, xMid)          // ruban « out »
-            : bezierCenterY(colLeftX + NODE_W, nodeCy, centerX, sliceCy, xMid); // ruban « in »
+        const textW = nChars * CHAR_W;
+        const xInner = anchor === "end" ? x - textW : x + textW;
+        const xa = Math.min(x, xInner), xb = Math.max(x, xInner);
+        let cy = centerAt(e, (xa + xb) / 2);
+        // Couloir : rester entre le bord bas du voisin du dessus (col[i-1]) et le
+        // bord haut du voisin du dessous (col[i+1]), sur toute l'emprise du texte
+        // (les rubans ne se croisant pas, seuls les voisins immédiats contraignent).
+        const above = col[i - 1], below = col[i + 1], MG = 1.5;
+        let hiLimit = M.top, loLimit = M.top + plotH;
+        for (let s = 0; s <= 6; s++) {
+          const xx = xa + (xb - xa) * s / 6;
+          if (above) hiLimit = Math.max(hiLimit, centerAt(above, xx) + above.h / 2);
+          if (below) loLimit = Math.min(loLimit, centerAt(below, xx) - below.h / 2);
         }
+        const cyLo = hiLimit + MG + blockH / 2, cyHi = loLimit - MG - blockH / 2;
+        cy = cyLo <= cyHi ? Math.min(Math.max(cy, cyLo), cyHi) : (hiLimit + loLimit) / 2;
         const g = el("g");
         const nameCls = "sk-name" + (n.isSolde ? " is-solde" : "");
         if (oneLine) {
@@ -1443,8 +1465,8 @@
           }
         });
       }
-      spread(leftNodes.map(n => buildLabel(n, "start", inSlices[n.key])));
-      spread(rightNodes.map(n => buildLabel(n, "end", outSlices ? outSlices[n.key] : null)));
+      spread(buildSide(leftNodes, "start", inSlices));
+      spread(buildSide(rightNodes, "end", outSlices));
       // Libellé du nœud central (au-dessus) — omis en destination unique.
       if (!singleTarget) {
         // Titre du nœud central maintenu en haut du cadre (le nœud, lui, est
