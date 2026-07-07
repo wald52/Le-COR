@@ -1472,13 +1472,6 @@
       }
       spread(buildSide(leftNodes, "start", inSlices));
       spread(buildSide(rightNodes, "end", outSlices));
-      // Libellé du nœud central (au-dessus) — omis en destination unique.
-      if (!singleTarget) {
-        // Titre du nœud central maintenu en haut du cadre (le nœud, lui, est
-        // désormais aligné en bas) : il reste un en-tête, au-dessus des branches.
-        const ct = text(centerX + NODE_W / 2, M.top - 10, (cfg.centerLabel || "Système de retraite") + " · " + fmt(T) + unit, "middle", "sk-center");
-        gLabels.appendChild(ct);
-      }
       // En-têtes de colonnes (masqués en étroit : ils chevaucheraient le nœud
       // central ; la légende sous le graphique explique déjà gauche/droite).
       // En-têtes ancrés vers l'intérieur du cadre (start à gauche, end à
