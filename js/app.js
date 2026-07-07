@@ -1091,8 +1091,13 @@
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
-  function setupChartTools() {
-    document.querySelectorAll(".chart-card").forEach((card, i) => {
+  // `root` restreint la recherche des `.chart-card` (par défaut : tout le
+  // document). Le mode carousel passe la <section> ouverte → plus de re-scan
+  // global du DOM à chaque ouverture de détail. Ne mesure PAS la réservation de
+  // titre (reserveTitleSpaceForTools) : celle-ci est calculée une seule fois au
+  // pré-rendu et au redimensionnement, hors du chemin critique d'ouverture.
+  function setupChartTools(root = document) {
+    root.querySelectorAll(".chart-card").forEach((card, i) => {
       if (!card.querySelector("svg") || card.querySelector(".chart-tools")) return;
       const bar = document.createElement("div");
       bar.className = "chart-tools";
@@ -1112,7 +1117,6 @@
       bar.appendChild(zoom); bar.appendChild(dl);
       card.appendChild(bar);
     });
-    reserveTitleSpaceForTools();
   }
 
   // Export CSV rattaché au tableau de données : le bouton `.data-csv` est créé
@@ -1156,14 +1160,21 @@
   // Sur grand écran, la barre d'outils (Agrandir / Télécharger) est en absolu en haut à
   // droite : sans précaution, un titre long passe dessous et devient illisible.
   // On mesure sa largeur réelle (qui dépend de la police du système) et on
-  // l'expose au CSS via --chart-tools-w, qui réserve d'autant la droite du titre.
+  // l'expose au CSS via --chart-tools-w, qui réserve d'autant la droite du titre
+  // (cf. `.chart-title strong` dans style.css, propriété HÉRITÉE).
   // Sous 760px la barre passe en pied de carte (en flux) : aucune réservation.
+  //
+  // Toutes les barres d'outils sont identiques (mêmes deux boutons) → on ne mesure
+  // qu'UNE seule barre et on pose la variable sur :root, d'où elle est héritée par
+  // tous les titres. Une seule lecture de `offsetWidth` au total (au lieu d'une par
+  // carte) → plus de reflow forcé répété. Calculée une fois au pré-rendu et
+  // recalculée uniquement au redimensionnement de largeur (cf. init).
   function reserveTitleSpaceForTools() {
+    const root = document.documentElement.style;
     const desktop = !window.matchMedia("(max-width: 760px)").matches;
-    document.querySelectorAll(".chart-card").forEach(card => {
-      const bar = card.querySelector(".chart-tools");
-      if (bar) card.style.setProperty("--chart-tools-w", desktop ? bar.offsetWidth + "px" : "0px");
-    });
+    if (!desktop) { root.setProperty("--chart-tools-w", "0px"); return; }
+    const bar = document.querySelector(".chart-tools");
+    if (bar) root.setProperty("--chart-tools-w", bar.offsetWidth + "px");
   }
 
   function slug(s) {
@@ -1396,8 +1407,12 @@
   window.CORApp = {
     renderSection(id) {
       renderSectionOnce(id);   // rendu une seule fois : pas de re-tracé (donc pas de saut)
-      setupChartTools();
-      reserveTitleSpaceForTools();
+      // Restreint la (re)pose des outils à la section ouverte → plus de re-scan
+      // global du DOM. La réservation d'espace du titre (--chart-tools-w) n'est PAS
+      // recalculée ici : elle l'a été une fois au pré-rendu et l'est au resize, et
+      // n'est pas fonction de la carte ouverte → on évite un reflow forcé sur le
+      // chemin critique d'ouverture.
+      setupChartTools(document.getElementById(id) || document);
     },
     ensureExplorer,
     // Le carrousel (js/cards.js) prend la main sur le rendu des graphiques via

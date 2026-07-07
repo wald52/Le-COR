@@ -234,6 +234,17 @@ body.mode-carousel {
   opacity: 0.96;
 }
 
+/* Pendant le mouvement des cartes (ressort ou drag — classe posée par js/cards.js),
+   on NEUTRALISE les backdrop-filter des pastilles (chapitre + « Voir le détail »).
+   Ré-échantillonner un flou d'arrière-plan à chaque frame, pour 14 cartes qui se
+   déplacent, est l'effet le plus coûteux du carrousel (surtout mobile). Au repos
+   (classe retirée en fin de ressort), le « verre dépoli » revient à l'identique. */
+body.cards-animating .card-chapter,
+body.cards-animating .card-cta {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 /* Cartes inactives : on atténue le texte (la profondeur vient surtout du JS). */
 .card:not(.is-active) .card-desc,
 .card:not(.is-active) .card-cta { opacity: 0; transition: opacity .2s ease; }

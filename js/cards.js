@@ -197,7 +197,8 @@
   const chartEls = [];   // calque .card-chart de chaque carte (parallax)
   const dotEls = [];
   const miniDrawn = new Set(); // cartes dont le mini-graphique est déjà tracé
-  let lastActive = -1;         // dernier indice actif poussé aux points/flèches
+  const lastZ = [];            // dernier zIndex écrit par carte (évite les ré-écritures par frame)
+  let lastActive = -1;         // dernier indice actif poussé aux points/flèches/classe is-active
 
   let screen, viewport, track, dotsWrap, prevBtn, nextBtn;
 
@@ -312,7 +313,11 @@
       el.style.transform =
         `translate3d(${d * STEP}px,0,0) scale(${scale}) rotate(${rot}deg)`;
       el.style.opacity = String(opacity);
-      el.style.zIndex = String(100 - Math.round(Math.abs(d) * 10));
+      // zIndex ne change qu'à des seuils entiers de distance : on ne le ré-écrit
+      // que lorsqu'il varie réellement, pas à chaque frame (une écriture de zIndex
+      // invalide le style/l'ordre d'empilement → coût inutile pendant le ressort).
+      const z = 100 - Math.round(Math.abs(d) * 10);
+      if (lastZ[i] !== z) { el.style.zIndex = String(z); lastZ[i] = z; }
       const chart = chartEls[i];
       if (chart) {
         // Parallax : le graphique se déplace plus lentement que la carte.
@@ -322,13 +327,15 @@
         const dp = clamp(d, -1, 1);
         chart.style.transform = `translate3d(${(-dp * STEP * PARALLAX_AMOUNT).toFixed(2)}px,0,0)`;
       }
-      el.classList.toggle("is-active", i === Math.round(off));
     }
-    // Points/flèches : n'écrire dans le DOM que quand l'indice actif arrondi
-    // change réellement (une seule fois par ressort), pas à chaque frame — sinon
-    // on force un recalcul de style inutile qui saccade légèrement l'animation.
+    // Points/flèches ET classe `is-active` : n'écrire dans le DOM que quand
+    // l'indice actif arrondi change réellement (une seule fois par ressort), pas à
+    // chaque frame — sinon on force un recalcul de style/classe inutile sur les 14
+    // cartes qui saccade légèrement l'animation.
     const active = Math.round(off);
     if (active !== lastActive) {
+      if (cardEls[lastActive]) cardEls[lastActive].classList.remove("is-active");
+      if (cardEls[active]) cardEls[active].classList.add("is-active");
       lastActive = active;
       updateDots(active);
       updateNav(active);
@@ -356,6 +363,15 @@
   }
 
   /* ----------------------------------------------------------------------
+   * Indicateur « les cartes bougent » (ressort ou drag en cours). Pendant le
+   * mouvement, le CSS neutralise les `backdrop-filter` des cartes (pastilles
+   * chapitre / « Voir le détail ») : ces flous, ré-échantillonnés à chaque frame
+   * pour 14 cartes, sont l'effet le plus coûteux en mouvement. Au repos, l'effet
+   * « verre dépoli » revient à l'identique. Idempotent (toggle sur classe).
+   * -------------------------------------------------------------------- */
+  function setAnimating(on) { document.body.classList.toggle("cards-animating", on); }
+
+  /* ----------------------------------------------------------------------
    * Snap « spring » vers une carte cible.
    * -------------------------------------------------------------------- */
   function springTo(target) {
@@ -370,8 +386,10 @@
     if (reduceMotion()) {
       offset = target; vel = 0;
       applyTransforms(offset);
+      setAnimating(false);
       return;
     }
+    setAnimating(true);
     if (raf) cancelAnimationFrame(raf);
     let last = performance.now();
     const step = now => {
@@ -385,6 +403,7 @@
       if (Math.abs(offset - target) < 0.001 && Math.abs(vel) < 0.01) {
         offset = target; vel = 0; raf = null;
         applyTransforms(offset);
+        setAnimating(false);
         return;
       }
       raf = requestAnimationFrame(step);
@@ -403,6 +422,7 @@
     if (raf) { cancelAnimationFrame(raf); raf = null; }
     offset = index; vel = 0;
     applyTransforms(offset);
+    setAnimating(false);
   }
 
   /* ----------------------------------------------------------------------
@@ -418,6 +438,7 @@
     viewport.addEventListener("pointerdown", e => {
       if (detailOpen) return;
       dragging = true; axis = null;
+      setAnimating(true);   // le doigt va (peut-être) déplacer les cartes : coupe les flous coûteux
       // On mémorise la carte sous le doigt MAINTENANT : après setPointerCapture,
       // e.target des événements suivants devient le viewport, plus la carte.
       downCard = e.target.closest && e.target.closest(".card");
@@ -557,8 +578,14 @@
         // Tap : ouvrir la carte active, ou aller à la carte tapée.
         if (downCard) {
           const i = +downCard.dataset.index;
-          if (i === Math.round(offset)) openDetail(i);
+          // Ouverture (ou tap sur carte sans détail) : pas de ressort à venir →
+          // on lève tout de suite l'état « animation ». À l'ouverture, la feuille
+          // fige les cartes (centerActiveCard) : les flous, statiques, ne coûtent
+          // plus rien. `springTo` gère lui-même la classe pour un changement de carte.
+          if (i === Math.round(offset)) { openDetail(i); setAnimating(false); }
           else springTo(i);
+        } else {
+          setAnimating(false);
         }
         axis = null; downCard = null;
         return;
@@ -658,6 +685,7 @@
     if (card.noDetail) return null;       // carte sans descriptif détaillé
     const section = storeyard.querySelector("#" + CSS.escape(card.image.section));
     if (!section) return null;
+    setAnimating(false);   // un détail s'ouvre : les cartes vont être figées/recouvertes
     detailOpen = true;
     detailReady = false;           // réarmé à chaque ouverture (voir garde du voile plus bas)
     // Un détail a été ouvert au moins une fois : on fige définitivement la
