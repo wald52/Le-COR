@@ -326,7 +326,7 @@ window.COR_DATA = {
       { key: "equilibreFPE", label: "Contribution d'équilibre (FPE)", short: "Équilibre FPE", color: "#2f6fb0" },
       { key: "itaf", label: "Impôts & taxes affectés (ITAF, CSG)", short: "Impôts & CSG", color: "#c2185b" },
       { key: "subvSpeciaux", label: "Subventions aux régimes spéciaux", short: "Subv. spéciaux", color: "#e8731c" },
-      { key: "transferts", label: "Transferts d'autres organismes", short: "Transferts", color: "#6aa84f" },
+      { key: "transferts", label: "Transferts d'autres organismes", short: "Transferts", color: "#6aa84f", labelDy: 8 },
       { key: "autresProduits", label: "Produits financiers & autres", short: "Autres produits", color: "#9c27b0" },
     ],
     // Parts officielles de la structure des ressources — COR, rapport 2026
@@ -366,7 +366,7 @@ window.COR_DATA = {
       { key: "comp", label: "Régimes complémentaires (AGIRC-ARRCO…)", short: "Complémentaires", color: "#e8731c", pctPib: 4.026, mds: 121.2 },
       { key: "fpe", label: "Fonction publique d'État (FPE)", short: "Fonction publ. État", color: "#6aa84f", pctPib: 2.154, mds: 64.8 },
       { key: "cnracl", label: "CNRACL (collectivités, hôpitaux)", short: "CNRACL", color: "#c2185b", pctPib: 0.973, mds: 29.3 },
-      { key: "special", label: "Régimes spéciaux", short: "Régimes spéciaux", color: "#9c27b0", pctPib: 0.636, mds: 19.1 },
+      { key: "special", label: "Régimes spéciaux", short: "Régimes spéciaux", color: "#9c27b0", pctPib: 0.636, mds: 19.1, labelDy: 4 },
       { key: "nonsal", label: "Non-salariés (base)", short: "Non-salariés", color: "#2f6fb0", pctPib: 0.326, mds: 9.8 },
     ],
     // Détail officiel des ressources 2025 en Md€ — COR, tableau 2.2 (pour le tableau).

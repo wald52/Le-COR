@@ -351,7 +351,7 @@
     // En %, on garde la valeur NON arrondie (le moteur arrondit pour l'affichage) :
     // sommer des parts déjà arrondies donnerait un total faux (ex. 100,1 %).
     const sources = s.sources.map(d => ({
-      key: d.key, label: d.label, short: d.short, color: d.color,
+      key: d.key, label: d.label, short: d.short, color: d.color, labelDy: d.labelDy,
       value: pct ? shares[d.key] : Math.round((shares[d.key] / 100) * total)
     })).filter(n => n.value > 0);
 
@@ -362,7 +362,7 @@
     if (y === s.officialYear && s.regimes2025) {
       const sumMds = s.regimes2025.reduce((a, b) => a + b.mds, 0);
       regimes = s.regimes2025.map(r => ({
-        key: r.key, label: r.label, short: r.short, color: r.color,
+        key: r.key, label: r.label, short: r.short, color: r.color, labelDy: r.labelDy,
         value: pct ? (r.mds / sumMds) * 100 : Math.round(r.mds)
       }));
       if (!pct) {

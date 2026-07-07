@@ -1426,7 +1426,10 @@
           g.appendChild(name); g.appendChild(val);
         }
         gLabels.appendChild(g);
-        return { n, x, anchor, cy, g, blockH };
+        // manualDy : retouche verticale manuelle éventuelle (data → n.labelDy),
+        // appliquée en pur décalage visuel (n'entre pas dans le calcul du couloir
+        // ni de l'écartement, donc n'affecte pas les autres libellés).
+        return { n, x, anchor, cy, g, blockH, manualDy: n.labelDy || 0 };
       }
 
       // Passe d'écartement vertical d'un côté (gauche ou droite) : les libellés
@@ -1453,13 +1456,15 @@
             y[i] = y[i + 1] - gapBetween(items[i], items[i + 1]);
         }
         items.forEach((it, i) => {
-          const dy = Math.max(y[i], topY) - it.cy;
+          const spreadDy = Math.max(y[i], topY) - it.cy;
+          const dy = spreadDy + it.manualDy;   // retouche manuelle en plus (visuelle)
           if (Math.abs(dy) > 0.5) it.g.setAttribute("transform", `translate(0, ${dy.toFixed(1)})`);
-          // Trait de liaison quand le libellé a dû s'éloigner nettement du ruban.
-          if (Math.abs(dy) > 10) {
-            const above = dy < 0;
+          // Trait de liaison quand le libellé a dû s'éloigner nettement du ruban
+          // (sur le seul écartement algorithmique, pas la retouche manuelle).
+          if (Math.abs(spreadDy) > 10) {
+            const above = spreadDy < 0;
             gLabels.insertBefore(el("line", {
-              x1: it.x, y1: it.cy, x2: it.x, y2: it.cy + dy + (above ? lineH / 2 : -lineH / 2),
+              x1: it.x, y1: it.cy, x2: it.x, y2: it.cy + spreadDy + (above ? lineH / 2 : -lineH / 2),
               stroke: it.n.color, "stroke-width": 1, opacity: 0.55
             }), it.g);
           }
