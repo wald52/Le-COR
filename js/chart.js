@@ -1255,7 +1255,14 @@
     const colLeftX = M.left;
     const colRightX = W - M.right - NODE_W;
     const centerX = (colLeftX + NODE_W + colRightX) / 2 - NODE_W / 2;
-    const centerY = M.top;   // tout est aligné en haut (les écarts ne sont que sur les colonnes latérales)
+    // Nœud central aligné sur le BAS des colonnes latérales (et non le haut).
+    // Les colonnes de nœuds sont plus hautes que le nœud central de la somme des
+    // écarts entre nœuds — (maxN − 1)·GAP. En alignant le centre en bas, ce jeu
+    // est absorbé par les GRANDES branches du haut, qui s'inclinent doucement
+    // (l'inclinaison est imperceptible sur un ruban épais), tandis que les
+    // PETITES branches du bas — les plus sensibles — restent quasi horizontales.
+    // (mini : illustration de fond, comportement d'origine conservé.)
+    const centerY = M.top + (mini ? 0 : (maxN - 1) * GAP);
     // Destination unique (années sans ventilation par régime) : on fusionne le
     // nœud central et la destination → une seule barre à droite (plus lisible).
     const singleTarget = !!cfg.singleTarget;
@@ -1407,7 +1414,9 @@
       spread(rightNodes.map(n => buildLabel(n, "end")));
       // Libellé du nœud central (au-dessus) — omis en destination unique.
       if (!singleTarget) {
-        const ct = text(centerX + NODE_W / 2, centerY - 10, (cfg.centerLabel || "Système de retraite") + " · " + fmt(T) + unit, "middle", "sk-center");
+        // Titre du nœud central maintenu en haut du cadre (le nœud, lui, est
+        // désormais aligné en bas) : il reste un en-tête, au-dessus des branches.
+        const ct = text(centerX + NODE_W / 2, M.top - 10, (cfg.centerLabel || "Système de retraite") + " · " + fmt(T) + unit, "middle", "sk-center");
         gLabels.appendChild(ct);
       }
       // En-têtes de colonnes (masqués en étroit : ils chevaucheraient le nœud
