@@ -1386,14 +1386,20 @@
       function buildLabel(e, i, col) {
         const n = e.n, anchor = e.anchor;
         const x = anchor === "end" ? n.x - 8 : n.x + NODE_W + 8;
+        const nameOnly = n.h < lineH;          // ruban plus fin qu'une ligne → nom seul
         const oneLine = n.h < 2 * lineH;
         const blockH = oneLine ? lineH : 2 * lineH;
         // Emprise horizontale du texte et cible = médiane du ruban en son milieu.
-        const nChars = (n.short || n.label).length + (oneLine ? 7 : 0);
+        // Nom seul → texte plus court : il reste près du nœud (zone où les rubans
+        // sont encore écartés) au lieu d'atteindre le centre jointif et de croiser
+        // la voisine ; le montant reste au survol et dans le tableau.
+        const nChars = (n.short || n.label).length + (!nameOnly && oneLine ? 7 : 0);
         const textW = nChars * CHAR_W;
         const xInner = anchor === "end" ? x - textW : x + textW;
         const xa = Math.min(x, xInner), xb = Math.max(x, xInner);
-        let cy = centerAt(e, (xa + xb) / 2);
+        // Cible = médiane du ruban au milieu du texte, + retouche manuelle (labelDy)
+        // AVANT le bornage → le décalage reste dans le couloir (ne traverse jamais).
+        let cy = centerAt(e, (xa + xb) / 2) + (n.labelDy || 0);
         // Couloir : rester entre le bord bas du voisin du dessus (col[i-1]) et le
         // bord haut du voisin du dessous (col[i+1]), sur toute l'emprise du texte
         // (les rubans ne se croisant pas, seuls les voisins immédiats contraignent).
@@ -1408,7 +1414,12 @@
         cy = cyLo <= cyHi ? Math.min(Math.max(cy, cyLo), cyHi) : (hiLimit + loLimit) / 2;
         const g = el("g");
         const nameCls = "sk-name" + (n.isSolde ? " is-solde" : "");
-        if (oneLine) {
+        if (nameOnly) {
+          // Ruban trop fin pour héberger un montant : NOM seul, sur une ligne.
+          const t = text(x, cy + FS / 2 - 1, n.short || n.label, anchor, nameCls);
+          t.setAttribute("font-size", FS);
+          g.appendChild(t);
+        } else if (oneLine) {
           // Nom + valeur sur une seule ligne, via deux tspans (le nom garde son
           // style ; la valeur reste grise et légèrement plus petite).
           const t = text(x, cy + FS / 2 - 1, "", anchor, nameCls);
@@ -1426,10 +1437,7 @@
           g.appendChild(name); g.appendChild(val);
         }
         gLabels.appendChild(g);
-        // manualDy : retouche verticale manuelle éventuelle (data → n.labelDy),
-        // appliquée en pur décalage visuel (n'entre pas dans le calcul du couloir
-        // ni de l'écartement, donc n'affecte pas les autres libellés).
-        return { n, x, anchor, cy, g, blockH, manualDy: n.labelDy || 0 };
+        return { n, x, anchor, cy, g, blockH };
       }
 
       // Passe d'écartement vertical d'un côté (gauche ou droite) : les libellés
@@ -1456,15 +1464,13 @@
             y[i] = y[i + 1] - gapBetween(items[i], items[i + 1]);
         }
         items.forEach((it, i) => {
-          const spreadDy = Math.max(y[i], topY) - it.cy;
-          const dy = spreadDy + it.manualDy;   // retouche manuelle en plus (visuelle)
+          const dy = Math.max(y[i], topY) - it.cy;
           if (Math.abs(dy) > 0.5) it.g.setAttribute("transform", `translate(0, ${dy.toFixed(1)})`);
-          // Trait de liaison quand le libellé a dû s'éloigner nettement du ruban
-          // (sur le seul écartement algorithmique, pas la retouche manuelle).
-          if (Math.abs(spreadDy) > 10) {
-            const above = spreadDy < 0;
+          // Trait de liaison quand le libellé a dû s'éloigner nettement du ruban.
+          if (Math.abs(dy) > 10) {
+            const above = dy < 0;
             gLabels.insertBefore(el("line", {
-              x1: it.x, y1: it.cy, x2: it.x, y2: it.cy + spreadDy + (above ? lineH / 2 : -lineH / 2),
+              x1: it.x, y1: it.cy, x2: it.x, y2: it.cy + dy + (above ? lineH / 2 : -lineH / 2),
               stroke: it.n.color, "stroke-width": 1, opacity: 0.55
             }), it.g);
           }
