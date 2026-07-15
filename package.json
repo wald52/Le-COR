@@ -11,11 +11,14 @@
     "format": "prettier --check \"{js,data}/**/*.js\" \"*.html\" \"css/**/*.css\"",
     "format:fix": "prettier --write \"{js,data}/**/*.js\" \"*.html\" \"css/**/*.css\"",
     "serve": "python3 -m http.server 8000",
-    "test": "playwright test"
+    "build:min": "node tools/minify-assets.mjs",
+    "test": "playwright test",
+    "test:unit": "node --test \"tests/unit/**/*.test.mjs\""
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.49.0",
+    "esbuild": "0.28.1",
     "eslint": "^9.39.4",
     "globals": "^17.6.0",
     "prettier": "^3.8.4"

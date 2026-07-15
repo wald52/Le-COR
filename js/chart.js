@@ -1549,4 +1549,11 @@
   }
 
   window.CORChart = { lineChart, barChart, sankeyChart, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
+
+  /* Export de test — no-op dans le navigateur (`module` y est indéfini) ; seuls
+   * les tests unitaires Node (tests/unit/) le lisent pour vérifier ces fonctions
+   * pures en isolation. N'altère en rien l'exécution du site. */
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = { niceTicks, clipSegment };
+  }
 })();

@@ -1442,6 +1442,13 @@
     }
   };
 
+  /* Export de test — no-op dans le navigateur (`module` y est indéfini) ; seuls
+   * les tests unitaires Node (tests/unit/) le lisent pour vérifier ces fonctions
+   * pures en isolation. N'altère en rien l'exécution du site. */
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = { chartCsv, slug };
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

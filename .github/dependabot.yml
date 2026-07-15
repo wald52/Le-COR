@@ -1,0 +1,28 @@
+# Veille automatique des mises à jour de dépendances.
+# Le site ne dépend de rien à l'exécution ; seules les dépendances de
+# développement (lint, tests, minification) et les actions GitHub des workflows
+# sont concernées. Cadence hebdomadaire, PR groupées pour limiter le bruit.
+version: 2
+updates:
+  # Outillage npm (dev uniquement) : eslint, prettier, playwright, esbuild…
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+
+  # Actions utilisées par les workflows CI (checkout, setup-node, lighthouse…).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

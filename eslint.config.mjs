@@ -23,7 +23,10 @@ export default [
         COR_DATA: "readonly",
         COR_SERIES: "writable",
         COR_EXPLORER: "readonly",
-        CORChart: "readonly"
+        CORChart: "readonly",
+        // Export de test gardé (`typeof module !== "undefined"`) en pied de
+        // fichier : indéfini dans le navigateur, lu par les tests unitaires Node.
+        module: "readonly"
       }
     },
     rules: {
@@ -47,10 +50,11 @@ export default [
     languageOptions: { globals: { ...globals.node } }
   },
 
-  // Tests Playwright : s'exécutent sous Node, mais les rappels page.evaluate()
-  // tournent dans le navigateur (globaux browser).
+  // Tests Playwright (*.spec.js) : s'exécutent sous Node, mais les rappels
+  // page.evaluate() tournent dans le navigateur (globaux browser). Les tests
+  // unitaires (*.test.mjs, tests/unit/) sont du pur Node.
   {
-    files: ["tests/**/*.js"],
+    files: ["tests/**/*.{js,mjs}"],
     languageOptions: {
       sourceType: "module",
       globals: { ...globals.node, ...globals.browser }
