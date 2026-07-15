@@ -1,9 +1,10 @@
 name: Qualité (lint + tests e2e)
 
 # Contrôle qualité indépendant du déploiement Pages : vérifie le code à chaque
-# push et pull request. Le lint est bloquant ; les tests e2e (Playwright)
-# démarrent en mode informatif (continue-on-error) le temps d'être éprouvés, et
-# pourront être durcis ensuite.
+# push et pull request. Tout est bloquant : lint, tests unitaires, garde-fou des
+# assets minifiés et tests e2e (Playwright). Les e2e, éprouvés en CI, ne sont
+# plus en mode informatif ; une régression d'interface casse désormais le
+# workflow. Le déploiement Pages reste indépendant (jamais bloqué par ce job).
 
 on:
   push:
@@ -52,7 +53,6 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
