@@ -16,11 +16,11 @@
     "test:unit": "node --test \"tests/unit/**/*.test.mjs\""
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@playwright/test": "^1.49.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
     "esbuild": "0.28.1",
-    "eslint": "^9.39.4",
-    "globals": "^17.6.0",
-    "prettier": "^3.8.4"
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.5"
   }
 }
