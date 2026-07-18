@@ -287,8 +287,16 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .chart-tool:hover { border-color: var(--bleu-clair); color: var(--bleu); }
 /* Réserve à droite du titre la largeur réelle de la barre d'outils (mesurée en
    JS → --chart-tools-w) pour qu'un titre long ne passe pas sous les boutons
-   « Agrandir » / « Télécharger » positionnés en absolu en haut à droite de la carte. */
-.chart-title strong { padding-right: var(--chart-tools-w, 0); }
+   « Agrandir » / « Télécharger » positionnés en absolu en haut à droite de la carte.
+   Flotteur plutôt que padding : seule la PREMIÈRE ligne du titre est raccourcie
+   (la seule à hauteur des boutons), les suivantes reprennent toute la largeur.
+   La hauteur ~1,5em couvre la bande verticale occupée par la barre. */
+.chart-title strong::before {
+  content: "";
+  float: right;
+  width: var(--chart-tools-w, 0);
+  height: 1.5em;
+}
 
 /* Sélecteur d'unité du graphique phare (% du PIB / Md€ / % dépense publique).
    Permet au grand public de relire la même courbe dans une unité parlante. */
@@ -471,7 +479,8 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
 
   /* Graphiques : outils déplacés SOUS le graphique (plus de superposition) */
   .chart-card { padding: 14px; }
-  .chart-title strong { font-size: 0.98rem; padding-right: 0; }
+  .chart-title strong { font-size: 0.98rem; }
+  .chart-title strong::before { width: 0; }
   .chart-tools {
     position: static; justify-content: center; gap: 10px;
     margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--gris-clair);

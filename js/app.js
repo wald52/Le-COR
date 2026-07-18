@@ -1202,7 +1202,10 @@
     }
     if (!bars.length) return;
     const clone = bars[0].cloneNode(true);
-    clone.style.cssText = "position:absolute;visibility:hidden;left:-9999px;top:0";
+    // `right:auto` est indispensable : la feuille de style pose `right:12px` sur
+    // .chart-tools, et un absolu avec left ET right définis est étiré entre les
+    // deux (largeur ≈ viewport + 9999px au lieu de celle des boutons).
+    clone.style.cssText = "position:absolute;visibility:hidden;left:-9999px;top:0;right:auto";
     document.body.appendChild(clone);
     root.setProperty("--chart-tools-w", clone.offsetWidth + "px");
     clone.remove();
