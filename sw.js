@@ -4,7 +4,7 @@
  * dernière version (le navigateur revalide via ETag, donc 304 quasi gratuit
  * si rien n'a changé), avec repli sur le cache si le réseau est absent.
  */
-const CACHE = "le-cor-citoyen-v70";
+const CACHE = "le-cor-citoyen-v71";
 const NETWORK_TIMEOUT_MS = 5000;
 const ASSETS = [
   "./",
@@ -25,7 +25,7 @@ const ASSETS = [
   "./icons/icon.svg",
   "./icons/cor-logo.png",
   // Logo partenaire affiché sur l'accueil : précaché pour l'affichage hors-ligne.
-  "./icons/le-modele-social-francais.png",
+  "./icons/le-modele-social-francais.webp",
   // Icônes du manifest : précachées pour que l'installation et l'affichage de
   // l'app fonctionnent aussi hors-ligne (dès la première visite).
   "./icons/icon-192.png",

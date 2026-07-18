@@ -6,7 +6,7 @@
   "use strict";
 
   const D = window.COR_DATA;
-  const { lineChart, barChart, sankeyChart } = window.CORChart;
+  const { lineChart, barChart, sankeyChart, chartWidth } = window.CORChart;
   let explorerRedraw = null;   // permet de rejouer l'animation du graphe de l'explorateur
 
   /* ----------------------------------------------------------------------
@@ -193,10 +193,9 @@
     const container = document.getElementById("chart-prod");
     container.innerHTML = "";
     const NS = "http://www.w3.org/2000/svg";
-    // Repli quand le conteneur n'a pas de largeur (pré-rendu hors écran) : on estime
-    // d'après la fenêtre pour tomber du bon côté du seuil `narrow` (480 px), afin que
-    // la mise en page corresponde à celle du détail (ré-rendu à l'ouverture invisible).
-    const cw = Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
+    // Repli quand le conteneur n'a pas de largeur (pré-rendu hors écran) : cf.
+    // chartWidth (js/chart.js), qui évite aussi le reflow forcé du pré-rendu.
+    const cw = chartWidth(container);
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const H = Math.round(narrow ? Math.min(W * 0.9, 340) : 360);
@@ -563,7 +562,7 @@
     const NS = "http://www.w3.org/2000/svg";
     const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
     const cs = d.countries;
-    const cw = Math.round(host.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
+    const cw = chartWidth(host);
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const rowH = narrow ? 34 : 30, top = 16, bottom = 38;
@@ -1009,7 +1008,7 @@
   }
 
   // Cache du PNG par carte : { token, filename, blob }. La pré-génération en
-  // temps mort (scheduleChartPngCache) garantit qu'au clic le blob est prêt,
+  // temps mort (ensureSectionPngCache) garantit qu'au clic le blob est prêt,
   // donc partageable/téléchargeable de façon synchrone dans le geste utilisateur.
   // On garde le blob (et non une URL objet) : Web Share et <a download> le
   // consomment tous deux, et l'on évite toute course à la révocation d'URL.
@@ -1027,13 +1026,32 @@
     });
   }
 
-  // Régénère le cache PNG de toutes les cartes ayant un graphique, en temps mort.
-  function scheduleChartPngCache() {
-    const run = () => document.querySelectorAll(".chart-card").forEach(card => {
-      if (card.querySelector(".chart-svg")) ensureChartPngCache(card);
-    });
-    if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 2000 });
-    else setTimeout(run, 300);
+  // Prépare le cache PNG des cartes d'une section, une carte par temps mort.
+  // Appelé à l'ouverture de la vue détail — seul endroit d'où le bouton
+  // Enregistrer est accessible — et plus au chargement de la page : rasteriser
+  // toutes les cartes au démarrage gonflait le Total Blocking Time, et les
+  // cartes pré-rendues après son délai n'étaient de toute façon jamais mises en
+  // cache (downloadChartPng générait alors à la volée, en perdant le geste
+  // synchrone attendu par Web Share sur mobile).
+  function ensureSectionPngCache(root) {
+    const ric = window.requestIdleCallback || (fn => setTimeout(fn, 200));
+    const cards = Array.from(root.querySelectorAll(".chart-card"));
+    const step = () => {
+      const card = cards.shift();
+      if (!card) return;
+      // `__png` présent = cache déjà généré (ou en cours) et non invalidé par
+      // un redimensionnement : on ne rasterise pas deux fois la même carte.
+      if (card.querySelector(".chart-svg") && !card.__png) ensureChartPngCache(card);
+      ric(step);
+    };
+    ric(step);
+  }
+
+  // Après un redimensionnement, les SVG re-rendus ne correspondent plus aux PNG
+  // en cache : on invalide tout, la prochaine ouverture de détail (ou le repli à
+  // la volée de downloadChartPng) régénérera ce qui est nécessaire.
+  function invalidateChartPngCaches() {
+    document.querySelectorAll(".chart-card").forEach(card => { card.__png = null; });
   }
 
   // Enregistre le PNG d'une carte. Privilégie le blob déjà en cache (geste
@@ -1229,20 +1247,41 @@
     });
   }
 
+  /* ----------------------------------------------------------------------
+   * Contenu « statique » des sections (simulateur, tableau des hypothèses,
+   * sources, ancres, zoom) : tout vit dans le réservoir caché du carrousel et
+   * n'est visible qu'à l'ouverture d'une vue détail. Le construire dans init()
+   * gonflait la tâche DOMContentLoaded (Total Blocking Time) : on l'étale en
+   * temps mort, avec un rattrapage synchrone si un détail s'ouvre avant.
+   * `staticStepIdx` garantit que chaque morceau ne s'exécute qu'une fois,
+   * quel que soit le chemin (temps mort ou ouverture immédiate).
+   * -------------------------------------------------------------------- */
+  const staticSteps = [renderLeviers, renderTable, renderSources, setupSectionLinks, setupZoom];
+  let staticStepIdx = 0;
+  // Rattrapage synchrone : appelé par renderSection avant la 1re ouverture d'un détail.
+  function ensureStaticContent() {
+    while (staticStepIdx < staticSteps.length) staticSteps[staticStepIdx++]();
+  }
+  // Étalement : un morceau par temps mort (même motif que prerenderAllCharts).
+  function scheduleStaticContent() {
+    const ric = window.requestIdleCallback || (fn => setTimeout(fn, 1));
+    const step = () => {
+      if (staticStepIdx >= staticSteps.length) return;
+      staticSteps[staticStepIdx++]();
+      ric(step);
+    };
+    ric(step);
+  }
+
   function init() {
     // La présentation est le carrousel (js/cards.js) : il pilote le rendu des
     // graphiques (prerenderAllCharts au repos, renderSection à l'ouverture d'une
-    // carte). init() prépare ici le contenu des sections et les outils communs ;
-    // le tracé des graphiques est déclenché par le carrousel.
-    renderLeviers();
-    renderTable();
-    renderSources();
-    setupSectionLinks();
+    // carte). init() ne fait que câbler les outils communs ; le contenu des
+    // sections (scheduleStaticContent) et le tracé des graphiques sont différés.
+    scheduleStaticContent();
     setupChartTools();
     setupDataExports();
     setupPibUnitToggle();
-    setupZoom();
-    scheduleChartPngCache();
     // Sur mobile, le repli/déploiement de la barre d'adresse pendant le
     // défilement déclenche des « resize » qui ne changent que la hauteur :
     // on ne re-rend que si la largeur a réellement changé (rotation,
@@ -1256,7 +1295,7 @@
         renderAllCharts(false);
         if (explorerRedraw) explorerRedraw(false);
         reserveTitleSpaceForTools();
-        scheduleChartPngCache();
+        invalidateChartPngCaches();
       }, 200);
     });
 
@@ -1406,13 +1445,21 @@
    * -------------------------------------------------------------------- */
   window.CORApp = {
     renderSection(id) {
+      // Ouverture d'un détail avant la fin des temps morts : on rattrape le
+      // contenu statique (simulateur, tableau, sources, ancres, zoom) d'un coup.
+      ensureStaticContent();
       renderSectionOnce(id);   // rendu une seule fois : pas de re-tracé (donc pas de saut)
       // Restreint la (re)pose des outils à la section ouverte → plus de re-scan
       // global du DOM. La réservation d'espace du titre (--chart-tools-w) n'est PAS
       // recalculée ici : elle l'a été une fois au pré-rendu et l'est au resize, et
       // n'est pas fonction de la carte ouverte → on évite un reflow forcé sur le
       // chemin critique d'ouverture.
-      setupChartTools(document.getElementById(id) || document);
+      const sec = document.getElementById(id) || document;
+      setupChartTools(sec);
+      // Cache PNG des cartes de la section ouverte, en temps mort : le bouton
+      // Enregistrer garde son geste synchrone (Web Share mobile) sans que la
+      // rasterisation ne pèse sur le chargement de la page.
+      ensureSectionPngCache(sec);
     },
     ensureExplorer,
     // Le carrousel (js/cards.js) prend la main sur le rendu des graphiques via

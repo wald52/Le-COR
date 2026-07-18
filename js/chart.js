@@ -30,6 +30,20 @@
     return node;
   };
 
+  // Largeur utile d'un conteneur de graphique. Repli quand le conteneur n'a pas
+  // de largeur (pré-rendu hors écran, carte masquée) : on estime d'après la
+  // fenêtre pour tomber du bon côté du seuil `narrow` (480 px) — sinon une
+  // constante (ex. 760) forcerait le ratio large sur mobile et le graphique
+  // s'afficherait aplati une fois mis à l'échelle.
+  // Dans un ancêtre `[hidden]` (réservoir #story-sections du carrousel), la
+  // mesure vaudrait toujours 0 mais forcerait quand même un layout complet de
+  // la page : `closest` (simple parcours d'arbre, sans layout) court-circuite
+  // la lecture et évite un reflow forcé par graphique pré-rendu.
+  function chartWidth(container) {
+    if (container.closest("[hidden]")) return Math.min(window.innerWidth, 920);
+    return Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
+  }
+
   // Espacement « joli » pour les graduations d'un axe.
   function niceTicks(min, max, count) {
     const span = max - min;
@@ -199,12 +213,9 @@
 
     // Dimensions responsives : on cale le viewBox sur la largeur réelle du
     // conteneur pour que les textes restent à taille lisible (≈ px) partout,
-    // au lieu d'un SVG fixe réduit (illisible sur mobile).
-    // Repli quand le conteneur n'a pas de largeur (pré-rendu hors écran, carte
-    // masquée) : on estime d'après la fenêtre pour tomber du bon côté du seuil
-    // `narrow` (480 px) — sinon une constante (ex. 760) forcerait le ratio large
-    // sur mobile et le graphique s'afficherait aplati une fois mis à l'échelle.
-    const cw = Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
+    // au lieu d'un SVG fixe réduit (illisible sur mobile). Repli hors écran :
+    // cf. chartWidth.
+    const cw = chartWidth(container);
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     // Axe x catégoriel (profils par âge…) : les graduations sont les libellés
@@ -894,9 +905,7 @@
     if (container.__revealCancel) container.__revealCancel();
     container.innerHTML = "";
 
-    // Repli largeur : cf. lineChart — la fenêtre (≈ appareil) plutôt qu'une
-    // constante, pour que le pré-rendu hors écran tombe du bon côté de `narrow`.
-    const cw = Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
+    const cw = chartWidth(container);
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const cats = cfg.categories || [];
@@ -1214,8 +1223,8 @@
     const sum = arr => arr.reduce((a, b) => a + b.value, 0);
     const T = Math.max(sum(left), sum(right)) || 1;
 
-    const cw = Math.round(container.getBoundingClientRect().width) || Math.min(window.innerWidth, 920);
-    const W = mini ? 360 : Math.max(300, Math.min(cw, 920));
+    // `mini` a une largeur fixe : on ne mesure le conteneur que pour la vue pleine.
+    const W = mini ? 360 : Math.max(300, Math.min(chartWidth(container), 920));
     const narrow = W < 480;
 
     // Marges : les libellés sont désormais posés À L'INTÉRIEUR des branches
@@ -1548,7 +1557,7 @@
     container.insertAdjacentHTML("beforeend", html);
   }
 
-  window.CORChart = { lineChart, barChart, sankeyChart, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
+  window.CORChart = { lineChart, barChart, sankeyChart, chartWidth, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
 
   /* Export de test — no-op dans le navigateur (`module` y est indéfini) ; seuls
    * les tests unitaires Node (tests/unit/) le lisent pour vérifier ces fonctions

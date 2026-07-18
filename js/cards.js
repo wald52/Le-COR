@@ -1182,7 +1182,7 @@
       '<a class="ms-logo" href="https://linktr.ee/lemodelesocialfrancais" ' +
       'target="_blank" rel="noopener noreferrer" ' +
       'title="Le Modèle Social Français — voir mon Linktree">' +
-      '<img class="ms-logo-img" src="./icons/le-modele-social-francais.png" ' +
+      '<img class="ms-logo-img" src="./icons/le-modele-social-francais.webp" ' +
       'alt="Le Modèle Social Français" width="40" height="40" decoding="async" />' +
       '<span class="ms-logo-tip">🔗 Mon Linktree</span>' +
       "</a>" +
@@ -1250,7 +1250,17 @@
     // (garde `miniDrawn`) → sans effet s'il est déjà tracé.
     const idlePrefetch = window.requestIdleCallback
       || (cb => setTimeout(() => cb({ timeRemaining: () => 0 }), 200));
-    idlePrefetch(() => { for (let i = 0; i < cards.length; i++) drawMini(i); });
+    // Un mini par rappel idle : les tracer tous dans un seul rappel formait une
+    // longue tâche au chargement (Total Blocking Time). `drawMini` est idempotent
+    // (garde `miniDrawn`) → les minis déjà tracés par la navigation sont sautés.
+    let miniPrefetchIdx = 0;
+    const prefetchStep = () => {
+      while (miniPrefetchIdx < cards.length && miniDrawn.has(miniPrefetchIdx)) miniPrefetchIdx++;
+      if (miniPrefetchIdx >= cards.length) return;
+      drawMini(miniPrefetchIdx++);
+      idlePrefetch(prefetchStep);
+    };
+    idlePrefetch(prefetchStep);
 
     // Déploie le libellé d'aide de la flèche « suivante » après un court délai,
     // puis le replie à la première prise en main (premier appui sur le carrousel,
