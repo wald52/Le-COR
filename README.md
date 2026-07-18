@@ -18,7 +18,9 @@ des données de l'INSEE, de la Dares, etc.).
 
 ## Ce que montre le site
 
-Le site se lit comme un parcours en **trois chapitres** (12 sections au total) :
+Le site s'ouvre sur une **section d'accueil** — le diagramme de Sankey
+« D'où vient l'argent des retraites, et où va-t-il ? » —, puis se lit comme un
+parcours en **trois chapitres** (13 sections au total) :
 
 **Chapitre 1 — Le constat** (combien on dépense, et des prévisions qui bougent)
 1. **Le graphique clé** — part des dépenses de retraite dans le PIB :
@@ -33,12 +35,13 @@ Le site se lit comme un parcours en **trois chapitres** (12 sections au total) :
 7. **La dette** — « la moitié part dans les retraites », vrai ou faux ?
 8. **La France dans le monde** — comparaison internationale des dépenses.
 9. **Le tableau de bord** des hypothèses du scénario de référence.
-10. **L'explorateur** de tous les indicateurs.
 
 **Chapitre 3 — Que faire ?**
-11. **Le simulateur** des trois leviers d'équilibrage.
+10. **Le simulateur** des trois leviers d'équilibrage.
 
-Plus une annexe : **12. Méthode & sources**.
+**Aller plus loin** (les annexes)
+11. **L'explorateur** de tous les indicateurs.
+12. **Méthode & sources.**
 
 ## Caractéristiques techniques
 

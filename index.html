@@ -99,7 +99,10 @@
       <div class="container">
         <h2>D'où vient l'argent des retraites, et où va-t-il&nbsp;?</h2>
         <p class="section-intro">
-          Bienvenue. Avant les projections et les débats, voici le tableau d'ensemble&nbsp;:
+          Bienvenue. Chaque année, le COR (Conseil d'orientation des retraites) projette
+          nos retraites jusqu'en 2070&nbsp;: ce site <strong>superpose ses rapports
+          successifs</strong> pour voir s'il change d'avis, et si ses prévisions se
+          réalisent. Avant les projections et les débats, voici le tableau d'ensemble&nbsp;:
           en une image, <strong>d'où vient l'argent</strong> qui paie les retraites
           (cotisations, impôts, transferts…) et <strong>où il va</strong>. Choisissez l'unité
           et l'année. <strong>Uniquement des chiffres officiels du COR</strong>&nbsp;; ce qui est
@@ -634,34 +637,10 @@
       </div>
     </section>
 
-    <!-- 10. EXPLORATEUR D'INDICATEURS -->
-    <section id="explorer" class="band alt">
+    <!-- 10. SIMULATEUR DES 3 LEVIERS -->
+    <section id="simulateur" class="band alt">
       <div class="container">
-        <h2>10 · Explorez tous les indicateurs</h2>
-        <p class="section-intro">
-          Plutôt qu'une longue liste de graphiques, choisissez un <strong>thème</strong> puis un
-          <strong>indicateur</strong>&nbsp;: le graphique se met à jour. Tous viennent des fichiers
-          officiels du COR. Quand plusieurs rapports publient le <strong>même indicateur</strong>,
-          toutes leurs projections sont <strong>superposées</strong> (une couleur par millésime,
-          du gris 2016 au violet 2026)&nbsp;: on voit ainsi l'hypothèse évoluer face au réalisé.
-        </p>
-        <div id="explorer-themes" class="exp-tabs" role="group" aria-label="Thèmes"></div>
-        <div id="explorer-indicators" class="exp-chips" role="group" aria-label="Indicateurs"></div>
-        <figure class="chart-card">
-          <figcaption class="chart-title">
-            <strong id="exp-label">—</strong>
-            <span id="exp-desc"></span>
-          </figcaption>
-          <div id="chart-explorer" class="chart-host"></div>
-          <p class="chart-source" id="exp-source"></p>
-        </figure>
-      </div>
-    </section>
-
-    <!-- 11. SIMULATEUR DES 3 LEVIERS -->
-    <section id="simulateur" class="band">
-      <div class="container">
-        <h2>11 · À vous de jouer&nbsp;: équilibrez le système</h2>
+        <h2>10 · À vous de jouer&nbsp;: équilibrez le système</h2>
         <p class="section-intro">
           Pour combler le déficit projeté en <strong>2070</strong>, il existe trois leviers. Le COR
           calcule combien il faudrait de <em>chacun, utilisé seul</em>. À vous de choisir
@@ -699,6 +678,30 @@
             viennent du COR.
           </p>
         </div>
+      </div>
+    </section>
+
+    <!-- 11. EXPLORATEUR D'INDICATEURS -->
+    <section id="explorer" class="band">
+      <div class="container">
+        <h2>11 · Explorez tous les indicateurs</h2>
+        <p class="section-intro">
+          Plutôt qu'une longue liste de graphiques, choisissez un <strong>thème</strong> puis un
+          <strong>indicateur</strong>&nbsp;: le graphique se met à jour. Tous viennent des fichiers
+          officiels du COR. Quand plusieurs rapports publient le <strong>même indicateur</strong>,
+          toutes leurs projections sont <strong>superposées</strong> (une couleur par millésime,
+          du gris 2016 au violet 2026)&nbsp;: on voit ainsi l'hypothèse évoluer face au réalisé.
+        </p>
+        <div id="explorer-themes" class="exp-tabs" role="group" aria-label="Thèmes"></div>
+        <div id="explorer-indicators" class="exp-chips" role="group" aria-label="Indicateurs"></div>
+        <figure class="chart-card">
+          <figcaption class="chart-title">
+            <strong id="exp-label">—</strong>
+            <span id="exp-desc"></span>
+          </figcaption>
+          <div id="chart-explorer" class="chart-host"></div>
+          <p class="chart-source" id="exp-source"></p>
+        </figure>
       </div>
     </section>
 
