@@ -1187,12 +1187,25 @@
   // tous les titres. Une seule lecture de `offsetWidth` au total (au lieu d'une par
   // carte) → plus de reflow forcé répété. Calculée une fois au pré-rendu et
   // recalculée uniquement au redimensionnement de largeur (cf. init).
+  //
+  // En mode carrousel, les sections vivent dans le réservoir masqué
+  // #story-sections (display:none) : une barre qui s'y trouve mesure 0 (même
+  // problème d'ancêtre masqué que chartWidth dans chart.js). On cherche donc
+  // une barre visible et, à défaut, on mesure un clone hors écran.
   function reserveTitleSpaceForTools() {
     const root = document.documentElement.style;
     const desktop = !window.matchMedia("(max-width: 760px)").matches;
     if (!desktop) { root.setProperty("--chart-tools-w", "0px"); return; }
-    const bar = document.querySelector(".chart-tools");
-    if (bar) root.setProperty("--chart-tools-w", bar.offsetWidth + "px");
+    const bars = document.querySelectorAll(".chart-tools");
+    for (const bar of bars) {
+      if (bar.offsetWidth > 0) { root.setProperty("--chart-tools-w", bar.offsetWidth + "px"); return; }
+    }
+    if (!bars.length) return;
+    const clone = bars[0].cloneNode(true);
+    clone.style.cssText = "position:absolute;visibility:hidden;left:-9999px;top:0";
+    document.body.appendChild(clone);
+    root.setProperty("--chart-tools-w", clone.offsetWidth + "px");
+    clone.remove();
   }
 
   function slug(s) {
@@ -1450,12 +1463,15 @@
       ensureStaticContent();
       renderSectionOnce(id);   // rendu une seule fois : pas de re-tracé (donc pas de saut)
       // Restreint la (re)pose des outils à la section ouverte → plus de re-scan
-      // global du DOM. La réservation d'espace du titre (--chart-tools-w) n'est PAS
-      // recalculée ici : elle l'a été une fois au pré-rendu et l'est au resize, et
-      // n'est pas fonction de la carte ouverte → on évite un reflow forcé sur le
-      // chemin critique d'ouverture.
+      // global du DOM. La réservation d'espace du titre (--chart-tools-w) n'est
+      // recalculée ici que si elle n'a encore jamais été posée (carte ouverte
+      // avant la fin du pré-rendu) : les ouvertures suivantes gardent leur
+      // chemin critique sans reflow forcé.
       const sec = document.getElementById(id) || document;
       setupChartTools(sec);
+      if (!document.documentElement.style.getPropertyValue("--chart-tools-w")) {
+        reserveTitleSpaceForTools();
+      }
       // Cache PNG des cartes de la section ouverte, en temps mort : le bouton
       // Enregistrer garde son geste synchrone (Web Share mobile) sans que la
       // rasterisation ne pèse sur le chargement de la page.
