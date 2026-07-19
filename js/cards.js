@@ -37,7 +37,7 @@
 
   const D = window.COR_DATA || {};
   const S = window.COR_SERIES || {};
-  const { lineChart, barChart, sankeyChart } = window.CORChart;
+  const { lineChart, barChart } = window.CORChart;
 
   /* ======================================================================
    * CONSTANTES RÉGLABLES — voir aussi css/cards.css (mêmes valeurs en --var).
@@ -80,15 +80,6 @@
   }
 
   const MINI = {
-    // Mini-Sankey de fond de la carte d'accueil : sources → régimes (structure
-    // 2025, mêmes données que la vue détaillée), sans barres ni libellés — que
-    // les rubans. Construit via l'API exposée par js/app.js (window.CORSankey).
-    presentation: t => {
-      const api = window.CORSankey;
-      if (!api || !sankeyChart) return;
-      const cfg = api.buildCfg(2025, "pct", true);
-      if (cfg) sankeyChart(t, cfg);
-    },
     depenses: t => miniOverlay(t, S.depensesPib || D.depensesPib, "projections", " %"),
     deficit: t => miniOverlay(t, S.solde, "projections", " %"),
     productivite: t => {
@@ -133,8 +124,7 @@
   const cards = [
     { id: "presentation", chapter: "Bienvenue", title: "À quoi sert ce site ?",
       subtitle: "Chaque année, le COR projette nos retraites jusqu'en 2070. Ce site superpose ses rapports de 2001 à 2026 : change-t-il d'avis, et ses prévisions se réalisent-elles ?",
-      description: "Pour commencer, le tableau d'ensemble : d'où vient l'argent des retraites (cotisations, impôts, transferts) et où il va (les régimes qui versent les pensions) — année par année.",
-      image: { section: "presentation", theme: "#0e7490", mini: "presentation" } },
+      image: { section: "presentation", theme: "#0e7490", photo: "./images/intro-cor.webp" } },
     { id: "depenses", chapter: "Le constat", title: "La même question, des réponses différentes",
       subtitle: "Dépenses de retraite en % du PIB",
       description: "Chaque rapport du COR reprévoit la même courbe… et change d'avis : de « ça baisse » à « ça monte fortement ».",

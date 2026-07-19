@@ -15,18 +15,16 @@ test("le carousel affiche des cartes, des dots et un graphique sur une carte", a
   const cards = page.locator(".cs-track .card");
   await expect(cards).toHaveCount(13);
   await expect(page.locator(".cs-dots .cs-dot")).toHaveCount(13);
-  // La carte d'accueil active affiche son mini-diagramme de Sankey…
-  await expect(page.locator(".card.is-active .card-chart svg.sankey")).toBeVisible();
+  // La carte d'accueil active affiche son image de fond…
+  await expect(page.locator(".card.is-active .card-chart--photo img.card-photo")).toBeVisible();
   // …et la carte suivante (« depenses ») un vrai mini-graphique en courbes.
   await page.keyboard.press("ArrowRight");
   await expect(page.locator(".card.is-active .card-chart .chart-svg")).toBeVisible();
 });
 
-test("la carte d'accueil ouvre le Sankey de la structure des ressources (unité + année)", async ({ page }) => {
-  await page.goto("/");
-  const active = page.locator('.card.is-active[data-section="presentation"]');
-  await expect(active).toBeVisible();
-  await active.click();
+test("la carte « financement » ouvre le Sankey de la structure des ressources (unité + année)", async ({ page }) => {
+  // Lien profond : ouvre directement la vue détail de la section financement.
+  await page.goto("/#financement");
 
   await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
   // Le diagramme de Sankey se trace…
@@ -65,7 +63,7 @@ test("le logo/lien « Le Modèle Social Français » est visible sur l'accueil",
 
 test("taper la carte active ouvre la vue détail avec son contenu complet", async ({ page }) => {
   await page.goto("/");
-  // On va sur la carte « depenses » (la 1re carte ouvre, elle, le Sankey).
+  // On va sur la carte « depenses » (la 1re carte est la présentation du site).
   await page.keyboard.press("ArrowRight");
   const active = page.locator('.card.is-active[data-section="depenses"]');
   await expect(active).toBeVisible();
