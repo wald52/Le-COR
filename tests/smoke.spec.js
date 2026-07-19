@@ -79,6 +79,38 @@ test("taper la carte active ouvre la vue détail avec son contenu complet", asyn
   await expect(page.locator(".cd-body .takeaway")).toContainText(/retenir/i);
 });
 
+test("bulle du haut : cliquer sur le libellé « Cliquez pour revenir » ferme le descriptif", async ({ page }) => {
+  // Régression (ordinateur) : à la 1re ouverture, la pilule est déployée avec
+  // son libellé. Replier la pilule au pointerdown la faisait glisser hors du
+  // curseur avant le pointerup → aucun `click` synthétisé → l'action ne partait
+  // pas. On clique donc précisément sur le LIBELLÉ (partie droite de la
+  // pilule), le point qui reproduisait le bug.
+  await page.goto("/");
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.click();
+  await expect(page.locator(".card-detail .cd-sheet")).toBeVisible();
+
+  // Attend le déploiement de la pilule (startBackHint, ~480 ms) puis la fin de
+  // la transition de largeur (.4 s) pour cliquer sur une pilule stable.
+  await expect(page.locator(".cd-back")).toHaveClass(/is-shown/);
+  await page.waitForTimeout(450);
+
+  // Clic « humain » : pression maintenue ~300 ms vers le bout droit du libellé.
+  // Un clic synthétique instantané ne reproduit PAS le bug (la pilule n'a pas
+  // le temps de se replier entre down et up) ; avec une durée de pression
+  // réaliste, la pilule repliée au pointerdown glissait hors du curseur avant
+  // le pointerup et le `click` était perdu.
+  const box = await page.locator(".cd-back-label").boundingBox();
+  await page.mouse.move(box.x + box.width - 8, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(300);
+  await page.mouse.up();
+  await expect(page.locator(".card-detail")).toHaveCount(0);
+  await expect(page.locator(".card.is-active")).toBeVisible();
+});
+
 test("la touche Échap ferme la vue détail et restitue le carousel", async ({ page }) => {
   await page.goto("/");
   // On ouvre la vue détail de « depenses ».

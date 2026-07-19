@@ -796,7 +796,18 @@
     // (Le survol/focus de la flèche stoppe en plus le nudge en CSS.)
     const stopHint = () => { backBtn.classList.add("is-still"); backBtn.classList.remove("is-shown"); };
     sheet.addEventListener("scroll", stopHint, { once: true, passive: true });
-    sheet.addEventListener("pointerdown", stopHint, { once: true });
+    // Repli à la première pression sur la feuille, SAUF si elle commence sur la
+    // bulle elle-même : replier la pilule PENDANT la pression la fait glisser
+    // hors du curseur avant le pointerup (cible down ≠ cible up) → le
+    // navigateur ne synthétise jamais le `click` et l'action ne part pas (bug
+    // constaté sur ordinateur à la première ouverture). `once` manuel : la
+    // garde ne doit pas consommer l'écouteur.
+    const stopHintOnPress = e => {
+      if (backBtn.contains(e.target)) return;
+      sheet.removeEventListener("pointerdown", stopHintOnPress);
+      stopHint();
+    };
+    sheet.addEventListener("pointerdown", stopHintOnPress);
     setupSheetDismiss(sheet);
 
     const cardInner = cardEls[i] && cardEls[i].querySelector(".card-inner");
