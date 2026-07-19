@@ -122,8 +122,7 @@
    * Réordonner / ajouter une carte = éditer ce tableau, rien d'autre.
    * ==================================================================== */
   const cards = [
-    { id: "presentation", chapter: "Bienvenue", title: "À quoi sert ce site ?",
-      subtitle: "Chaque année, le COR projette nos retraites jusqu'en 2070. Ce site superpose ses rapports de 2001 à 2026 : change-t-il d'avis, et ses prévisions se réalisent-elles ?",
+    { id: "presentation", chapter: "Bienvenue", title: "À quoi sert ce site ?", noDetail: true,
       image: { section: "presentation", theme: "#0e7490", photo: "./images/accueil-lecteur-cor.webp" } },
     { id: "depenses", chapter: "Le constat", title: "La même question, des réponses différentes",
       subtitle: "Dépenses de retraite en % du PIB",
@@ -259,7 +258,7 @@
     text.innerHTML =
       (i === 0 ? "" : `<span class="card-chapter">${card.chapter} · ${String(i).padStart(2, "0")}</span>`) +
       `<h2 class="card-title">${card.title}</h2>` +
-      `<p class="card-sub">${card.subtitle}</p>` +
+      (card.subtitle ? `<p class="card-sub">${card.subtitle}</p>` : "") +
       (card.description ? `<p class="card-desc">${card.description}</p>` : "") +
       (card.noDetail ? "" : `<span class="card-cta">Voir le détail ›</span>`);
 
