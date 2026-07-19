@@ -149,19 +149,12 @@ body.mode-carousel {
    l'overlay sombre du bas). Élargie à 140% (débord 20% de chaque côté) pour
    couvrir le décalage parallax max (STEP × PARALLAX_AMOUNT = 360 × 0.18 ≈ 65 px
    ≈ 19% de la carte) sans révéler de bord vide sur les cartes latérales. */
-.card-chart--photo { top: 0; height: 100%; left: -20%; width: 140%; }
+.card-chart--photo { top: 0; height: 100%; left: -20%; width: 140%; background: #fff; }
 .card-photo {
   width: 100%; height: 100%;
   object-fit: cover; object-position: center top;
   display: block;
 }
-
-/* Carte de présentation : le mini-Sankey occupe TOUTE la carte (le texte se lit
-   par-dessus l'overlay sombre du bas, comme les cartes « photo »). Le viewBox
-   du mini est au ratio de la carte, donc le SVG (preserveAspectRatio meet) la
-   remplit entièrement sans rogner. */
-.card[data-section="presentation"] .card-chart { top: 0; left: 0; width: 100%; height: 100%; }
-.card[data-section="presentation"] .card-chart svg { width: 100%; height: 100%; }
 
 /* Overlay sombre en bas : lisibilité du texte au-dessus du graphique. */
 .card-overlay {
