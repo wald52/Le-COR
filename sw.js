@@ -34,7 +34,7 @@ const ASSETS = [
   // Images du carrousel (js/cards.js) : chargées seulement à l'ouverture d'une
   // carte. Précachées ici pour rester disponibles hors-ligne (« mode avion »)
   // même si les cartes n'ont jamais été ouvertes lors de la première visite.
-  "./images/intro-cor.webp",
+  "./images/accueil-lecteur-cor.webp",
   "./images/bayrou.webp",
   "./images/hypotheses-cockpit.webp",
   "./images/simulateur-faders.webp",

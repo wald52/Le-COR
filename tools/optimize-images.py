@@ -22,6 +22,7 @@ from PIL import Image
 # Photos de cartes converties (cf. js/cards.js, champ `photo`). `explorer-cards.svg`
 # est exclu : déjà vectoriel et léger.
 PHOTOS = [
+    "accueil-lecteur-cor.jpg",
     "intro-cor.jpg",
     "bayrou.jpg",
     "hypotheses-cockpit.jpg",
