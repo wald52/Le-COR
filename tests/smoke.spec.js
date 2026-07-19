@@ -15,11 +15,11 @@ test("le carousel affiche des cartes, des dots et un graphique sur une carte", a
   const cards = page.locator(".cs-track .card");
   await expect(cards).toHaveCount(13);
   await expect(page.locator(".cs-dots .cs-dot")).toHaveCount(13);
-  // La carte d'accueil active affiche son image de fond, sans bouton
-  // « Voir le détail » ni descriptif (carte de couverture, noDetail)…
+  // La carte d'accueil active affiche son image de fond et son pitch, mais
+  // pas de bouton « Voir le détail » (carte de couverture, noDetail)…
   await expect(page.locator(".card.is-active .card-chart--photo img.card-photo")).toBeVisible();
+  await expect(page.locator(".card.is-active .card-sub")).toBeVisible();
   await expect(page.locator(".card.is-active .card-cta")).toHaveCount(0);
-  await expect(page.locator(".card.is-active .card-sub")).toHaveCount(0);
   // …et la carte suivante (« depenses ») un vrai mini-graphique en courbes.
   await page.keyboard.press("ArrowRight");
   await expect(page.locator(".card.is-active .card-chart .chart-svg")).toBeVisible();

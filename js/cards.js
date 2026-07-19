@@ -123,6 +123,7 @@
    * ==================================================================== */
   const cards = [
     { id: "presentation", chapter: "Bienvenue", title: "À quoi sert ce site ?", noDetail: true,
+      subtitle: "Chaque année, le COR projette nos retraites jusqu'en 2070. Ce site superpose ses rapports de 2001 à 2026 : change-t-il d'avis, et ses prévisions se réalisent-elles ?",
       image: { section: "presentation", theme: "#0e7490", photo: "./images/accueil-lecteur-cor.webp" } },
     { id: "depenses", chapter: "Le constat", title: "La même question, des réponses différentes",
       subtitle: "Dépenses de retraite en % du PIB",
