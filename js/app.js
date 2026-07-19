@@ -323,7 +323,7 @@
   }
 
   /* ----------------------------------------------------------------------
-   * Sankey de la carte d'accueil : « D'où vient l'argent des retraites ? »
+   * Sankey de la section financement : « D'où vient l'argent des retraites ? »
    * Structure des ressources (gauche) → Système de retraite → emplois (droite).
    *
    * DISTINCTION OFFICIEL / CALCULÉ (exigence : ne montrer que des chiffres
@@ -338,7 +338,6 @@
   let sankeyUnit = "pct";      // "pct" (%) par défaut : 100 % officiel, toutes années | "mds" (Md€)
 
   // Construit la config du moteur Sankey pour une année et une unité.
-  // mini:true → version simplifiée pour le fond de la carte (sans libellés).
   function buildSankeyCfg(year, unit, mini) {
     const s = D.sankeyFinancement;
     if (!s) return null;
@@ -394,9 +393,6 @@
         (pct ? " (parts en %)" : " (en milliards d’euros)")
     };
   }
-  // Exposé pour le mini-graphique de fond de carte (js/cards.js).
-  window.CORSankey = { buildCfg: buildSankeyCfg };
-
   // Source dynamique : dit clairement ce qui est officiel et ce qui est calculé.
   function sankeySourceNote(year, unit) {
     if (unit === "pct")
@@ -407,7 +403,7 @@
       "Seules les parts en % (et l’année 2025 en Md€) sont des chiffres officiels du COR.";
   }
 
-  function renderPresentationSankey() {
+  function renderFinancementSankey() {
     const host = document.getElementById("chart-sankey");
     if (!host) return;
     const cfg = buildSankeyCfg(sankeyYear, sankeyUnit, false);
@@ -437,7 +433,7 @@
           x.classList.toggle("is-active", on);
           x.setAttribute("aria-pressed", on ? "true" : "false");
         });
-        renderPresentationSankey();
+        renderFinancementSankey();
       });
     }
     const sel = document.getElementById("sankey-year");
@@ -447,7 +443,7 @@
         `<option value="${y}"${y === sankeyYear ? " selected" : ""}>${y}</option>`).join("");
       sel.addEventListener("change", () => {
         sankeyYear = Number(sel.value);
-        renderPresentationSankey();
+        renderFinancementSankey();
       });
     }
   }
@@ -734,13 +730,12 @@
     if (sectionRendered.has(id)) return;
     sectionRendered.add(id);
     switch (id) {
-      case "presentation": setupSankeyControls(); renderPresentationSankey(); break;
       case "depenses": renderDepensesPib(false); break;
       case "deficit": renderSolde(false); renderCiseaux(false); break;
       case "productivite": renderProductivite(); break;
       case "realite": renderFecondite(false); renderProductiviteReel(false); break;
       case "niveau": renderNiveauVie(false); break;
-      case "financement": renderFiscalisation(false); break;
+      case "financement": renderFiscalisation(false); setupSankeyControls(); renderFinancementSankey(); break;
       case "monde": renderInternational(); break;
       case "explorer": ensureExplorer(); break;
       // simulateur / hypotheses / methode : contenu statique ou déjà câblé au chargement.

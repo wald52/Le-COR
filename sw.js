@@ -4,7 +4,7 @@
  * dernière version (le navigateur revalide via ETag, donc 304 quasi gratuit
  * si rien n'a changé), avec repli sur le cache si le réseau est absent.
  */
-const CACHE = "le-cor-citoyen-v71";
+const CACHE = "le-cor-citoyen-v72";
 const NETWORK_TIMEOUT_MS = 5000;
 const ASSETS = [
   "./",
@@ -34,6 +34,7 @@ const ASSETS = [
   // Images du carrousel (js/cards.js) : chargées seulement à l'ouverture d'une
   // carte. Précachées ici pour rester disponibles hors-ligne (« mode avion »)
   // même si les cartes n'ont jamais été ouvertes lors de la première visite.
+  "./images/intro-cor.webp",
   "./images/bayrou.webp",
   "./images/hypotheses-cockpit.webp",
   "./images/simulateur-faders.webp",
