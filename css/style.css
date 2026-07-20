@@ -62,8 +62,10 @@ a { color: var(--bleu-clair); }
   position: sticky; top: 0; z-index: 50;
   display: flex; align-items: center; gap: 16px;
   padding: 6px 20px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
+  /* Fond quasi opaque SANS backdrop-filter : un flou sous un header sticky est
+     ré-échantillonné à chaque frame de défilement (saccades, surtout mobile),
+     pour un rendu déjà imperceptible derrière un fond à 92 %+. */
+  background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid var(--gris-clair);
 }
 .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; margin-right: auto; }

@@ -205,10 +205,12 @@ body.mode-carousel {
   /* La description complète n'apparaît qu'en plein (la carte active est lisible). */
 }
 /* Appel à l'action « Voir le détail › » : présenté comme une PASTILLE tactile
-   (verre dépoli) et non un simple texte, pour que les visiteurs comprennent qu'on
-   ouvre ici la description détaillée. Même vocabulaire visuel que la bulle de
-   retour .cd-back (fond translucide + flou + ombre douce), mais en blanc pour
-   ressortir sur les photos sombres des cartes. */
+   et non un simple texte, pour que les visiteurs comprennent qu'on ouvre ici la
+   description détaillée. Même vocabulaire visuel que la bulle de retour .cd-back
+   (fond translucide + ombre douce), mais en blanc pour ressortir sur les photos
+   sombres des cartes. PAS de backdrop-filter ici : la pastille pulse en boucle
+   (card-cta-pulse) et un flou d'arrière-plan serait re-rastérisé à chaque frame,
+   même carrousel au repos — le fond translucide un peu plus opaque suffit. */
 .card-cta {
   display: inline-flex;
   align-items: center;
@@ -217,9 +219,7 @@ body.mode-carousel {
   padding: 7px 14px;
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.22);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
   font-size: 0.82rem;
   font-weight: 700;
@@ -228,12 +228,12 @@ body.mode-carousel {
 }
 
 /* Pendant le mouvement des cartes (ressort ou drag — classe posée par js/cards.js),
-   on NEUTRALISE les backdrop-filter des pastilles (chapitre + « Voir le détail »).
-   Ré-échantillonner un flou d'arrière-plan à chaque frame, pour 14 cartes qui se
-   déplacent, est l'effet le plus coûteux du carrousel (surtout mobile). Au repos
-   (classe retirée en fin de ressort), le « verre dépoli » revient à l'identique. */
-body.cards-animating .card-chapter,
-body.cards-animating .card-cta {
+   on NEUTRALISE le backdrop-filter de la pastille chapitre (seule à garder son
+   « verre dépoli », car statique au repos). Ré-échantillonner un flou
+   d'arrière-plan à chaque frame, pour 14 cartes qui se déplacent, est l'effet le
+   plus coûteux du carrousel (surtout mobile). Au repos (classe retirée en fin de
+   ressort), le flou revient à l'identique. */
+body.cards-animating .card-chapter {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -355,12 +355,13 @@ body:not(.cards-detail-seen) .card.is-active .card-cta {
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85);
+  /* Fond quasi opaque, SANS backdrop-filter : la flèche « suivante » se balance
+     en boucle (cs-nav-nudge) et un flou d'arrière-plan serait re-rastérisé à
+     chaque frame, même écran au repos. */
+  background: rgba(255, 255, 255, 0.92);
   color: var(--bleu);
   box-shadow: 0 4px 14px rgba(31, 78, 121, 0.22);
   cursor: pointer;
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
   transition: opacity .2s ease, transform .15s ease, background .2s ease, padding .38s ease;
 }
 .cs-nav .icon { width: 24px; height: 24px; flex: none; }
@@ -461,8 +462,8 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   color: var(--bleu);            /* flèche + texte en bleu */
   box-shadow: 0 4px 16px rgba(31, 78, 121, 0.26), 0 1px 3px rgba(0, 0, 0, 0.12);
   cursor: pointer;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  /* Pas de backdrop-filter : la bulle « nudge » en boucle, et un flou d'arrière-
+     plan serait re-rastérisé à chaque frame (fond à 95 % : flou invisible). */
   /* « Nudge » : un bref va-et-vient vers le bas, comme une flèche que l'on tire. */
   animation: cd-back-nudge 1.7s ease-in-out 0.6s infinite;
   transition: padding .38s ease;
