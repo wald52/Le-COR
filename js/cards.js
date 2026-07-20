@@ -188,7 +188,17 @@
   const dotEls = [];
   const miniDrawn = new Set(); // cartes dont le mini-graphique est déjà tracé
   const lastZ = [];            // dernier zIndex écrit par carte (évite les ré-écritures par frame)
+  const lastHidden = [];       // dernier état visibility écrit par carte (même principe)
   let lastActive = -1;         // dernier indice actif poussé aux points/flèches/classe is-active
+  // Distance (en cartes) au-delà de laquelle une carte est entièrement hors écran.
+  // Les cartes au-delà sont passées en visibility:hidden : ~3-5 cartes peintes et
+  // composées au lieu de 14 (chaque carte est un calque GPU permanent via son
+  // translate3d). Marge large (CARD_WIDTH entier au lieu d'une demi-carte) pour
+  // couvrir échelle/rotation. Recalculée au resize (rotation d'écran).
+  let hideDist = Infinity;
+  function computeHideDist() {
+    hideDist = (window.innerWidth / 2 + CARD_WIDTH) / STEP;
+  }
 
   let screen, viewport, track, dotsWrap, prevBtn, nextBtn;
 
@@ -296,7 +306,12 @@
     for (let i = 0; i < cardEls.length; i++) {
       const el = cardEls[i];
       const d = i - off;
-      const ad = clamp(Math.abs(d), 0, 1);
+      const dist = Math.abs(d);
+      // Cartes entièrement hors écran : masquées (ni peintes ni composées).
+      // Écrit seulement au franchissement du seuil, pas à chaque frame.
+      const hidden = dist > hideDist;
+      if (lastHidden[i] !== hidden) { el.style.visibility = hidden ? "hidden" : ""; lastHidden[i] = hidden; }
+      const ad = clamp(dist, 0, 1);
       const scale = lerp(ACTIVE_SCALE, INACTIVE_SCALE, ad);
       const opacity = lerp(1, 0.55, ad);
       const rot = clamp(d, -1.5, 1.5) * -2; // légère inclinaison
@@ -526,13 +541,15 @@
         startBackHint(refs.backBtn, refs.labelEl);
       };
       if (reduceMotion()) { settle(); return; }
-      const r0 = parseFloat(sheet.style.borderRadius) || 0;
       const s0 = scrim ? (parseFloat(scrim.style.opacity) || 0) : 0;
       const dur = clamp(v > 0 ? fromTy / v : OPEN_DURATION, 160, OPEN_DURATION);
+      // Le rayon reste FIGÉ à sa valeur du drag pendant le settle (animer
+      // border-radius repeint la feuille plein écran à chaque frame) ; settle()
+      // le remet à zéro en une seule écriture, coins en bord d'écran → invisible.
       const a = sheet.animate(
         [
-          { transform: `translateY(${fromTy}px)`, borderRadius: r0 + "px" },
-          { transform: "translateY(0px)", borderRadius: "0px" }
+          { transform: `translateY(${fromTy}px)` },
+          { transform: "translateY(0px)" }
         ],
         { duration: dur, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" }
       );
@@ -652,6 +669,10 @@
       try { a.cancel(); } catch (e) {}
     });
     openAnims = [];
+    // Efface le rayon figé posé avant la montée (cf. openDetail) : la feuille
+    // est plein écran, le passage 28px → 0 se joue hors champ.
+    const sheet = detailEl && detailEl.querySelector(".cd-sheet");
+    if (sheet) sheet.style.borderRadius = "";
     // Le rendu des graphiques a été DIFFÉRÉ pour ne pas saccader l'ouverture (effet
     // « on/off » : reconstruire le SVG bloque le thread pendant la montée de la
     // feuille). On le déclenche maintenant, une seule fois, l'animation étant figée
@@ -854,10 +875,15 @@
       return;
     }
     setDetailWillChange(true);     // promeut voile + corps avant leurs animations
+    // Rayon FIGÉ à 28px pendant la montée (animer border-radius avec transform
+    // repeint la feuille plein écran à chaque frame → saccades à l'ouverture) ;
+    // freezeOpenAnims le remet à zéro en une seule écriture, coins en bord
+    // d'écran à ce moment-là → imperceptible.
+    sheet.style.borderRadius = "28px";
     const sheetAnim = sheet.animate(
       [
-        { transform: "translateY(100%)", borderRadius: "28px" },
-        { transform: "translateY(0)", borderRadius: "0px" }
+        { transform: "translateY(100%)" },
+        { transform: "translateY(0)" }
       ],
       { duration: OPEN_DURATION, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" }
     );
@@ -962,12 +988,14 @@
       const fromY = opts.fromY || 0;
       const v = Math.max(opts.velocity || 0, 0);              // px/ms
       const dur = clamp(v > 0 ? (vh - fromY) / v : 300, 200, 420);
-      const r0 = parseFloat(sheet.style.borderRadius) || 0;
       const s0 = scrim ? (parseFloat(scrim.style.opacity) || 1) : 1;
+      // Le rayon garde sa valeur inline du moment (drag : déjà arrondi ; bouton :
+      // carré) : l'animer pendant la sortie repeindrait la feuille à chaque frame
+      // pour un détail invisible sur un mouvement descendant rapide.
       const a = sheet.animate(
         [
-          { transform: `translateY(${fromY}px)`, borderRadius: r0 + "px" },
-          { transform: `translateY(${vh}px)`, borderRadius: "26px" }
+          { transform: `translateY(${fromY}px)` },
+          { transform: `translateY(${vh}px)` }
         ],
         { duration: dur, easing: "cubic-bezier(.22,1,.36,1)", fill: "both" }
       );
@@ -985,10 +1013,14 @@
     const tx = rect.left + rect.width / 2 - vw / 2;
     const ty = rect.top + rect.height / 2 - vh / 2;
     const body = detailEl.querySelector(".cd-body");
+    // Rayon FIGÉ à 26px dès le départ (au lieu d'animer 0 → 26 : repaint plein
+    // écran à chaque frame) : la mise à l'échelle le réduit visuellement pendant
+    // la « replongée », et la feuille est démontée à l'arrivée.
+    sheet.style.borderRadius = "26px";
     const a = sheet.animate(
       [
-        { transform: "translate(0px,0px) scale(1,1)", borderRadius: "0px", opacity: 1 },
-        { transform: `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`, borderRadius: "26px", opacity: 0.35 }
+        { transform: "translate(0px,0px) scale(1,1)", opacity: 1 },
+        { transform: `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`, opacity: 0.35 }
       ],
       { duration: OPEN_DURATION, easing: "cubic-bezier(.32,.72,0,1)", fill: "both" }
     );
@@ -1139,6 +1171,7 @@
     const root = document.documentElement.style;
     root.setProperty("--card-w", CARD_WIDTH + "px");
     root.setProperty("--card-h", CARD_HEIGHT + "px");
+    computeHideDist();
 
     // Réservoir : on déplace tout le contenu existant de <main> dans un conteneur
     // caché. Les <section> y restent disponibles comme contenu des vues détail.
@@ -1276,11 +1309,15 @@
     if (reduceMotion()) deployNavHint();
     else setTimeout(deployNavHint, 800);
 
-    // Redimensionnement (rotation) : les transforms sont en px → on réapplique.
+    // Redimensionnement (rotation) : les transforms sont en px → on réapplique
+    // (et le seuil de masquage hors écran dépend de la largeur du viewport).
     let rt;
     window.addEventListener("resize", () => {
       clearTimeout(rt);
-      rt = setTimeout(() => { if (!detailOpen) applyTransforms(offset); }, 150);
+      rt = setTimeout(() => {
+        computeHideDist();
+        if (!detailOpen) applyTransforms(offset);
+      }, 150);
     });
 
     // Lien profond : une URL du type …/#depenses (celle que copie le bouton
