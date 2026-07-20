@@ -390,9 +390,14 @@
     const playReveal = () => {
       cancelAnimationFrame(revealRaf);
       const t0 = performance.now();
+      // Largeur arrondie au pixel entier et écrite seulement quand elle change :
+      // la queue de l'ease-out produit beaucoup de frames sub-pixel → autant de
+      // re-rendus du calque clippé évités (largeur exacte à la dernière frame).
+      let lastW = -1;
       const step = now => {
         const k = Math.max(0, Math.min(1, (now - t0) / 1100));
-        revealRect.setAttribute("width", revealW * (1 - Math.pow(1 - k, 3)));
+        const w = k < 1 ? Math.round(revealW * (1 - Math.pow(1 - k, 3))) : revealW;
+        if (w !== lastW) { revealRect.setAttribute("width", w); lastW = w; }
         if (k < 1) revealRaf = requestAnimationFrame(step);
       };
       revealRaf = requestAnimationFrame(step);
@@ -743,9 +748,13 @@
       };
       const start = () => {
         const t0 = performance.now();
+        // Même optimisation que playReveal : largeur au pixel entier, écrite
+        // seulement quand elle change (la fin de l'ease-out est sub-pixel).
+        let lastW = -1;
         const step = now => {
           const k = Math.max(0, Math.min(1, (now - t0) / dur));
-          revealRect.setAttribute("width", revealW * (1 - Math.pow(1 - k, 3)));
+          const w = k < 1 ? Math.round(revealW * (1 - Math.pow(1 - k, 3))) : revealW;
+          if (w !== lastW) { revealRect.setAttribute("width", w); lastW = w; }
           if (k < 1) raf = requestAnimationFrame(step); else done();
         };
         raf = requestAnimationFrame(step);
@@ -796,12 +805,21 @@
       return pts[pts.length - 1].y;
     }
 
-    overlay.addEventListener("mousemove", evt => {
-      const rect = svg.getBoundingClientRect();
-      const px = (evt.clientX - rect.left) / rect.width * W;
+    // Le rect du SVG est mis en cache à l'entrée du curseur : le lire à chaque
+    // mousemove force une mesure de layout (et seuls left/width servent ici →
+    // le défilement vertical pendant le survol ne le périme pas). Les mises à
+    // jour sont regroupées en rAF et dédupliquées par année : on n'écrit dans
+    // le DOM qu'au changement d'année survolée, pas à chaque mouvement.
+    let hoverRect = null, hoverRaf = 0, hoverX = 0, lastXr = null;
+    const updateTip = () => {
+      hoverRaf = 0;
+      const rect = hoverRect || (hoverRect = svg.getBoundingClientRect());
+      const px = (hoverX - rect.left) / rect.width * W;
       const xv = xMin + ((px - M.left) / plotW) * (xMax - xMin);
       let xr = Math.round(xv);
       if (cats) xr = Math.max(0, Math.min(cats.length - 1, xr));
+      if (xr === lastXr) return;
+      lastXr = xr;
       focusLine.setAttribute("x1", sx(xr));
       focusLine.setAttribute("x2", sx(xr));
       focusLine.setAttribute("opacity", 1);
@@ -819,8 +837,16 @@
       tip.innerHTML = rows;
       tip.style.opacity = 1;
       placeTip(tip, rect, (sx(xr) / W) * rect.width);
+    };
+    overlay.addEventListener("mouseenter", () => { hoverRect = svg.getBoundingClientRect(); });
+    overlay.addEventListener("mousemove", evt => {
+      hoverX = evt.clientX;
+      if (!hoverRaf) hoverRaf = requestAnimationFrame(updateTip);
     });
     overlay.addEventListener("mouseleave", () => {
+      if (hoverRaf) { cancelAnimationFrame(hoverRaf); hoverRaf = 0; }
+      hoverRect = null;
+      lastXr = null;
       tip.style.opacity = 0;
       focusLine.setAttribute("opacity", 0);
     });
