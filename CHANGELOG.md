@@ -7,12 +7,12 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Modifié
 
-- **Section « D'où vient vraiment l'argent des retraites ? »** : l'accordéon des
-  trois lectures (A/B/C) est resserré sur la seule lecture critique « avant
-  subventions d'équilibre » et son tableau (≈ 87 Md€). La lecture officielle du
-  COR — convention de tout le site — est rappelée dans le paragraphe
-  d'introduction, et la lecture « médiane » était redondante avec l'encadré
-  « Ce qu'il faut retenir ».
+- **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
+  (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
+  d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus
+  d'accordéon, puisqu'il n'y a qu'une lecture). La lecture officielle du COR —
+  convention de tout le site — est rappelée dans le paragraphe d'introduction, et
+  la lecture « médiane » était redondante avec l'encadré « Ce qu'il faut retenir ».
 
 ## [1.0.0] – 2026-06-27
 
