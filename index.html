@@ -326,9 +326,15 @@
               <button type="button" class="unit-btn is-active" data-unit="pct" aria-pressed="true">Parts (%)</button>
               <button type="button" class="unit-btn" data-unit="mds" aria-pressed="false">Milliards €</button>
             </div>
-            <label class="sankey-year-pick">Année&nbsp;:
-              <select id="sankey-year" aria-label="Choisir l'année"></select>
-            </label>
+            <span class="sankey-year-pick" id="sankey-year-pick">Année&nbsp;:
+              <span id="sankey-year" class="cor-select" data-value="2025">
+                <button type="button" class="cor-select__btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Choisir l'année">
+                  <span class="cor-select__value">2025</span>
+                  <span class="cor-select__arrow" aria-hidden="true"></span>
+                </button>
+                <ul class="cor-select__list" role="listbox" tabindex="-1" hidden aria-label="Année"></ul>
+              </span>
+            </span>
           </div>
           <div id="chart-sankey" class="chart-host"></div>
           <ul class="sankey-key">

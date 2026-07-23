@@ -439,13 +439,112 @@
     const sel = document.getElementById("sankey-year");
     if (sel && !sel.__built) {
       sel.__built = true;
-      sel.innerHTML = s.years.map(y =>
-        `<option value="${y}"${y === sankeyYear ? " selected" : ""}>${y}</option>`).join("");
-      sel.addEventListener("change", () => {
-        sankeyYear = Number(sel.value);
-        renderFinancementSankey();
-      });
+      buildYearSelect(sel, s.years);
     }
+  }
+
+  // Liste déroulante d'année personnalisée (bouton + listbox stylable aux
+  // couleurs du site), en remplacement du <select> natif dont la liste ouverte
+  // n'est pas stylable en CSS. Entièrement accessible au clavier et compatible
+  // lecteur d'écran (rôles listbox/option, aria-expanded/aria-selected).
+  function buildYearSelect(root, years) {
+    const btn = root.querySelector(".cor-select__btn");
+    const valEl = root.querySelector(".cor-select__value");
+    const list = root.querySelector(".cor-select__list");
+    if (!btn || !valEl || !list) return;
+
+    list.innerHTML = years.map(y =>
+      `<li role="option" data-value="${y}" id="sankey-year-opt-${y}"` +
+      `${y === sankeyYear ? ' aria-selected="true" class="is-selected"' : ""}>${y}</li>`
+    ).join("");
+    const options = Array.from(list.querySelectorAll('[role="option"]'));
+
+    function setValue(y, focusBtn) {
+      sankeyYear = Number(y);
+      root.dataset.value = String(y);
+      valEl.textContent = String(y);
+      options.forEach(o => {
+        const on = o.dataset.value === String(y);
+        o.classList.toggle("is-selected", on);
+        if (on) o.setAttribute("aria-selected", "true");
+        else o.removeAttribute("aria-selected");
+      });
+      close(focusBtn);
+      renderFinancementSankey();
+    }
+
+    function isOpen() { return btn.getAttribute("aria-expanded") === "true"; }
+
+    function activeOption() {
+      return options.find(o => o.dataset.value === String(sankeyYear)) || options[0];
+    }
+
+    function open() {
+      if (isOpen()) return;
+      btn.setAttribute("aria-expanded", "true");
+      list.hidden = false;
+      const cur = activeOption();
+      list.setAttribute("aria-activedescendant", cur.id);
+      options.forEach(o => o.classList.toggle("is-active", o === cur));
+      cur.scrollIntoView({ block: "nearest" });
+      list.focus();
+    }
+
+    function close(focusBtn) {
+      if (!isOpen() && list.hidden) { if (focusBtn) btn.focus(); return; }
+      btn.setAttribute("aria-expanded", "false");
+      list.hidden = true;
+      list.removeAttribute("aria-activedescendant");
+      options.forEach(o => o.classList.remove("is-active"));
+      if (focusBtn) btn.focus();
+    }
+
+    function moveActive(delta) {
+      const cur = options.find(o => o.classList.contains("is-active")) || activeOption();
+      let i = options.indexOf(cur) + delta;
+      i = Math.max(0, Math.min(options.length - 1, i));
+      const next = options[i];
+      options.forEach(o => o.classList.toggle("is-active", o === next));
+      list.setAttribute("aria-activedescendant", next.id);
+      next.scrollIntoView({ block: "nearest" });
+    }
+
+    btn.addEventListener("click", () => { isOpen() ? close(false) : open(); });
+
+    btn.addEventListener("keydown", e => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        open();
+      }
+    });
+
+    list.addEventListener("click", e => {
+      const opt = e.target.closest('[role="option"]');
+      if (opt) setValue(opt.dataset.value, true);
+    });
+
+    list.addEventListener("keydown", e => {
+      switch (e.key) {
+        case "ArrowDown": e.preventDefault(); moveActive(1); break;
+        case "ArrowUp": e.preventDefault(); moveActive(-1); break;
+        case "Home": e.preventDefault(); moveActive(-options.length); break;
+        case "End": e.preventDefault(); moveActive(options.length); break;
+        case "Enter":
+        case " ": {
+          e.preventDefault();
+          const cur = options.find(o => o.classList.contains("is-active"));
+          if (cur) setValue(cur.dataset.value, true);
+          break;
+        }
+        case "Escape": e.preventDefault(); close(true); break;
+        case "Tab": close(false); break;
+        default: break;
+      }
+    });
+
+    document.addEventListener("click", e => {
+      if (isOpen() && !root.contains(e.target)) close(false);
+    });
   }
 
   /* ----------------------------------------------------------------------

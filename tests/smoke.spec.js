@@ -34,13 +34,14 @@ test("la carte « financement » ouvre le Sankey de la structure des ressources 
   await expect(page.locator(".cd-body #chart-sankey svg.sankey")).toBeVisible();
   // …avec un sélecteur d'unité (Milliards € / Parts %) et une liste d'années 2004→2025.
   await expect(page.locator(".cd-body #sankey-unit-toggle .unit-btn")).toHaveCount(2);
-  await expect(page.locator(".cd-body #sankey-year option")).toHaveCount(22);
+  await expect(page.locator('.cd-body #sankey-year [role="option"]')).toHaveCount(22);
   await expect(page.locator("#sankey-year-label")).toHaveText("2025");
   // Par défaut « Parts (%) » : source officielle (aucun calcul).
   await expect(page.locator("#sankey-source")).toContainText(/officielle/i);
   // Passer en « Milliards € » sur une année ≠ 2025 : la source signale un CALCUL.
   await page.locator('.cd-body .unit-btn[data-unit="mds"]').click();
-  await page.locator(".cd-body #sankey-year").selectOption("2010");
+  await page.locator(".cd-body #sankey-year .cor-select__btn").click();
+  await page.locator('.cd-body #sankey-year [role="option"][data-value="2010"]').click();
   await expect(page.locator("#sankey-year-label")).toHaveText("2010");
   await expect(page.locator("#sankey-source")).toContainText(/calcul/i);
 });

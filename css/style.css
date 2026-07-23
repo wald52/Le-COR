@@ -335,12 +335,45 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 0.85rem; color: var(--gris);
 }
-#sankey-year {
+/* Liste déroulante d'année personnalisée (composant .cor-select) : bouton
+ * + liste (role="listbox") entièrement stylables aux couleurs du site,
+ * contrairement au <select> natif dont la liste ouverte reste native. */
+.cor-select { position: relative; display: inline-block; }
+.cor-select__btn {
   font: inherit; font-size: 0.9rem; font-weight: 600; color: var(--bleu);
+  display: inline-flex; align-items: center; gap: 8px;
   padding: 6px 10px; border: 1px solid var(--gris-clair); border-radius: 8px;
   background: #fff; cursor: pointer;
 }
-#sankey-year:focus-visible { outline: 2px solid var(--bleu-clair); outline-offset: 2px; }
+.cor-select__btn:hover { border-color: var(--bleu-clair); }
+.cor-select__btn:focus-visible { outline: 2px solid var(--bleu-clair); outline-offset: 2px; }
+.cor-select__arrow {
+  width: 8px; height: 8px; flex: 0 0 auto; margin-left: 2px;
+  border-right: 2px solid var(--bleu); border-bottom: 2px solid var(--bleu);
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 0.15s ease;
+}
+.cor-select__btn[aria-expanded="true"] .cor-select__arrow {
+  transform: rotate(-135deg) translate(-1px, -1px);
+}
+.cor-select__list {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+  margin: 0; padding: 6px; list-style: none;
+  min-width: 100%; max-height: 260px; overflow-y: auto;
+  background: #fff; border: 1px solid var(--gris-clair);
+  border-radius: 10px; box-shadow: var(--ombre);
+}
+.cor-select__list[hidden] { display: none; }
+.cor-select__list:focus-visible { outline: none; }
+.cor-select__list li {
+  font-size: 0.9rem; font-weight: 600; color: var(--encre);
+  padding: 7px 12px; border-radius: 6px; cursor: pointer;
+  text-align: center; user-select: none;
+}
+.cor-select__list li:hover,
+.cor-select__list li.is-active { background: var(--bleu-pale); color: var(--bleu); }
+.cor-select__list li.is-selected { background: var(--bleu); color: #fff; }
+.cor-select__list li.is-selected.is-active { background: var(--bleu-clair); color: #fff; }
 
 /* Texte du SVG Sankey. */
 .sankey { font-family: var(--police); display: block; width: 100%; height: auto; }
