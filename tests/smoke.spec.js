@@ -180,3 +180,28 @@ test("sans hash, l'accueil normal se charge (carousel, pas de vue détail)", asy
   await expect(page.locator(".card.is-active")).toBeVisible();
   await expect(page.locator(".card-detail")).toHaveCount(0);
 });
+
+test("double-clic sur une carte : la description détaillée reste visible", async ({ page }) => {
+  // Régression (ordinateur) : au 1er clic le détail s'ouvre et la feuille monte ;
+  // ~130 ms plus tard, le 2e clic d'un double-clic tombe sur la feuille et amorce
+  // un drag (freezeOpenAnims). Un commitStyles() précoce figeait alors le fondu
+  // d'entrée du corps à opacité ~0 → description « totalement blanche ». Le corps
+  // doit rester pleinement visible.
+  await page.goto("/");
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+
+  const box = await active.boundingBox();
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(130);
+  await page.mouse.click(cx, cy);
+
+  const body = page.locator(".card-detail .cd-body");
+  await expect(body).toBeVisible();
+  await expect
+    .poll(async () => Number(await body.evaluate((el) => getComputedStyle(el).opacity)))
+    .toBeGreaterThan(0.9);
+});

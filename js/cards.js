@@ -702,6 +702,14 @@
     // est plein écran, le passage 28px → 0 se joue hors champ.
     const sheet = detailEl && detailEl.querySelector(".cd-sheet");
     if (sheet) sheet.style.borderRadius = "";
+    // Le fondu d'entrée du corps (.cd-body) peut être figé à mi-course par le
+    // commitStyles() ci-dessus s'il est déclenché tôt (2e clic d'un double-clic
+    // amorçant un drag avant la fin de l'ouverture, alors que le corps est encore
+    // à opacité ~0 pendant son délai/début de fondu) : l'opacité resterait bloquée
+    // en style inline → description « blanche ». À l'état ouvert le corps est
+    // TOUJOURS pleinement visible : on efface ces styles figés.
+    const cdBody = detailEl && detailEl.querySelector(".cd-body");
+    if (cdBody) { cdBody.style.opacity = ""; cdBody.style.transform = ""; }
     // Le rendu des graphiques a été DIFFÉRÉ pour ne pas saccader l'ouverture (effet
     // « on/off » : reconstruire le SVG bloque le thread pendant la montée de la
     // feuille). On le déclenche maintenant, une seule fois, l'animation étant figée
