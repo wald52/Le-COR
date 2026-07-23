@@ -150,7 +150,7 @@ a { color: var(--bleu-clair); }
 
 /* ---------- Encadré « à retenir » ---------- */
 .takeaway {
-  margin-top: 26px; background: var(--bleu-pale); border-left: 5px solid var(--bleu);
+  margin-top: 26px; background: var(--bleu-pale);
   border-radius: 10px; padding: 18px 22px;
 }
 .takeaway h3 { margin: 0 0 6px; font-size: 1.05rem; }
