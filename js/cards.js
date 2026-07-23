@@ -616,7 +616,12 @@
           if (i === Math.round(offset)) { openDetail(i); setAnimating(false); }
           else springTo(i);
         } else {
-          setAnimating(false);
+          // Un pointerdown incident (doigt qui effleure le viewport pendant un
+          // appui rapide sur une flèche) a pu annuler le ressort en cours, laissant
+          // `offset` sur une position intermédiaire. On le recale sur la carte visée
+          // au lieu de figer la carte entre deux positions. Au repos (aucun ressort
+          // annulé), `offset === index` déjà → `springTo` est un quasi no-op.
+          springTo(index);
         }
         axis = null; downCard = null;
         return;
