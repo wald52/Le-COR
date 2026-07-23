@@ -609,11 +609,20 @@
         // Tap : ouvrir la carte active, ou aller à la carte tapée.
         if (downCard) {
           const i = +downCard.dataset.index;
-          // Ouverture (ou tap sur carte sans détail) : pas de ressort à venir →
-          // on lève tout de suite l'état « animation ». À l'ouverture, la feuille
+          // Carte la plus centrée : ouvrir son détail. À l'ouverture, la feuille
           // fige les cartes (centerActiveCard) : les flous, statiques, ne coûtent
-          // plus rien. `springTo` gère lui-même la classe pour un changement de carte.
-          if (i === Math.round(offset)) { openDetail(i); setAnimating(false); }
+          // plus rien, donc on lève tout de suite l'état « animation ».
+          // `springTo` gère lui-même la classe pour un changement de carte.
+          if (i === Math.round(offset)) {
+            // Une carte sans détail (l'intro) ne s'ouvre pas — mais il faut quand
+            // même se recaler dessus : un pointerdown incident (doigt qui effleure
+            // la carte pendant un appui rapide sur une flèche) a pu annuler le
+            // ressort en cours et figer `offset` sur une position intermédiaire.
+            // Sans ce recalage, la carte reste bloquée de travers (openDetail
+            // recentre via centerActiveCard, mais seulement quand un détail s'ouvre).
+            if (cards[i].noDetail) springTo(i);
+            else { openDetail(i); setAnimating(false); }
+          }
           else springTo(i);
         } else {
           // Un pointerdown incident (doigt qui effleure le viewport pendant un
