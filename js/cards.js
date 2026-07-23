@@ -301,7 +301,11 @@
     try { MINI[card.image.mini](chartEls[i]); } catch (e) { miniDrawn.delete(i); }
   }
   function drawVisibleMinis() {
-    for (let i = index - 1; i <= index + 1; i++) drawMini(i);
+    // ±2 (pas seulement les voisines immédiates) : un swipe rapide peut « dépasser »
+    // le pré-tracé en temps mort et atteindre une carte dont le SVG n'est pas encore
+    // construit → il serait bâti en pleine frame (micro-saccade). Tracer un cran plus
+    // loin donne une marge. `drawMini` est idempotent (garde `miniDrawn`).
+    for (let i = index - 2; i <= index + 2; i++) drawMini(i);
   }
 
   /* ----------------------------------------------------------------------
@@ -442,6 +446,17 @@
   function setupGestures() {
     let dragging = false, axis = null, downCard = null;
     let startX = 0, startY = 0, startOffset = 0, lastOffset = 0, lastT = 0;
+    // Le drag écrit dans le DOM au rythme de l'écran, pas au rythme des événements
+    // pointeur : sur un swipe rapide (ou un écran 90/120 Hz), plusieurs `pointermove`
+    // tombent dans une même frame. On calcule bien `offset`/`vel` à chaque événement
+    // (nécessaire pour la vélocité du flick), mais on ne pousse `applyTransforms` qu'une
+    // seule fois par frame via rAF → fin des recalculs de style redondants.
+    let moveRaf = 0;
+    const scheduleDraw = () => {
+      if (moveRaf) return;
+      moveRaf = requestAnimationFrame(() => { moveRaf = 0; applyTransforms(offset); });
+    };
+    const cancelDraw = () => { if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; } };
     // Ouverture au glissement (vertical, vers le haut) : miroir de la fermeture.
     let openDragActive = false, odRefs = null;
     let odStartY = 0, odLastY = 0, odLastT = 0, odV = 0;   // suivi de vélocité (px/ms montants)
@@ -479,7 +494,7 @@
       const dt = Math.max((now - lastT) / 1000, 0.001);
       vel = (offset - lastOffset) / dt;
       lastOffset = offset; lastT = now;
-      applyTransforms(offset);
+      scheduleDraw();
     });
 
     // ----- Glisser-pour-ouvrir : inverse de setupSheetDismiss (la feuille MONTE) -----
@@ -585,6 +600,9 @@
       }
       if (!dragging) return;
       dragging = false;
+      // Une écriture de drag planifiée mais pas encore exécutée écraserait la 1re
+      // frame du ressort (springTo) avec l'`offset` du drag → petit saut. On l'annule.
+      cancelDraw();
       try { viewport.releasePointerCapture(e.pointerId); } catch (err) {}
       const moved = Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY);
       if (axis !== "x" || moved < 10) {

@@ -88,7 +88,6 @@ body.mode-carousel #boot-splash { display: none !important; }
   margin-left: calc(var(--card-w) / -2);
   margin-top: calc(var(--card-h) / -2);
   transform-origin: center center;
-  will-change: transform, opacity;
   cursor: pointer;
   outline: none;
 }
@@ -131,7 +130,6 @@ body.mode-carousel #boot-splash { display: none !important; }
   left: -8%;
   width: 116%;
   height: 64%;
-  will-change: transform;
   pointer-events: none;
 }
 .card-chart svg { width: 100%; height: auto; display: block; }
@@ -242,6 +240,14 @@ body.cards-animating .card-chapter {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+
+/* `will-change` TRANSITOIRE : posé seulement pendant le mouvement (classe posée dès
+   le pointerdown, avant le 1er déplacement → la promotion des calques a le temps de
+   se faire, pas d'à-coup au démarrage du geste), retiré au repos. Sinon les 14 cartes
+   + 14 calques graphiques restent des calques GPU alloués en PERMANENCE : pression
+   mémoire/compositing inutile au repos, surtout sur mobile. */
+body.cards-animating .card { will-change: transform, opacity; }
+body.cards-animating .card-chart { will-change: transform; }
 
 /* Cartes inactives : on atténue le texte (la profondeur vient surtout du JS). */
 .card:not(.is-active) .card-desc,
