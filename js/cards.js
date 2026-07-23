@@ -32,8 +32,14 @@
   "use strict";
 
   // Sécurité : si le moteur de graphiques ou l'API app ne sont pas chargés, on
-  // ne fait rien (la page reste la version à défilement classique).
-  if (!window.CORChart || !window.CORApp) return;
+  // ne fait rien (la page reste la version à défilement classique) — mais on
+  // retire d'abord l'accueil statique (#boot-splash), sinon il masquerait la
+  // page à défilement qui prend le relais.
+  if (!window.CORChart || !window.CORApp) {
+    const s = document.getElementById("boot-splash");
+    if (s) s.remove();
+    return;
+  }
 
   const D = window.COR_DATA || {};
   const S = window.COR_SERIES || {};
@@ -1166,6 +1172,15 @@
   function CardSwipeScreen() {
     const main = document.getElementById("top") || document.querySelector("main");
     if (!main) return;
+
+    // Retire l'accueil statique (#boot-splash) qui recouvrait le contenu détaillé
+    // pendant le chargement des scripts `defer`. Tout CardSwipeScreen s'exécute en
+    // UNE tâche synchrone : le navigateur ne repeint qu'à la fin, quand le vrai
+    // .card-screen est déjà monté et le contenu déplacé dans #story-sections[hidden].
+    // Aucune peinture intermédiaire → pas de re-flash. On le retire (plutôt que de le
+    // masquer) pour éviter toute collision de sélecteurs (.cs-title, .card.is-active…).
+    const bootSplash = document.getElementById("boot-splash");
+    if (bootSplash) bootSplash.remove();
 
     // Source unique : les constantes JS pilotent les variables CSS des cartes.
     const root = document.documentElement.style;

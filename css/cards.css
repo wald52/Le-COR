@@ -23,6 +23,11 @@ body.mode-carousel {
 /* Le contenu d'origine sert de réservoir aux vues détail. */
 #story-sections[hidden] { display: none !important; }
 
+/* Filet de sécurité : l'accueil statique (#boot-splash, cf. index.html) est
+   normalement retiré par CardSwipeScreen au montage. Si le retrait était
+   court-circuité, le carrousel monté (body.mode-carousel) le masque tout de même. */
+body.mode-carousel #boot-splash { display: none !important; }
+
 /* ---------- Écran carousel ---------- */
 .card-screen {
   position: fixed;

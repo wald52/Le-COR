@@ -84,7 +84,41 @@
 
   <main id="top">
 
+    <!-- Accueil statique affiché AVANT le boot du carrousel (js/cards.js) : il
+         évite le flash de la description détaillée sous les scripts `defer`.
+         Réplique exacte de la 1re carte (cards[0], carte photo, sans détail).
+         Retiré par CardSwipeScreen au montage ; masqué sans JS via le <style>
+         du <noscript> ci-dessous. Réutilise les classes du carrousel
+         (css/cards.css) : aucun style nouveau. -->
+    <div id="boot-splash" class="card-screen" aria-hidden="true">
+      <header class="cs-head">
+        <p class="cs-kicker">Outil citoyen · données publiques du COR</p>
+        <h1 class="cs-title">Ceci est mon COR</h1>
+      </header>
+      <div class="cs-viewport">
+        <div class="card card--no-detail is-active" role="img" aria-label="À quoi sert ce site ?">
+          <div class="card-inner" style="--theme:#0e7490">
+            <div class="card-bg"></div>
+            <div class="card-chart card-chart--photo">
+              <img class="card-photo" src="./images/accueil-lecteur-cor.webp" alt=""
+                   width="340" height="520" loading="eager" fetchpriority="high" decoding="async" />
+            </div>
+            <div class="card-overlay"></div>
+            <div class="card-text">
+              <h2 class="card-title">À quoi sert ce site&nbsp;?</h2>
+              <p class="card-sub">Chaque année, le COR projette nos retraites jusqu'en 2070. Ce site superpose ses rapports de 2001 à 2026&nbsp;: change-t-il d'avis, et ses prévisions se réalisent-elles&nbsp;?</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <noscript>
+      <!-- Sans JavaScript, le carrousel ne se monte jamais : on masque l'accueil
+           statique (#boot-splash) pour laisser apparaître la page à défilement
+           classique. Le CSP autorise `style-src 'unsafe-inline'` ; une règle CSS
+           s'applique globalement quelle que soit sa position dans le document. -->
+      <style>#boot-splash{display:none!important}</style>
       <p class="noscript-note">
         Ce site affiche ses graphiques interactifs grâce à JavaScript, qui est
         actuellement désactivé dans votre navigateur. Activez-le pour explorer
