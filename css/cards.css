@@ -320,20 +320,20 @@ body:not(.cards-detail-seen) .card.is-active .card-cta {
 .ms-logo:hover { transform: scale(1.08); }
 .ms-logo-img {
   width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
-  background: #fff; border: 2px solid #d4af37;
-  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35), 0 0 0 2px rgba(212, 175, 55, 0.12);
+  background: #fff; border: 2px solid var(--or);
+  box-shadow: 0 4px 14px rgba(240, 169, 42, 0.35), 0 0 0 2px rgba(240, 169, 42, 0.12);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .ms-logo:hover .ms-logo-img {
-  border-color: #e6c75a;
-  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.5), 0 0 0 3px rgba(212, 175, 55, 0.2);
+  border-color: var(--or-clair);
+  box-shadow: 0 6px 22px rgba(240, 169, 42, 0.5), 0 0 0 3px rgba(240, 169, 42, 0.2);
 }
 /* pastille « lien externe » en haut à droite du logo */
 .ms-logo::before {
   content: "🔗"; position: absolute; top: -6px; right: -6px;
   width: 20px; height: 20px; font-size: 11px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--bleu); border: 1px solid #d4af37; border-radius: 50%;
+  background: var(--bleu); border: 1px solid var(--or); border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); z-index: 1;
   transition: transform 0.2s ease, background 0.2s ease;
 }
