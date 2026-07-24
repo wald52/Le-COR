@@ -503,6 +503,7 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
    défaut ; il se déploie à droite de la flèche quand .is-shown est posée, puis se
    replie à la première prise en main. Court → n'envahit pas l'écran. */
 .cd-back-label {
+  display: flex;
   max-width: 0;
   opacity: 0;
   overflow: hidden;
@@ -518,10 +519,31 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   opacity: 1;
   margin-left: 7px;
 }
+
+/* Variante « lien profond » : qui arrive par une URL …/#section n'a jamais vu
+   l'accueil. La bulle nomme alors le site ET l'action, sur DEUX lignes (le même
+   texte d'un seul tenant déborderait sous 360 px de large). Repliée, elle reste
+   la pastille ronde commune : seules les règles .is-shown changent. */
+.cd-back.is-deep { height: auto; min-height: 46px; border-radius: 23px; }
+.cd-back.is-deep.is-shown { padding: 7px 16px; }
+.cd-back.is-deep .cd-back-label { flex-direction: column; align-items: flex-start; gap: 4px; }
+.cd-back.is-deep.is-shown .cd-back-label { max-width: min(66vw, 13rem); }
+.cd-back-site { font-weight: 700; }
+.cd-back-act { font-weight: 500; opacity: 0.85; }
+
 .cd-body { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); }
 /* La <section> déplacée garde son style d'origine ; on neutralise juste le
-   fond alterné pour une feuille homogène. */
-.cd-body .band { padding-top: 8px; }
+   fond alterné pour une feuille homogène.
+
+   `scroll-margin-top` : par lien profond, la section porte l'id du fragment ET
+   vient d'être déplacée dans .cd-sheet (conteneur défilant). Le navigateur
+   applique alors son « défilement jusqu'au fragment » en fin de chargement et
+   alignerait le haut de la section sur celui de la feuille — le titre passerait
+   sous la bulle de retour collante. Une marge de défilement supérieure plus
+   grande que la position de la section dans la feuille ramène ce calcul à
+   scrollTop 0 (valeur bornée) : déclaratif, sans lutter contre le navigateur ni
+   minuter de correction. */
+.cd-body .band { padding-top: 14px; scroll-margin-top: 96px; }
 .cd-body .band.alt { background: var(--fond); }
 
 /* Bouton de retour EN BAS du descriptif : la pilule .cta du site (style inchangé),

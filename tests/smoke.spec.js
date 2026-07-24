@@ -175,6 +175,49 @@ test("un lien profond (#depenses) ouvre directement la vue détail", async ({ pa
   await expect(page.locator('.card.is-active[data-section="depenses"]')).toBeVisible();
 });
 
+test("un lien profond ouvre la feuille en haut, titre de section lisible", async ({ page }) => {
+  // Régression : la <section> ciblée est déplacée dans .cd-sheet (conteneur
+  // défilant) ; le navigateur y appliquait ensuite son « défilement jusqu'au
+  // fragment », alignant le haut de la section sur celui de la feuille — le titre
+  // passait derrière la bulle de retour collante et devenait illisible.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#realite");
+  const sheet = page.locator(".card-detail .cd-sheet");
+  await expect(sheet).toBeVisible();
+
+  // La feuille est bien en haut de course…
+  await expect.poll(async () => sheet.evaluate(el => el.scrollTop)).toBe(0);
+  // …et le titre de la section, une fois la feuille montée, commence SOUS la bulle
+  // de retour et sous le bord haut de l'écran (on interroge en boucle : l'ouverture
+  // est animée, les positions ne sont stables qu'à la fin de la montée).
+  const back = page.locator(".cd-back");
+  const h2 = page.locator(".cd-body #realite h2");
+  await expect(h2).toBeVisible();
+  await expect
+    .poll(async () => {
+      const backBox = await back.boundingBox();
+      const h2Box = await h2.boundingBox();
+      return h2Box.y > 0 && h2Box.y >= backBox.y + backBox.height;
+    })
+    .toBe(true);
+
+  // Arrivée par lien : la bulle nomme le site pour qui n'a jamais vu l'accueil.
+  await expect(back).toHaveClass(/is-deep/);
+  await expect(back).toContainText("Ceci est mon COR");
+});
+
+test("ouverte depuis le carousel, la bulle garde l'indice de retour habituel", async ({ page }) => {
+  await page.goto("/");
+  // 1re carte = couverture sans détail : on passe à « depenses » puis on l'ouvre.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('.card.is-active[data-section="depenses"]')).toBeVisible();
+  await page.locator(".card.is-active").click();
+  const back = page.locator(".cd-back");
+  await expect(back).toBeVisible();
+  await expect(back).not.toHaveClass(/is-deep/);
+  await expect(back).toContainText(/revenir à l'accueil/i);
+});
+
 test("sans hash, l'accueil normal se charge (carousel, pas de vue détail)", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".card.is-active")).toBeVisible();

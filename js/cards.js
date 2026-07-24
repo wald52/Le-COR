@@ -668,6 +668,7 @@
   let sectionPlaceholder = null;
   let detailHistoryPushed = false; // a-t-on empilé une entrée d'historique pour ce détail ?
   let backHintShown = false; // l'indice texte « cliquez/glissez pour revenir » ne s'affiche qu'à la 1re ouverture
+  let deepLinkArrival = false; // ce détail s'ouvre-t-il DIRECTEMENT depuis une URL …/#section ?
   let openAnims = [];        // animations d'ouverture (WAAPI) à figer avant un drag
   let openCardAnim = null;   // fondu de la carte d'origine pendant l'ouverture (à annuler pour la restaurer)
   let openDragInner = null;  // .card-inner estompé au doigt pendant l'ouverture-glissement (styles inline à restaurer)
@@ -806,12 +807,23 @@
     // s'adapte à la plateforme : « Glissez » sur écran tactile (on tire la
     // feuille), « Cliquez » au pointeur fin (souris). Court, pour ne pas envahir
     // l'écran et laisser interagir.
+    //
+    // Cas particulier du LIEN PROFOND (…/#realite) : le visiteur n'a jamais vu
+    // l'accueil et peut ignorer sur quel site il vient d'atterrir. La bulle nomme
+    // alors le site ET l'action (deux lignes, cf. .cd-back.is-deep), au lieu du
+    // simple « revenir à l'accueil » qui ne dit rien à qui arrive par un lien
+    // partagé. Le drapeau est consommé ici : seule la feuille d'arrivée le reçoit.
     const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
     const showHint = !backHintShown;
+    const deep = deepLinkArrival;
     backHintShown = true;
+    deepLinkArrival = false;
     const labelHtml = showHint
       ? '<span class="cd-back-label">' +
-        (coarse ? "Glissez pour revenir à l'accueil" : "Cliquez pour revenir à l'accueil") +
+        (deep
+          ? '<span class="cd-back-site">Ceci est mon COR</span>' +
+            '<span class="cd-back-act">voir toutes les cartes</span>'
+          : coarse ? "Glissez pour revenir à l'accueil" : "Cliquez pour revenir à l'accueil") +
         "</span>"
       : "";
 
@@ -828,7 +840,8 @@
       // (nudge, en CSS) invite au geste. Pastille ronde, qui se déploie en pilule
       // pour révéler le libellé. Indispensable sur ordinateur, où rien n'existait.
       '<div class="cd-backbar">' +
-      '<button class="cd-back" type="button" aria-label="Revenir aux cartes">' +
+      '<button class="cd-back' + (showHint && deep ? " is-deep" : "") +
+      '" type="button" aria-label="Revenir aux cartes">' +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>' +
       labelHtml +
       "</button>" +
@@ -865,6 +878,13 @@
       "Revenir à l'accueil";
     returnBtn.addEventListener("click", () => closeDetail({ slideDown: true }));
     body.appendChild(returnBtn);
+
+    // Une feuille s'ouvre TOUJOURS en haut de course : le titre de la section est
+    // la première chose que l'on doit lire. Ceinture et bretelles avec le
+    // `scroll-margin-top` de .cd-body .band (cf. cards.css), qui borne à 0 le
+    // « défilement jusqu'au fragment » que le navigateur applique après coup sur
+    // un lien profond.
+    sheet.scrollTop = 0;
 
     // Les graphiques sont pré-rendus au repos (déjà à leur taille finale → pas de
     // redimensionnement à l'ouverture). renderSection ne fait ici que (re)câbler les outils
@@ -1448,6 +1468,9 @@
     offset = i; index = i;
     applyTransforms(offset);
     drawVisibleMinis();
+    // Signale à buildDetail que cette feuille est une ARRIVÉE par lien : la bulle
+    // de retour nommera le site (le visiteur n'a jamais vu l'accueil).
+    deepLinkArrival = true;
     requestAnimationFrame(() => { if (!detailOpen) openDetail(i); });
   }
 
