@@ -199,13 +199,17 @@
     const W = Math.max(300, Math.min(cw, 920));
     const narrow = W < 480;
     const H = Math.round(narrow ? Math.min(W * 0.9, 340) : 360);
-    const M = { top: 24, right: narrow ? 16 : 30, bottom: narrow ? 40 : 50, left: narrow ? 42 : 50 };
+    const M = { top: 30, right: narrow ? 16 : 30, bottom: narrow ? 40 : 50, left: narrow ? 42 : 50 };
     const plotW = W - M.left - M.right;
     const plotH = H - M.top - M.bottom;
     const yMin = 0.0, yMax = 2.0;
     const sy = v => M.top + (1 - (v - yMin) / (yMax - yMin)) * plotH;
     const n = d.rapports.length;
-    const sx = i => M.left + ((i + 0.5) / n) * plotW;
+    // Échelle X bord à bord : la bande (l'éventail) remplit tout le cadre et
+    // « glisse » d'un côté à l'autre au lieu d'être 11 barres juxtaposées.
+    const sx = i => M.left + (n === 1 ? 0.5 : i / (n - 1)) * plotW;
+
+    const BLEU = "#1f4e79", ROUGE = "#d62728"; // = tokens --bleu / --rouge du site
 
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
@@ -219,7 +223,35 @@
       return e;
     };
 
-    // Grille Y
+    // --- Défs : dégradé horizontal bleu→rouge (bascule centrée sur 2022) +
+    //     découpe « révélation » pour un balayage gauche→droite à l'ouverture. ---
+    const rnd = Math.random().toString(36).slice(2, 8);
+    const gradId = "prod-grad-" + rnd;
+    const revealId = "prod-reveal-" + rnd;
+    const defs = mk("defs", {});
+    const iBascule = d.rapports.findIndex(r => r.year >= 2022); // 1re année « rouge »
+    const fBascule = iBascule < 0 ? 1 : (n === 1 ? 0.5 : iBascule / (n - 1));
+    const grad = mk("linearGradient", {
+      id: gradId, gradientUnits: "userSpaceOnUse",
+      x1: M.left, y1: 0, x2: M.left + plotW, y2: 0
+    });
+    // Transition douce de part et d'autre de la bascule : le glissement de
+    // couleur EST le message (« à partir de 2022, tout l'éventail glisse »).
+    const g0 = Math.max(0, fBascule - 0.04), g1 = Math.min(1, fBascule + 0.04);
+    [[0, BLEU], [g0, BLEU], [g1, ROUGE], [1, ROUGE]].forEach(([o, c]) => {
+      grad.appendChild(mk("stop", { offset: (o * 100).toFixed(1) + "%", "stop-color": c }));
+    });
+    defs.appendChild(grad);
+    const revealClip = mk("clipPath", { id: revealId });
+    // Rect « visible par défaut » (état statique) ; masqué puis rejoué à
+    // l'ouverture via __revealReset/__revealPlay (cf. js/cards.js).
+    const revealW = plotW + M.right;
+    const revealRect = mk("rect", { x: M.left, y: 0, width: revealW, height: H, class: "reveal-rect" });
+    revealClip.appendChild(revealRect);
+    defs.appendChild(revealClip);
+    svg.appendChild(defs);
+
+    // --- Grille Y + axe X (hors révélation : toujours visibles) ---
     for (let v = 0.0; v <= 2.0001; v += 0.5) {
       const y = sy(v);
       svg.appendChild(mk("line", { x1: M.left, y1: y, x2: M.left + plotW, y2: y, class: "chart-grid" }));
@@ -227,46 +259,92 @@
       t.textContent = v.toFixed(1).replace(".", ",") + " %";
       svg.appendChild(t);
     }
-
-    // Repère visuel : l'ancien plancher (1,0 %) devient un scénario central.
-    const refY = sy(1.0);
-    const refLine = mk("line", { x1: M.left, y1: refY, x2: M.left + plotW, y2: refY, class: "chart-ref-line" });
-    svg.appendChild(refLine);
-
+    svg.appendChild(mk("line", { x1: M.left, y1: M.top + plotH, x2: M.left + plotW, y2: M.top + plotH, class: "chart-axis" }));
     d.rapports.forEach((r, i) => {
-      const x = sx(i);
-      const color = r.year >= 2022 ? "#d62728" : "#1f4e79"; // bascule visible à partir de 2022
-      // Barre min→max
-      svg.appendChild(mk("line", {
-        x1: x, y1: sy(r.max), x2: x, y2: sy(r.min),
-        stroke: color, "stroke-width": 10, "stroke-linecap": "round", opacity: 0.25
-      }));
-      // Bornes
-      [r.min, r.max].forEach(v => {
-        svg.appendChild(mk("line", { x1: x - 9, y1: sy(v), x2: x + 9, y2: sy(v), stroke: color, "stroke-width": 2 }));
-      });
-      // Point central (scénario de référence)
-      svg.appendChild(mk("circle", { cx: x, cy: sy(r.central), r: 6, fill: color }));
-      const ctAttrs = narrow
-        ? { x: x, y: sy(r.central) - 12, class: "chart-endnote", fill: color, "text-anchor": "middle" }
-        : { x: x + 12, y: sy(r.central) - 8, class: "chart-endnote", fill: color };
-      const ct = mk("text", ctAttrs);
-      ct.textContent = r.central.toFixed(1).replace(".", ",");
-      svg.appendChild(ct);
-      // Étiquette année (une sur deux quand l'écran est étroit)
       if (!narrow || i % 2 === 0) {
-        const yl = mk("text", { x: x, y: M.top + plotH + 24, class: "chart-axis-label", "text-anchor": "middle" });
+        const yl = mk("text", { x: sx(i), y: M.top + plotH + 24, class: "chart-axis-label", "text-anchor": "middle" });
         yl.textContent = r.year;
         svg.appendChild(yl);
       }
     });
 
-    svg.appendChild(mk("line", { x1: M.left, y1: M.top + plotH, x2: M.left + plotW, y2: M.top + plotH, class: "chart-axis" }));
+    // --- Calque animé (bande + bascule + courbe + points + étiquettes) ---
+    const layer = mk("g", { "clip-path": `url(#${revealId})` });
+
+    // Contours de l'éventail : frontière haute (max) et basse (min). Segments
+    // droits, comme le reste du moteur (js/chart.js buildClippedPath en « L »).
+    const upper = d.rapports.map((r, i) => `${sx(i).toFixed(1)},${sy(r.max).toFixed(1)}`);
+    const lower = d.rapports.map((r, i) => `${sx(i).toFixed(1)},${sy(r.min).toFixed(1)}`);
+    // Bande = aller (max) + retour (min inversé), remplie au dégradé.
+    const bandD = `M${upper.join(" L")} L${lower.slice().reverse().join(" L")} Z`;
+    layer.appendChild(mk("path", { d: bandD, fill: `url(#${gradId})`, "fill-opacity": 0.2, stroke: "none" }));
+    // Frontières haute et basse (traits pleins, dégradé) pour la netteté.
+    [upper, lower].forEach(pts => {
+      layer.appendChild(mk("path", {
+        d: `M${pts.join(" L")}`, fill: "none", stroke: `url(#${gradId})`,
+        "stroke-width": 1.5, "stroke-linejoin": "round", "stroke-linecap": "round", opacity: 0.9
+      }));
+    });
+
+    // Marque « bascule 2022 » : là où le bleu vire au rouge.
+    if (iBascule > 0) {
+      const xb = sx(iBascule);
+      layer.appendChild(mk("line", {
+        x1: xb, y1: M.top, x2: xb, y2: M.top + plotH,
+        stroke: ROUGE, "stroke-width": 1, "stroke-dasharray": "3 4", opacity: 0.5
+      }));
+      const bl = mk("text", { x: xb, y: M.top - 10, class: "chart-break-label", fill: ROUGE, "text-anchor": narrow ? "end" : "middle" });
+      bl.textContent = "bascule 2022";
+      layer.appendChild(bl);
+    }
+
+    // Courbe de référence (par-dessus) : la chute 1,3 → 1,0 → 0,7.
+    const refPts = d.rapports.map((r, i) => `${sx(i).toFixed(1)},${sy(r.central).toFixed(1)}`);
+    layer.appendChild(mk("path", {
+      d: `M${refPts.join(" L")}`, fill: "none", stroke: `url(#${gradId})`,
+      "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round"
+    }));
+
+    // Points + étiquettes UNIQUEMENT aux décrochages (met en avant les 2 baisses).
+    let prev = null;
+    d.rapports.forEach((r, i) => {
+      const x = sx(i), y = sy(r.central);
+      const color = r.year >= 2022 ? ROUGE : BLEU;
+      layer.appendChild(mk("circle", { cx: x, cy: y, r: 5, fill: color, stroke: "#fff", "stroke-width": 2 }));
+      if (prev === null || r.central !== prev) {
+        const anchor = i === 0 ? "start" : (i === n - 1 ? "end" : "middle");
+        const lx = i === 0 ? x + 2 : (i === n - 1 ? x - 2 : x);
+        const ct = mk("text", { x: lx, y: y - 12, class: "chart-endnote", fill: color, "text-anchor": anchor });
+        ct.textContent = r.central.toFixed(1).replace(".", ",");
+        layer.appendChild(ct);
+      }
+      prev = r.central;
+    });
+
+    svg.appendChild(layer);
     container.appendChild(svg);
+
+    // Révélation : balayage gauche→droite (le temps qui passe, 2016 → 2026),
+    // rejoué à l'ouverture de la carte. Même schéma que le moteur en courbes ;
+    // respecté par prefers-reduced-motion et l'export (cf. js/cards.js, app.js).
+    let revealRaf;
+    container.__revealReset = () => { cancelAnimationFrame(revealRaf); revealRect.setAttribute("width", 0); };
+    container.__revealPlay = () => {
+      cancelAnimationFrame(revealRaf);
+      const t0 = performance.now();
+      let lastW = -1;
+      const frame = now => {
+        const k = Math.max(0, Math.min(1, (now - t0) / 1100));
+        const w = k < 1 ? Math.round(revealW * (1 - Math.pow(1 - k, 3))) : revealW;
+        if (w !== lastW) { revealRect.setAttribute("width", w); lastW = w; }
+        if (k < 1) revealRaf = requestAnimationFrame(frame);
+      };
+      revealRaf = requestAnimationFrame(frame);
+    };
 
     const cap = document.createElement("p");
     cap.className = "chart-inline-legend";
-    cap.innerHTML = `${window.CORChart.swatch("#1f4e79")} éventail des scénarios<br>le point = scénario de référence<br>${window.CORChart.swatch("#d62728")} à partir de 2022, tout l'éventail glisse vers le bas`;
+    cap.innerHTML = `${window.CORChart.swatch(BLEU, "bar")} éventail des scénarios (min → max)<br>${window.CORChart.swatch(ROUGE)} scénario de référence — la ligne descend de 1,3 % à 0,7 %<br>dégradé bleu→rouge : à partir de 2022, tout l'éventail glisse vers le bas`;
     container.appendChild(cap);
   }
 
