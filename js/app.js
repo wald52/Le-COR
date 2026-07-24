@@ -6,7 +6,10 @@
   "use strict";
 
   const D = window.COR_DATA;
-  const { lineChart, barChart, sankeyChart, chartWidth } = window.CORChart;
+  // Séries officielles générées depuis les Excel du COR. Même objet que
+  // window.COR_SERIES (ensureExplorer y ajoute `explorer` à la volée).
+  const S = window.COR_SERIES || {};
+  const { lineChart, barChart, sankeyChart, chartWidth, el, interpolateY, attachReveal } = window.CORChart;
   let explorerRedraw = null;   // permet de rejouer l'animation du graphe de l'explorateur
 
   /* ----------------------------------------------------------------------
@@ -19,8 +22,7 @@
     download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
     close: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
     share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="8.59" y1="10.49" x2="15.42" y2="6.51"/>',
-    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
-    phone: '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>'
+    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'
   };
   const icon = name =>
     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
@@ -36,21 +38,11 @@
    * -------------------------------------------------------------------- */
   let pibUnit = "pct"; // "pct" | "eur" | "share" — unité courante du graphe phare
 
-  // Interpolation linéaire bornée sur des ancres {x, y} triées par x. En dehors
-  // de la plage, on prolonge par la valeur de l'extrémité la plus proche.
-  function interpAt(points, x) {
-    if (!points || !points.length) return null;
-    if (x <= points[0].x) return points[0].y;
-    const last = points[points.length - 1];
-    if (x >= last.x) return last.y;
-    for (let i = 1; i < points.length; i++) {
-      if (x <= points[i].x) {
-        const a = points[i - 1], b = points[i];
-        return a.y + (b.y - a.y) * ((x - a.x) / (b.x - a.x));
-      }
-    }
-    return last.y;
-  }
+  // Interpolation linéaire bornée sur des ancres {x, y} triées par x (moteur de
+  // graphiques). En dehors de la plage, la valeur de l'extrémité la plus proche
+  // est prolongée.
+  const interpAt = (points, x) =>
+    points && points.length ? interpolateY(points, x) : null;
 
   // Convertit une valeur en % du PIB vers l'unité demandée pour une année donnée.
   function convertPibValue(pct, x, unit) {
@@ -66,18 +58,17 @@
     return pct; // "pct"
   }
 
-  // Transforme un tableau de séries (points en % du PIB) vers l'unité demandée
-  // et recalcule les étiquettes de fin, qui dépendent de l'unité.
+  // Transforme un tableau de séries (points en % du PIB) vers l'unité demandée.
+  // Les étiquettes de fin (`endNote`) sont des millésimes de rapport : elles ne
+  // dépendent pas de l'unité et sont conservées telles quelles.
   function convertPibSeries(series, unit) {
     if (unit === "pct") return series;
-    return series.map(s => {
-      const points = s.points
+    return series.map(s => ({
+      ...s,
+      points: s.points
         .map(p => ({ x: p.x, y: convertPibValue(p.y, p.x, unit) }))
-        .filter(p => p.y != null);
-      // On ne recalcule l'étiquette de fin que pour les séries qui en avaient
-      // une (les projections) ; la courbe « Réalisé » reste sans étiquette.
-      return { ...s, points };
-    });
+        .filter(p => p.y != null)
+    }));
   }
 
   const PIB_UNIT_SUFFIX = { pct: " %", eur: " Md€", share: " %" };
@@ -89,9 +80,8 @@
 
   function renderDepensesPib(animate, unit) {
     if (unit) pibUnit = unit;
-    // Données officielles générées depuis les Excel du COR si disponibles,
-    // sinon valeurs d'amorçage de data.js.
-    const d = (window.COR_SERIES && window.COR_SERIES.depensesPib) || D.depensesPib;
+    const d = S.depensesPib;
+    if (!d) return;
     // On retire l'hypothèse de productivité « (prod. 1,3 %) » du libellé : elle
     // alourdit la légende et parle peu au grand public. L'info est expliquée en
     // clair dans le texte « Ce qu'il faut retenir » sous le graphique.
@@ -125,6 +115,10 @@
     if (sub) sub.textContent = PIB_UNIT_SUBTITLE[pibUnit];
     const note = document.getElementById("pib-unit-note");
     if (note) note.hidden = pibUnit !== "eur";
+    // Le SVG vient d'être reconstruit : le PNG en cache montre l'unité
+    // précédente. On le régénère pour que « Télécharger / Partager » livre bien
+    // le graphique affiché (cf. refreshChartPngCache).
+    if (card) refreshChartPngCache(card);
   }
 
   // Câble le sélecteur d'unité (% du PIB / Md€ / % dépense publique) du graphe
@@ -164,11 +158,11 @@
   }
 
   function renderSolde(animate) {
-    renderRealiseProjections("chart-solde", window.COR_SERIES && window.COR_SERIES.solde, animate);
+    renderRealiseProjections("chart-solde", S.solde, animate);
   }
 
   function renderCiseaux(animate) {
-    const b = window.COR_SERIES && window.COR_SERIES.ressourcesVsDepenses;
+    const b = S.ressourcesVsDepenses;
     if (!b) return;
     lineChart(document.getElementById("chart-ciseaux"), {
       series: b.series.map(s => ({ ...s, endNote: s.label })),
@@ -180,7 +174,7 @@
   }
 
   function renderNiveauVie(animate) {
-    renderRealiseProjections("chart-niveau", window.COR_SERIES && window.COR_SERIES.niveauVie, animate);
+    renderRealiseProjections("chart-niveau", S.niveauVie, animate);
   }
 
   /* ----------------------------------------------------------------------
@@ -192,7 +186,6 @@
     const d = D.productivite;
     const container = document.getElementById("chart-prod");
     container.innerHTML = "";
-    const NS = "http://www.w3.org/2000/svg";
     // Repli quand le conteneur n'a pas de largeur (pré-rendu hors écran) : cf.
     // chartWidth (js/chart.js), qui évite aussi le reflow forcé du pré-rendu.
     const cw = chartWidth(container);
@@ -211,17 +204,11 @@
 
     const BLEU = "#1f4e79", ROUGE = "#d62728"; // = tokens --bleu / --rouge du site
 
-    const svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    svg.setAttribute("class", "chart-svg");
-    svg.setAttribute("role", "img");
-    svg.setAttribute("aria-label", d.subtitle);
-
-    const mk = (name, attrs) => {
-      const e = document.createElementNS(NS, name);
-      for (const k in attrs) e.setAttribute(k, attrs[k]);
-      return e;
-    };
+    // Même fabrique d'éléments SVG que le moteur de graphiques (js/chart.js).
+    const mk = el;
+    const svg = mk("svg", {
+      viewBox: `0 0 ${W} ${H}`, class: "chart-svg", role: "img", "aria-label": d.subtitle
+    });
 
     // --- Défs : dégradé horizontal bleu→rouge (bascule centrée sur 2022) +
     //     découpe « révélation » pour un balayage gauche→droite à l'ouverture. ---
@@ -325,22 +312,10 @@
     container.appendChild(svg);
 
     // Révélation : balayage gauche→droite (le temps qui passe, 2016 → 2026),
-    // rejoué à l'ouverture de la carte. Même schéma que le moteur en courbes ;
-    // respecté par prefers-reduced-motion et l'export (cf. js/cards.js, app.js).
-    let revealRaf;
-    container.__revealReset = () => { cancelAnimationFrame(revealRaf); revealRect.setAttribute("width", 0); };
-    container.__revealPlay = () => {
-      cancelAnimationFrame(revealRaf);
-      const t0 = performance.now();
-      let lastW = -1;
-      const frame = now => {
-        const k = Math.max(0, Math.min(1, (now - t0) / 1100));
-        const w = k < 1 ? Math.round(revealW * (1 - Math.pow(1 - k, 3))) : revealW;
-        if (w !== lastW) { revealRect.setAttribute("width", w); lastW = w; }
-        if (k < 1) revealRaf = requestAnimationFrame(frame);
-      };
-      revealRaf = requestAnimationFrame(frame);
-    };
+    // rejoué à l'ouverture de la carte. Exactement le même mouvement que le
+    // moteur en courbes — il expose __revealReset / __revealPlay sur le
+    // conteneur, que le carrousel pilote (cf. js/cards.js).
+    attachReveal(container, revealRect, revealW);
 
     const cap = document.createElement("p");
     cap.className = "chart-inline-legend";
@@ -352,7 +327,8 @@
    * 3. Fécondité : hypothèse vs réalité.
    * -------------------------------------------------------------------- */
   function renderFecondite(animate) {
-    const d = (window.COR_SERIES && window.COR_SERIES.fecondite) || D.fecondite;
+    const d = S.fecondite;
+    if (!d) return;
     const series = [
       { ...d.realise, kind: "solid", markers: true },
       ...d.hypotheses.map(h => ({ label: h.label, color: h.color, kind: "dash", points: h.points, endNote: h.endNote }))
@@ -370,7 +346,8 @@
    * 4. Productivité : hypothèse vs réalité.
    * -------------------------------------------------------------------- */
   function renderProductiviteReel(animate) {
-    const d = (window.COR_SERIES && window.COR_SERIES.productiviteReel) || D.productiviteReel;
+    const d = S.productiviteReel;
+    if (!d) return;
     const series = [
       { ...d.realise, kind: "solid", markers: true },
       ...d.hypotheses.map(h => ({ label: h.label, color: h.color, kind: "dash", points: h.points, endNote: h.endNote }))
@@ -389,7 +366,8 @@
    * qui monte, 2022 → 2025. Une seule courbe (montant en Md€).
    * -------------------------------------------------------------------- */
   function renderFiscalisation(animate) {
-    const d = (window.COR_SERIES && window.COR_SERIES.fiscalisation) || D.fiscalisation;
+    const d = D.fiscalisation;
+    if (!d) return;
     const series = [{ ...d.realise, kind: "solid", markers: true }];
     lineChart(document.getElementById("chart-fiscalisation"), {
       series,
@@ -491,6 +469,10 @@
     if (lbl) lbl.textContent = String(sankeyYear);
     const src = document.getElementById("sankey-source");
     if (src) src.textContent = sankeySourceNote(sankeyYear, sankeyUnit);
+    // Année ou unité changée : le diagramme a été reconstruit, le PNG en cache
+    // ne correspond plus à ce qui est affiché.
+    const card = host.closest(".chart-card");
+    if (card) refreshChartPngCache(card);
   }
 
   // Contrôles : sélecteur d'unité (Parts % / Milliards €) + liste déroulante
@@ -629,13 +611,11 @@
    * Explorateur d'indicateurs : un thème + un indicateur = un graphique.
    * -------------------------------------------------------------------- */
   function renderExplorer() {
-    const exp = window.COR_SERIES && window.COR_SERIES.explorer;
+    const exp = S.explorer;
     if (!exp || !exp.themes.length) return;
     const themesEl = document.getElementById("explorer-themes");
     const chipsEl = document.getElementById("explorer-indicators");
     themesEl.innerHTML = "";
-    let currentTheme = exp.themes[0];
-
     let currentId = null;
     explorerRedraw = animate => { if (currentId) drawIndicator(currentId, animate); };
 
@@ -681,10 +661,7 @@
       // Le contenu de la carte explorateur a changé : on régénère son cache PNG
       // (en temps mort) pour que le téléchargement reflète l'indicateur courant.
       const card = document.getElementById("chart-explorer").closest(".chart-card");
-      if (card) {
-        if (window.requestIdleCallback) window.requestIdleCallback(() => ensureChartPngCache(card), { timeout: 2000 });
-        else setTimeout(() => ensureChartPngCache(card), 300);
-      }
+      if (card) refreshChartPngCache(card);
     }
 
     function buildChips(theme) {
@@ -710,7 +687,6 @@
       tab.setAttribute("aria-pressed", idx === 0 ? "true" : "false");
       tab.textContent = theme.name;
       tab.addEventListener("click", () => {
-        currentTheme = theme;
         themesEl.querySelectorAll(".exp-tab").forEach(t => {
           t.classList.remove("active");
           t.setAttribute("aria-pressed", "false");
@@ -721,19 +697,18 @@
       });
       themesEl.appendChild(tab);
     });
-    buildChips(currentTheme);
+    buildChips(exp.themes[0]);
   }
 
   /* ----------------------------------------------------------------------
    * Comparaison internationale : barres horizontales empilées (pub/privé).
    * -------------------------------------------------------------------- */
   function renderInternational() {
-    const d = window.COR_SERIES && window.COR_SERIES.international;
+    const d = S.international;
     if (!d) return;
     const host = document.getElementById("chart-international");
     host.innerHTML = "";
-    const NS = "http://www.w3.org/2000/svg";
-    const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+    const mk = el;   // fabrique d'éléments SVG partagée (js/chart.js)
     const cs = d.countries;
     const cw = chartWidth(host);
     const W = Math.max(300, Math.min(cw, 920));
@@ -795,7 +770,7 @@
    * équilibrer le système en 2070 via un seul levier.
    * -------------------------------------------------------------------- */
   function renderLeviers() {
-    const L = window.COR_SERIES && window.COR_SERIES.leviers;
+    const L = S.leviers;
     if (!L) return;
     const id = x => document.getElementById(x);
     const f1 = v => (Math.round(v * 10) / 10).toString().replace(".", ",");
@@ -871,58 +846,52 @@
   }
 
   /* ----------------------------------------------------------------------
-   * Rendu différé des graphiques (« lazy »).
-   * Construire les neuf graphiques SVG au chargement saturait le thread
-   * principal (Total Blocking Time) et enchaînait les reflows. On ne construit
-   * désormais chaque graphique qu'à l'approche du viewport : le chargement reste
-   * léger, et le reste du travail s'étale au fil du défilement.
+   * Rendu des graphiques par SECTION.
+   * Construire les neuf graphiques SVG au chargement saturait le thread principal
+   * (Total Blocking Time) et enchaînait les reflows. Chaque section n'est donc
+   * tracée qu'une fois — au pré-rendu en temps mort (prerenderAllCharts) ou à la
+   * première ouverture de sa carte — puis jamais re-tracée, sauf changement réel
+   * de largeur de fenêtre (rotation) : la mise en page d'un graphique dépend de
+   * la largeur (seuil « étroit », marges d'axes, étiquettes).
    * -------------------------------------------------------------------- */
   let resizeTimer;
-  const CHARTS = [
-    { id: "chart-pib", draw: renderDepensesPib },
-    { id: "chart-solde", draw: renderSolde },
-    { id: "chart-ciseaux", draw: renderCiseaux },
-    { id: "chart-niveau", draw: renderNiveauVie },
-    { id: "chart-prod", draw: () => renderProductivite() },
-    { id: "chart-fecondite", draw: renderFecondite },
-    { id: "chart-prod-reel", draw: renderProductiviteReel },
-    { id: "chart-fiscalisation", draw: renderFiscalisation },
-    { id: "chart-international", draw: () => renderInternational() }
-  ];
-  const chartsDrawn = new Set();
-  // Observateurs du rendu paresseux au défilement (un par graphique). Conservés
-  // pour pouvoir les couper si le carrousel prend la main (cf. disableLazyCharts).
-  const lazyChartObservers = [];
 
-  // Sections dont le(s) graphique(s) ont déjà été tracés : rendus une seule fois
-  // (pré-rendu au repos OU 1re ouverture), puis jamais re-tracés — re-tracer à une largeur
-  // différente ferait « bouger »/redimensionner le graphique à l'ouverture. Le viewBox met
-  // le SVG à l'échelle du conteneur ; la révélation des courbes est rejouée séparément
-  // (cf. __revealReset/__revealPlay côté chart.js) sans reconstruire le SVG.
+  // Section → tracés de ses graphiques. Source unique, utilisée pour le premier
+  // rendu (renderSectionOnce) comme pour le re-rendu (renderAllCharts).
+  // `animate:false` partout : le tracé des courbes n'est pas lancé ici, il est
+  // rejoué à l'ouverture de la carte via __revealPlay (cf. js/cards.js).
+  const SECTION_CHARTS = {
+    depenses: [renderDepensesPib],
+    deficit: [renderSolde, renderCiseaux],
+    productivite: [renderProductivite],
+    realite: [renderFecondite, renderProductiviteReel],
+    niveau: [renderNiveauVie],
+    financement: [renderFiscalisation, renderFinancementSankey],
+    monde: [renderInternational],
+    explorer: [ensureExplorer]
+    // simulateur / hypotheses / methode : contenu statique ou déjà câblé au chargement.
+  };
+  const drawSection = (id, animate) =>
+    (SECTION_CHARTS[id] || []).forEach(draw => draw(animate));
+
+  // Sections déjà tracées (pré-rendu au repos OU 1re ouverture).
   const sectionRendered = new Set();
-  // Trace (une seule fois) le(s) graphique(s) d'une section. animate:false partout : le
-  // tracé des courbes n'est PAS lancé ici (pas d'auto-révélation), il est rejoué à
-  // l'ouverture via __revealPlay. Les sections statiques se tracent telles quelles.
   function renderSectionOnce(id) {
     if (sectionRendered.has(id)) return;
     sectionRendered.add(id);
-    switch (id) {
-      case "depenses": renderDepensesPib(false); break;
-      case "deficit": renderSolde(false); renderCiseaux(false); break;
-      case "productivite": renderProductivite(); break;
-      case "realite": renderFecondite(false); renderProductiviteReel(false); break;
-      case "niveau": renderNiveauVie(false); break;
-      case "financement": renderFiscalisation(false); setupSankeyControls(); renderFinancementSankey(); break;
-      case "monde": renderInternational(); break;
-      case "explorer": ensureExplorer(); break;
-      // simulateur / hypotheses / methode : contenu statique ou déjà câblé au chargement.
-      default: break;
-    }
+    if (id === "financement") setupSankeyControls();
+    drawSection(id, false);
   }
 
-  // Re-rend les graphiques déjà construits (redimensionnement de fenêtre).
+  // Re-trace les sections déjà construites (changement de largeur de fenêtre,
+  // rotation d'écran) : sans cela, les SVG gardent la mise en page calculée pour
+  // l'ancienne largeur et le viewBox se contente de les étirer.
   function renderAllCharts(animate) {
-    CHARTS.forEach(entry => { if (chartsDrawn.has(entry.id)) entry.draw(animate); });
+    sectionRendered.forEach(id => {
+      // L'explorateur a son propre re-tracé (explorerRedraw) : il ne doit pas
+      // être reconstruit ici (ses onglets seraient dupliqués).
+      if (id !== "explorer") drawSection(id, animate);
+    });
   }
 
   // Charge un script à la demande (une seule fois, résultat mémoïsé). Sert au
@@ -953,8 +922,7 @@
   function ensureExplorer() {
     if (explorerPromise) return explorerPromise;
     explorerPromise = loadScript("./data/cor-explorer.generated.js").then(() => {
-      if (window.COR_SERIES && window.COR_EXPLORER)
-        window.COR_SERIES.explorer = window.COR_EXPLORER.explorer;
+      if (window.COR_EXPLORER) S.explorer = window.COR_EXPLORER.explorer;
       renderExplorer();
       setupChartTools();
     }).catch(() => { explorerPromise = null; });
@@ -1037,7 +1005,7 @@
   // Rendu PNG complet d'un graphique : titre, sous-titre, graphique, légende et
   // source — l'image se suffit à elle-même une fois partagée. Renvoie une
   // Promise<Blob> (ou null en cas d'échec). L'enregistrement est volontairement
-  // séparé (saveChartImage) pour se faire de façon synchrone dans le geste
+  // séparé (saveBlob) pour se faire de façon synchrone dans le geste
   // utilisateur, à partir du blob pré-généré (voir downloadChartPng).
   function renderChartPngBlob(card, svg) {
     return new Promise(resolve => {
@@ -1088,6 +1056,12 @@
     style.textContent = EXPORT_CSS;
     clone.insertBefore(style, clone.firstChild);
     const xml = new XMLSerializer().serializeToString(clone);
+    // Data-URL en clair (pas de base64) : `btoa(unescape(encodeURIComponent(…)))`
+    // reposait sur `unescape`, déprécié, et enchaînait deux conversions de toute
+    // la chaîne. Une URL blob: serait plus légère encore, mais la CSP de la page
+    // n'autorise que `img-src 'self' data:` — et l'élargir pour un export n'en
+    // vaut pas le prix.
+    const svgUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
     const img = new Image();
     img.onload = () => {
       const s = 2;
@@ -1131,7 +1105,7 @@
       c.toBlob(b => resolve(b || null));
     };
     img.onerror = () => { console.warn("Export PNG : échec du rendu SVG"); resolve(null); };
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(xml)));
+    img.src = svgUrl;
     });
   }
 
@@ -1154,15 +1128,17 @@
   function saveActionLabel() { return isMobileDevice() ? "Partager" : "Télécharger"; }
   function saveActionIcon() { return isMobileDevice() ? "share" : "download"; }
 
-  function saveChartImage(blob, filename) {
+  // Enregistre un blob (image PNG ou fichier CSV) sous `filename`. Doit être
+  // appelé de façon synchrone dans le geste utilisateur — c'est la condition
+  // pour que Web Share s'ouvre (le blob de l'image vient donc du cache).
+  function saveBlob(blob, filename) {
     if (!blob) return;
     if (isMobileDevice() && navigator.canShare) {
       try {
-        const file = new File([blob], filename, { type: "image/png" });
+        const file = new File([blob], filename, { type: blob.type });
         if (navigator.canShare({ files: [file] })) {
-          // Doit rester dans le geste utilisateur : OK car le blob vient du cache.
           // .catch() : l'utilisateur peut annuler la feuille de partage → on ignore.
-          navigator.share({ files: [file], title: filename.replace(/\.png$/i, "") })
+          navigator.share({ files: [file], title: filename.replace(/\.[a-z0-9]+$/i, "") })
             .catch(() => {});
           return;
         }
@@ -1198,6 +1174,18 @@
     });
   }
 
+  // Le SVG d'une carte vient d'être reconstruit (changement d'unité, d'année ou
+  // d'indicateur) : le PNG en cache montre encore l'état précédent. On le
+  // régénère en temps mort, pour que le bouton « Télécharger / Partager » reste
+  // synchrone ET fidèle à ce qui est affiché.
+  function refreshChartPngCache(card) {
+    card.__png = null;
+    const ric = window.requestIdleCallback
+      ? cb => window.requestIdleCallback(cb, { timeout: 2000 })
+      : cb => setTimeout(cb, 300);
+    ric(() => ensureChartPngCache(card));
+  }
+
   // Prépare le cache PNG des cartes d'une section, une carte par temps mort.
   // Appelé à l'ouverture de la vue détail — seul endroit d'où le bouton
   // Enregistrer est accessible — et plus au chargement de la page : rasteriser
@@ -1231,8 +1219,8 @@
   // à la volée (premier appel, le cache servant les suivants).
   function downloadChartPng(card, svg, filename) {
     const c = card.__png;
-    if (c && c.blob && c.filename === filename) { saveChartImage(c.blob, filename); return; }
-    renderChartPngBlob(card, svg).then(blob => saveChartImage(blob, filename));
+    if (c && c.blob && c.filename === filename) { saveBlob(c.blob, filename); return; }
+    renderChartPngBlob(card, svg).then(blob => saveBlob(blob, filename));
   }
 
   function cardTitle(card) {
@@ -1259,26 +1247,6 @@
       lines.push(cells.map(esc).join(";"));
     });
     return "\uFEFF" + lines.join("\r\n");
-  }
-
-  // Enregistre un fichier texte (CSV…). Même logique que l'image : sur mobile, on
-  // privilégie la feuille de partage native (Web Share) ; sinon <a download>.
-  function saveTextFile(text, filename, mime) {
-    const blob = new Blob([text], { type: mime + ";charset=utf-8" });
-    if (isMobileDevice() && navigator.canShare) {
-      try {
-        const file = new File([blob], filename, { type: mime });
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], title: filename }).catch(() => {});
-          return;
-        }
-      } catch (e) { /* repli sur le téléchargement classique ci-dessous */ }
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
   // `root` restreint la recherche des `.chart-card` (par défaut : tout le
@@ -1319,7 +1287,8 @@
       const host = btn.closest(".chart-host");
       const card = btn.closest(".chart-card");
       if (!host || !host.__cfg || !host.__cfg.series || !host.__cfg.series.length) return;
-      saveTextFile(chartCsv(host.__cfg), "cor-" + slug(cardTitle(card)) + ".csv", "text/csv");
+      const csv = new Blob([chartCsv(host.__cfg)], { type: "text/csv;charset=utf-8" });
+      saveBlob(csv, "cor-" + slug(cardTitle(card)) + ".csv");
     });
   }
 
@@ -1653,15 +1622,6 @@
       ensureSectionPngCache(sec);
     },
     ensureExplorer,
-    // Le carrousel (js/cards.js) prend la main sur le rendu des graphiques via
-    // renderSection : on coupe alors le rendu paresseux au défilement. Sans ça, ses
-    // observateurs — restés actifs car les sections sont masquées au montage du
-    // carrousel — se redéclencheraient quand une section reparaît dans la vue détail
-    // et retraceraient le graphique par-dessus, d'où un double-tracé (clignotement).
-    disableLazyCharts() {
-      lazyChartObservers.forEach(io => io.disconnect());
-      lazyChartObservers.length = 0;
-    },
     // Pré-rend TOUS les graphiques au repos (échelonné en requestIdleCallback), une seule
     // fois, pour qu'ils soient déjà à leur taille finale dès la 1re ouverture d'une carte —
     // sinon le conteneur passe de min-height:300px à la hauteur du SVG au rendu différé

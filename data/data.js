@@ -10,6 +10,11 @@
  *                      (les extrémités, elles, sont sourcées). Voir l'onglet
  *                      « Méthode & sources ».
  *
+ * PÉRIMÈTRE
+ * Les séries extraites automatiquement des fichiers Excel du COR vivent dans
+ * data/cor-series.generated.js (window.COR_SERIES) : elles ne sont PAS
+ * dupliquées ici. Ce fichier ne porte que les séries saisies à la main.
+ *
  * COMMENT METTRE À JOUR ?
  * Les fichiers Excel du COR contiennent les séries complètes année par année.
  * Pour remplacer une courbe par les chiffres exacts, il suffit d'éditer le
@@ -20,133 +25,7 @@
 window.COR_DATA = {
 
   /* =========================================================================
-   * 1. DÉPENSES DE RETRAITE EN % DU PIB — projections successives du COR
-   *    (le graphique « spaghetti », façon PIIE)
-   *
-   *    Idée : à chaque rapport annuel, le COR reprojette la part des dépenses
-   *    de retraite dans le PIB jusqu'en 2070. En superposant ces projections,
-   *    on voit si le COR « change d'avis ».
-   *
-   *    Toutes les valeurs (départ, points intermédiaires, point 2070) sont
-   *    reprises des séries officielles extraites des fichiers Excel du COR
-   *    (identiques à window.COR_SERIES, échantillonnées tous les ~5/10 ans).
-   *    Cette copie ne sert que de secours si le fichier généré ne charge pas.
-   * ====================================================================== */
-  depensesPib: {
-    title: "La part des retraites dans le PIB selon les rapports successifs du COR",
-    subtitle: "Dépenses de retraite, en % du PIB — scénario de référence de chaque rapport annuel",
-    yLabel: "% du PIB",
-    yMin: 11,
-    yMax: 15.5,
-    xMin: 2000,
-    xMax: 2070,
-
-    // Courbe pleine = ce qui s'est réellement passé (données réalisées).
-    realise: {
-      label: "Réalisé",
-      color: "#1f4e79",
-      kind: "solid",
-      source: "COR, rapport annuel juin 2026 (série observée, fig. 2.2) ; INSEE (comptes nationaux).",
-      points: [
-        { x: 2002, y: 11.8 }, { x: 2005, y: 12.1 }, { x: 2008, y: 12.4 },
-        { x: 2010, y: 13.4 }, { x: 2012, y: 13.8 }, { x: 2014, y: 14.1 },
-        { x: 2016, y: 14.0 }, { x: 2018, y: 13.8 }, { x: 2019, y: 13.7 },
-        { x: 2020, y: 14.7 }, // pic Covid : le PIB chute, le ratio grimpe mécaniquement
-        { x: 2021, y: 13.8 }, { x: 2022, y: 13.6 }, { x: 2023, y: 13.5 },
-        { x: 2024, y: 13.9 }, { x: 2025, y: 14.1 }
-      ]
-    },
-
-    // Une projection par rapport annuel. La date entre parenthèses = millésime.
-    projections: [
-      {
-        label: "Projection 2019",
-        year: 2019,
-        color: "#7f7f7f",
-        endNote: "≈13,0 %",
-        source: "COR, rapport annuel juin 2019 — scénario 1,3 % de productivité.",
-        points: [
-          { x: 2019, y: 13.7 }, { x: 2025, y: 13.9 }, { x: 2030, y: 13.9 },
-          { x: 2040, y: 13.7 }, { x: 2050, y: 13.4 }, { x: 2060, y: 13.1 },
-          { x: 2070, y: 13.0 }
-        ]
-      },
-      {
-        label: "Projection 2021",
-        year: 2021,
-        color: "#2ca02c",
-        endNote: "≈12,3 %",
-        source: "COR, rapport annuel juin 2021 — scénario central 1,3 % de productivité (dépenses décroissantes).",
-        points: [
-          { x: 2021, y: 14.2 }, { x: 2025, y: 13.7 }, { x: 2030, y: 13.7 },
-          { x: 2040, y: 13.3 }, { x: 2050, y: 12.9 }, { x: 2060, y: 12.5 },
-          { x: 2070, y: 12.3 }
-        ]
-      },
-      {
-        label: "Projection 2022",
-        year: 2022,
-        color: "#ff7f0e",
-        endNote: "≈12,8 %",
-        source: "COR, rapport annuel sept. 2022 — nouveaux scénarios de productivité (0,7 % à 1,6 %).",
-        points: [
-          { x: 2022, y: 13.7 }, { x: 2025, y: 14.0 }, { x: 2030, y: 14.2 },
-          { x: 2040, y: 13.9 }, { x: 2050, y: 13.5 }, { x: 2060, y: 13.1 },
-          { x: 2070, y: 12.8 }
-        ]
-      },
-      {
-        label: "Projection 2023",
-        year: 2023,
-        color: "#9467bd",
-        endNote: "≈13,0 %",
-        source: "COR, rapport annuel juin 2023 — après la réforme des retraites de 2023.",
-        points: [
-          { x: 2023, y: 13.5 }, { x: 2025, y: 13.8 }, { x: 2030, y: 13.5 },
-          { x: 2040, y: 13.3 }, { x: 2050, y: 13.2 }, { x: 2060, y: 13.0 },
-          { x: 2070, y: 13.0 }
-        ]
-      },
-      {
-        label: "Projection 2024",
-        year: 2024,
-        color: "#d62728",
-        endNote: "≈13,2 %",
-        source: "COR, rapport annuel juin 2024 — scénario de référence.",
-        points: [
-          { x: 2024, y: 13.8 }, { x: 2030, y: 13.7 }, { x: 2040, y: 13.6 },
-          { x: 2050, y: 13.4 }, { x: 2060, y: 13.2 }, { x: 2070, y: 13.2 }
-        ]
-      },
-      {
-        label: "Projection 2025",
-        year: 2025,
-        color: "#e377c2",
-        endNote: "≈14,2 %",
-        source: "COR, rapport annuel juin 2025 — productivité abaissée à 0,7 % : les dépenses repartent à la hausse.",
-        points: [
-          { x: 2025, y: 14.1 }, { x: 2030, y: 14.0 }, { x: 2040, y: 14.1 },
-          { x: 2050, y: 14.2 }, { x: 2060, y: 14.1 }, { x: 2070, y: 14.2 }
-        ]
-      },
-      {
-        label: "Projection 2026",
-        year: 2026,
-        color: "#7b1fa2",
-        endNote: "≈15,3 %",
-        source: "COR, rapport annuel juin 2026 — nouvelles hypothèses démographiques (fécondité 1,45) : les dépenses montent nettement à long terme.",
-        points: [
-          { x: 2025, y: 14.1 }, { x: 2030, y: 14.1 }, { x: 2035, y: 14.0 },
-          { x: 2040, y: 14.0 }, { x: 2045, y: 14.2 }, { x: 2050, y: 14.4 },
-          { x: 2055, y: 14.6 }, { x: 2060, y: 14.7 }, { x: 2065, y: 15.0 },
-          { x: 2070, y: 15.3 }
-        ]
-      }
-    ]
-  },
-
-  /* =========================================================================
-   * 2. HYPOTHÈSE DE PRODUCTIVITÉ — le grand revirement
+   * 1. HYPOTHÈSE DE PRODUCTIVITÉ — le grand revirement
    *    Les scénarios de productivité du travail à long terme, rapport par
    *    rapport. C'est l'hypothèse qui a le plus changé… et qui fait tout
    *    basculer dans les projections financières.
@@ -174,109 +53,7 @@ window.COR_DATA = {
   },
 
   /* =========================================================================
-   * 3. FÉCONDITÉ — l'hypothèse rattrapée par la réalité
-   *    Indice conjoncturel de fécondité (enfants par femme).
-   *    On compare l'hypothèse retenue par le COR (reprise de l'INSEE) à la
-   *    fécondité réellement observée.
-   * ====================================================================== */
-  fecondite: {
-    title: "Fécondité : l'hypothèse du COR rattrapée par la réalité",
-    subtitle: "Indice conjoncturel de fécondité (enfants par femme)",
-    yLabel: "enfants / femme",
-    yMin: 1.35,
-    yMax: 2.1,
-    xMin: 2010,
-    xMax: 2040,
-    source: "Hypothèses : INSEE (projections de population) reprises par le COR. Réalisé : INSEE, état civil (série du rapport juin 2026, 2024-2025 provisoires).",
-    realise: {
-      label: "Fécondité réelle observée",
-      color: "#1f4e79",
-      kind: "solid",
-      points: [
-        { x: 2010, y: 2.03 }, { x: 2014, y: 2.00 }, { x: 2016, y: 1.92 },
-        { x: 2018, y: 1.87 }, { x: 2020, y: 1.82 }, { x: 2022, y: 1.78 },
-        { x: 2023, y: 1.65 }, { x: 2024, y: 1.61 }, { x: 2025, y: 1.56 }
-      ]
-    },
-    hypotheses: [
-      {
-        label: "Hypothèse COR/INSEE 2019",
-        year: 2019,
-        color: "#2ca02c",
-        endNote: "1,95",
-        points: [ { x: 2019, y: 1.87 }, { x: 2025, y: 1.95 }, { x: 2040, y: 1.95 } ]
-      },
-      {
-        label: "Hypothèse COR/INSEE 2022→2025",
-        year: 2022,
-        color: "#ff7f0e",
-        endNote: "1,80",
-        points: [ { x: 2022, y: 1.79 }, { x: 2030, y: 1.80 }, { x: 2040, y: 1.80 } ]
-      },
-      {
-        label: "Hypothèse COR/INSEE 2026",
-        year: 2026,
-        color: "#7b1fa2",
-        endNote: "1,45",
-        points: [ { x: 2025, y: 1.56 }, { x: 2028, y: 1.45 }, { x: 2040, y: 1.45 } ]
-      }
-    ]
-  },
-
-  /* =========================================================================
-   * 4. PRODUCTIVITÉ : HYPOTHÈSE vs RÉALITÉ
-   *    Réponse directe à « les prévisions se sont-elles réalisées ? »
-   * ====================================================================== */
-  productiviteReel: {
-    title: "Productivité : ce que le COR supposait vs ce qui s'est passé",
-    subtitle: "Croissance de la productivité du travail (%/an, moyenne mobile 5 ans)",
-    yLabel: "% / an",
-    yMin: -0.5,
-    yMax: 2.5,
-    xMin: 2000,
-    xMax: 2025,
-    source: "Réalisé : INSEE, comptes nationaux (rapport COR juin 2026, fig. 1.10) — moyenne mobile 5 ans. Hypothèses : scénarios centraux du COR.",
-    realise: {
-      label: "Productivité réellement observée",
-      color: "#1f4e79",
-      kind: "solid",
-      points: [
-        { x: 2000, y: 2.16 }, { x: 2003, y: 1.47 }, { x: 2006, y: 0.86 },
-        { x: 2009, y: 0.24 }, { x: 2012, y: 1.16 }, { x: 2015, y: 1.00 },
-        { x: 2018, y: 0.52 }, // puis creux Covid : productivité négative en 2021-2022
-        { x: 2021, y: -0.23 }, { x: 2023, y: -0.03 }, { x: 2025, y: 0.94 }
-      ]
-    },
-    hypotheses: [
-      {
-        label: "Hypothèse centrale du COR (longtemps 1,3 %)",
-        year: 2019,
-        color: "#d62728",
-        kind: "dash",
-        endNote: "1,3 %",
-        points: [ { x: 2010, y: 1.3 }, { x: 2025, y: 1.3 } ]
-      },
-      {
-        label: "Hypothèse 1,0 % (rapports 2023-2024)",
-        year: 2023,
-        color: "#ff7f0e",
-        kind: "dash",
-        endNote: "1,0 %",
-        points: [ { x: 2010, y: 1.0 }, { x: 2025, y: 1.0 } ]
-      },
-      {
-        label: "Hypothèse 0,7 % (référence depuis 2025)",
-        year: 2025,
-        color: "#c2185b",
-        kind: "dash",
-        endNote: "0,7 %",
-        points: [ { x: 2010, y: 0.7 }, { x: 2025, y: 0.7 } ]
-      }
-    ]
-  },
-
-  /* =========================================================================
-   * 4 bis. FISCALISATION DES RETRAITES — la part « impôts » qui monte
+   * 2. FISCALISATION DES RETRAITES — la part « impôts » qui monte
    *    Impôts et taxes affectés + CSG (ITAF) finançant les retraites, en Md€.
    *    Sert à illustrer la bascule progressive des cotisations vers l'impôt.
    *    Valeurs : feuille « Tab 2.2 » des rapports COR 2023 à 2026 (millésimes
@@ -307,7 +84,7 @@ window.COR_DATA = {
   },
 
   /* =========================================================================
-   * 4 quater. STRUCTURE DES RESSOURCES — « d'où vient l'argent des retraites ? »
+   * 3. STRUCTURE DES RESSOURCES — « d'où vient l'argent des retraites ? »
    *    Sankey de la carte d'accueil. Distinction stricte officiel / calculé :
    *    - Parts (%) par année 2004→2025 : OFFICIELLES (COR, rapport 2026, fig. 2.11).
    *    - Montants 2025 en Md€ : OFFICIELS (COR, tableau 2.2 = 422,23 Md€).
@@ -392,7 +169,7 @@ window.COR_DATA = {
   },
 
   /* =========================================================================
-   * 4 ter. DONNÉES MACRO DE RÉFÉRENCE — pour traduire le « % du PIB » en euros
+   * 4. DONNÉES MACRO DE RÉFÉRENCE — pour traduire le « % du PIB » en euros
    *    et en « % de la dépense publique ».
    *
    *    Le graphique phare (« part des retraites dans le PIB ») peut être affiché

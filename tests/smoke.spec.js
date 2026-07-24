@@ -181,6 +181,68 @@ test("sans hash, l'accueil normal se charge (carousel, pas de vue détail)", asy
   await expect(page.locator(".card-detail")).toHaveCount(0);
 });
 
+test("le graphique est re-tracé quand la largeur de la fenêtre change", async ({ page }) => {
+  // Régression : le registre des graphiques tracés n'était jamais alimenté, si
+  // bien que le gestionnaire « resize » ne re-traçait RIEN. Après une rotation,
+  // chaque SVG gardait la mise en page calculée pour l'ancienne largeur (marges
+  // d'axes, seuil « étroit ») et le viewBox se contentait de l'étirer.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/#depenses");
+  const svg = page.locator(".cd-body #chart-pib .chart-svg");
+  await expect(svg).toBeVisible();
+  const before = await svg.getAttribute("viewBox");
+
+  await page.setViewportSize({ width: 420, height: 900 });
+  // Le re-rendu est débattu (200 ms) après le dernier événement resize.
+  await expect.poll(async () => svg.getAttribute("viewBox")).not.toBe(before);
+});
+
+test("changer d'unité régénère l'image téléchargeable du graphique", async ({ page }) => {
+  // Régression : le PNG mis en cache par carte n'était invalidé qu'au
+  // redimensionnement. Après un passage en « Milliards € », le bouton
+  // Télécharger/Partager livrait encore l'image en % du PIB.
+  await page.goto("/#depenses");
+  const card = page.locator(".cd-body .chart-card").first();
+  await expect(card.locator(".chart-svg")).toBeVisible();
+  // Cache initial prêt (généré en temps mort à l'ouverture du détail).
+  await expect.poll(async () => card.evaluate(el => !!(el.__png && el.__png.blob))).toBe(true);
+  const sizeBefore = await card.evaluate(el => el.__png.blob.size);
+
+  await page.locator('.cd-body .unit-btn[data-unit="eur"]').click();
+  await expect(page.locator(".cd-body #pib-unit-note")).toBeVisible();
+  // Le cache est régénéré : un nouveau blob, rendu depuis le SVG en Md€.
+  await expect.poll(async () => card.evaluate(el => !!(el.__png && el.__png.blob))).toBe(true);
+  const sizeAfter = await card.evaluate(el => el.__png.blob.size);
+  expect(sizeAfter).not.toBe(sizeBefore);
+});
+
+test("le focus entre dans la vue détail puis revient à la carte à la fermeture", async ({ page }) => {
+  // La feuille est une boîte de dialogue modale et l'accueil passe en
+  // aria-hidden : laisser le focus sur la carte le rendrait invisible aux
+  // lecteurs d'écran, et la tabulation parcourrait l'arrière-plan.
+  await page.goto("/");
+  await page.keyboard.press("ArrowRight");
+  const active = page.locator('.card.is-active[data-section="depenses"]');
+  await expect(active).toBeVisible();
+  await active.focus();
+  await page.keyboard.press("Enter");
+
+  const sheet = page.locator(".card-detail .cd-sheet");
+  await expect(sheet).toBeVisible();
+  await expect.poll(async () =>
+    page.evaluate(() => !!document.activeElement.closest(".cd-sheet"))).toBe(true);
+  // La tabulation reste enfermée dans la feuille.
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => !!document.activeElement.closest(".cd-sheet"))).toBe(true);
+
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".card-detail")).toHaveCount(0);
+  // Le focus est rendu à la carte qui a ouvert le détail.
+  await expect.poll(async () =>
+    page.evaluate(() => document.activeElement.dataset && document.activeElement.dataset.section))
+    .toBe("depenses");
+});
+
 test("double-clic sur une carte : la description détaillée reste visible", async ({ page }) => {
   // Régression (ordinateur) : au 1er clic le détail s'ouvre et la feuille monte ;
   // ~130 ms plus tard, le 2e clic d'un double-clic tombe sur la feuille et amorce

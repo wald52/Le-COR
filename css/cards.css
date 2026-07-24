@@ -441,6 +441,10 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   transform-origin: center center;
   padding-top: calc(env(safe-area-inset-top, 0px) + 4px);
 }
+/* La feuille reçoit le focus à l'ouverture (dialogue modal : le lecteur d'écran
+   annonce son libellé) — c'est un conteneur, pas une commande : aucun anneau. */
+.cd-sheet:focus,
+.cd-sheet:focus-visible { outline: none; }
 /* Barre de retour COLLANTE (sticky) : reste visible même en faisant défiler le
    descriptif, donc on peut revenir à tout moment — en particulier sur ordinateur,
    où aucun moyen visible n'existait. Elle ne sert qu'à centrer la « bulle » (et la

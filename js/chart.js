@@ -10,18 +10,8 @@
 (function () {
   "use strict";
 
-  // État de l'animation de tracé (révélation des courbes).
-  let ANIMATE = true;
-  const running = new Set();
   const reducedMotion = () =>
     window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function setAnimate(on) {
-    ANIMATE = on;
-    if (!on) {
-      Array.from(running).forEach(f => { if (f.cancel) f.cancel(); f(); });
-      running.clear();
-    }
-  }
 
   const NS = "http://www.w3.org/2000/svg";
   const el = (name, attrs = {}) => {
@@ -29,6 +19,46 @@
     for (const k in attrs) node.setAttribute(k, attrs[k]);
     return node;
   };
+
+  // Largeur moyenne d'un caractère des libellés d'axe (px SVG) : sert à
+  // dimensionner marges et emprises de texte sans mesurer le DOM.
+  const CHAR_W = 6.8;
+
+  // Durée de la révélation d'un tracé (ms), partagée par toutes les animations
+  // « balayage gauche → droite » du site.
+  const REVEAL_MS = 1100;
+
+  /* Révélation d'un tracé : anime la largeur du rectangle de découpe `rect` de
+   * 0 à `width` (easing cubique sortant), et expose les commandes sur le
+   * conteneur — __revealReset (cacher) / __revealPlay (rejouer). Le carrousel
+   * (js/cards.js) s'en sert pour rejouer le tracé à l'ouverture d'une carte sur
+   * un SVG déjà rendu, sans le reconstruire. Partagé par le moteur en courbes et
+   * par le graphique de productivité (js/app.js) : même mouvement partout.
+   * Renvoie { play, reset, cancel }. */
+  function attachReveal(container, rect, width) {
+    let raf;
+    // Largeur arrondie au pixel entier et écrite seulement quand elle change :
+    // la queue de l'ease-out produit beaucoup de frames sub-pixel → autant de
+    // re-rendus du calque clippé évités (largeur exacte à la dernière frame).
+    const play = onDone => {
+      cancelAnimationFrame(raf);
+      const t0 = performance.now();
+      let lastW = -1;
+      const step = now => {
+        const k = Math.max(0, Math.min(1, (now - t0) / REVEAL_MS));
+        const w = k < 1 ? Math.round(width * (1 - Math.pow(1 - k, 3))) : width;
+        if (w !== lastW) { rect.setAttribute("width", w); lastW = w; }
+        if (k < 1) raf = requestAnimationFrame(step);
+        else if (onDone) onDone();
+      };
+      raf = requestAnimationFrame(step);
+    };
+    const reset = () => { cancelAnimationFrame(raf); rect.setAttribute("width", 0); };
+    const cancel = () => cancelAnimationFrame(raf);
+    container.__revealReset = reset;
+    container.__revealPlay = () => play();
+    return { play, reset, cancel };
+  }
 
   // Largeur utile d'un conteneur de graphique. Repli quand le conteneur n'a pas
   // de largeur (pré-rendu hors écran, carte masquée) : on estime d'après la
@@ -197,6 +227,55 @@
     container.insertAdjacentHTML("beforeend", html);
   }
 
+  /* Légende interactive, commune aux courbes et aux barres : une pastille + un
+   * libellé par série, et le survol (ou le focus clavier) estompe les autres
+   * séries. `opts.swatchKind` force la forme de pastille ("bar" pour les
+   * barres) ; sans lui, chaque série porte la sienne (trait plein/pointillé).
+   * `opts.narrow` active le raccourcissement des libellés de projections. */
+  function buildLegend(container, seriesNodes, opts = {}) {
+    const legend = document.createElement("div");
+    legend.className = "chart-legend";
+    // Sur petit écran, les libellés du type « Rapport 2023 (réf. 1,0 %) »
+    // sont raccourcis à l'année pour tenir sur une seule ligne ; le libellé
+    // complet reste disponible (title, infobulle, tableau de données).
+    const shortFor = label => {
+      if (!opts.narrow) return label;
+      const m = /^(Rapport|Projection|Hypothèse)\b/.test(label) &&
+        label.match(/(19|20)\d{2}(\s*→\s*(19|20)\d{2})?/);
+      return m ? m[0] : label;
+    };
+    // Quand les libellés sont réduits à l'année, une ligne d'en-tête rappelle
+    // que ces courbes sont des projections (et non des données observées).
+    let groupDone = false;
+    seriesNodes.forEach(sn => {
+      const label = sn.cfg.label;
+      const text = shortFor(label);
+      if (text !== label && !groupDone) {
+        const head = document.createElement("div");
+        head.className = "legend-group";
+        head.textContent = /^Hypothèse/.test(label) ? "Hypothèses des rapports :" : "Projections des rapports :";
+        legend.appendChild(head);
+        groupDone = true;
+      }
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "legend-item" +
+        (sn.cfg.kind === "solid" ? " is-solid" : "") +
+        ((opts.swatchKind === "bar" ? label.length > 16 : text === label) ? " is-long" : "");
+      item.title = label;
+      item.innerHTML = swatchHTML(sn.cfg.color, opts.swatchKind || sn.cfg.kind) + `<span>${text}</span>`;
+      const dim = on => {
+        seriesNodes.forEach(o => { o.node.style.opacity = on && o !== sn ? 0.18 : 1; });
+      };
+      item.addEventListener("mouseenter", () => dim(true));
+      item.addEventListener("mouseleave", () => dim(false));
+      item.addEventListener("focus", () => dim(true));
+      item.addEventListener("blur", () => dim(false));
+      legend.appendChild(item);
+    });
+    container.appendChild(legend);
+  }
+
   /**
    * Crée un graphique en courbes.
    * @param {HTMLElement} container
@@ -261,7 +340,6 @@
 
     // Espace minimal (px SVG) entre une étiquette intérieure et toute autre
     // courbe pour que l'étiquette reste lisible sans chevauchement.
-    const CHAR_W = 6.8;
     const MIN_CLEAR = narrow ? 14 : 16;
 
     // Point de fin « visible » d'une série : les données peuvent dépasser la
@@ -278,7 +356,7 @@
     // Pour chaque série : 'inside' si toutes les autres courbes sont à plus de
     // MIN_CLEAR px au niveau du dernier point, 'outside' sinon, 'none' sans label.
     const labelMode = cfg.series.map(s => {
-      if (!s.endNote && !s.endLabel) return "none";
+      if (!s.endNote) return "none";
       const lastPt = endAnchor(s);
       if (!lastPt) return "outside";
       // Une série qui s'arrête avant le bord droit aurait son étiquette
@@ -297,7 +375,7 @@
 
     // La marge droite ne doit couvrir que les étiquettes extérieures.
     const outsideEndLen = Math.max(0, ...cfg.series.map((s, i) =>
-      labelMode[i] === "outside" ? String(s.endNote || s.endLabel || "").length : 0
+      labelMode[i] === "outside" ? String(s.endNote || "").length : 0
     ));
     // Marge gauche : doit contenir la PLUS LONGUE étiquette de l'axe Y, suffixe
     // compris. Les valeurs avec une unité large (ex. « 70 Md€ ») débordaient
@@ -386,24 +464,7 @@
     // puis CACHE la courbe avant la montée de la feuille (__revealReset) et la TRACE
     // une fois la feuille arrivée (__revealPlay) — sur le SVG déjà rendu, sans le
     // reconstruire. Indépendant du bloc d'animation auto (page à défilement) ci-dessous.
-    let revealRaf;
-    const playReveal = () => {
-      cancelAnimationFrame(revealRaf);
-      const t0 = performance.now();
-      // Largeur arrondie au pixel entier et écrite seulement quand elle change :
-      // la queue de l'ease-out produit beaucoup de frames sub-pixel → autant de
-      // re-rendus du calque clippé évités (largeur exacte à la dernière frame).
-      let lastW = -1;
-      const step = now => {
-        const k = Math.max(0, Math.min(1, (now - t0) / 1100));
-        const w = k < 1 ? Math.round(revealW * (1 - Math.pow(1 - k, 3))) : revealW;
-        if (w !== lastW) { revealRect.setAttribute("width", w); lastW = w; }
-        if (k < 1) revealRaf = requestAnimationFrame(step);
-      };
-      revealRaf = requestAnimationFrame(step);
-    };
-    container.__revealReset = () => { cancelAnimationFrame(revealRaf); revealRect.setAttribute("width", 0); };
-    container.__revealPlay = playReveal;
+    const reveal = attachReveal(container, revealRect, revealW);
 
     // --- Grille + axe Y ---
     const yTicks = niceTicks(yMin, yMax, 5);
@@ -555,7 +616,7 @@
       // (text-anchor=end), ce qui évite d'agrandir la marge droite.
       // Mode 'outside' : comportement classique, dans la marge droite.
       let endNoteEl = null;
-      if ((s.endNote || s.endLabel) && endScaled) {
+      if (s.endNote && endScaled) {
         const last = endScaled;
         const mode = labelMode[idx];
         const xPos = mode === "inside"
@@ -568,7 +629,7 @@
           fill: s.color,
           "text-anchor": mode === "inside" ? "end" : "start"
         });
-        endNoteEl.textContent = s.endNote || s.endLabel;
+        endNoteEl.textContent = s.endNote;
         g.appendChild(endNoteEl);
       }
 
@@ -732,35 +793,19 @@
     // Le tracé ne démarre qu'à l'entrée du graphique dans la zone visible :
     // chaque graphique est ainsi vu en train de se dessiner, une seule fois,
     // au lieu de s'animer hors écran dès le chargement de la page.
-    if (ANIMATE && !reducedMotion() && cfg.animate !== false) {
-      revealRect.setAttribute("width", 0);
-      const dur = 1100;
-      let raf, obs;
-      const done = () => { running.delete(finish); container.__revealCancel = null; };
-      const finish = () => {
+    if (!reducedMotion() && cfg.animate !== false) {
+      reveal.reset();
+      let obs = null;
+      const done = () => { container.__revealCancel = null; };
+      // Un nouveau rendu du même conteneur doit pouvoir couper cette animation
+      // (sa boucle rAF continuerait sinon sur un SVG orphelin) — cf. l'appel en
+      // tête de lineChart.
+      container.__revealCancel = () => {
         if (obs) { obs.disconnect(); obs = null; }
-        revealRect.setAttribute("width", revealW);
+        reveal.cancel();
         done();
       };
-      finish.cancel = () => {
-        if (obs) { obs.disconnect(); obs = null; }
-        cancelAnimationFrame(raf);
-      };
-      const start = () => {
-        const t0 = performance.now();
-        // Même optimisation que playReveal : largeur au pixel entier, écrite
-        // seulement quand elle change (la fin de l'ease-out est sub-pixel).
-        let lastW = -1;
-        const step = now => {
-          const k = Math.max(0, Math.min(1, (now - t0) / dur));
-          const w = k < 1 ? Math.round(revealW * (1 - Math.pow(1 - k, 3))) : revealW;
-          if (w !== lastW) { revealRect.setAttribute("width", w); lastW = w; }
-          if (k < 1) raf = requestAnimationFrame(step); else done();
-        };
-        raf = requestAnimationFrame(step);
-      };
-      running.add(finish);
-      container.__revealCancel = () => { finish.cancel(); done(); };
+      const start = () => reveal.play(done);
       if ("IntersectionObserver" in window) {
         obs = new IntersectionObserver(entries => {
           if (entries.some(e => e.isIntersecting)) {
@@ -856,51 +901,7 @@
 
     // --- Légende interactive ---
     if (cfg.legend !== false) {
-      const legend = document.createElement("div");
-      legend.className = "chart-legend";
-      // Sur petit écran, les libellés du type « Rapport 2023 (réf. 1,0 %) »
-      // sont raccourcis à l'année pour tenir sur une seule ligne ; le libellé
-      // complet reste disponible (title, infobulle, tableau de données).
-      const shortFor = label => {
-        if (!narrow) return label;
-        const m = /^(Rapport|Projection|Hypothèse)\b/.test(label) &&
-          label.match(/(19|20)\d{2}(\s*→\s*(19|20)\d{2})?/);
-        return m ? m[0] : label;
-      };
-      // Quand les libellés sont réduits à l'année, une ligne d'en-tête rappelle
-      // que ces courbes sont des projections (et non des données observées).
-      let groupDone = false;
-      const groupHeader = label => {
-        const d = document.createElement("div");
-        d.className = "legend-group";
-        d.textContent = /^Hypothèse/.test(label) ? "Hypothèses des rapports :" : "Projections des rapports :";
-        return d;
-      };
-      seriesNodes.forEach((sn, idx) => {
-        const text = shortFor(sn.cfg.label);
-        if (text !== sn.cfg.label && !groupDone) {
-          legend.appendChild(groupHeader(sn.cfg.label));
-          groupDone = true;
-        }
-        const item = document.createElement("button");
-        item.className = "legend-item" +
-          (sn.cfg.kind === "solid" ? " is-solid" : "") +
-          (text === sn.cfg.label ? " is-long" : "");
-        item.type = "button";
-        item.title = sn.cfg.label;
-        item.innerHTML = swatchHTML(sn.cfg.color, sn.cfg.kind) + `<span>${text}</span>`;
-        const dim = on => {
-          seriesNodes.forEach(o => {
-            o.node.style.opacity = on && o !== sn ? 0.18 : 1;
-          });
-        };
-        item.addEventListener("mouseenter", () => dim(true));
-        item.addEventListener("mouseleave", () => dim(false));
-        item.addEventListener("focus", () => dim(true));
-        item.addEventListener("blur", () => dim(false));
-        legend.appendChild(item);
-      });
-      container.appendChild(legend);
+      buildLegend(container, seriesNodes, { narrow });
     }
 
     if (cfg.table !== false) buildDataTable(container, cfg, suffix);
@@ -939,7 +940,6 @@
     const waterfall = !!cfg.waterfall;
     const stacked = cfg.barMode === "stacked";
     const suffix = cfg.y?.suffix ?? "";
-    const CHAR_W = 6.8;
 
     const barSeries = cfg.series.filter(s => !s.total);
     const totalSeries = cfg.series.filter(s => s.total);
@@ -1147,11 +1147,19 @@
     container.style.position = "relative";
     container.appendChild(tip);
     const overlay = el("rect", { x: M.left, y: M.top, width: plotW, height: plotH, fill: "transparent", "pointer-events": "all" });
-    overlay.addEventListener("mousemove", evt => {
-      const rect = svg.getBoundingClientRect();
-      const px = (evt.clientX - rect.left) / rect.width * W;
+    // Même schéma que lineChart : le rect du SVG est mesuré une fois à l'entrée
+    // du curseur (le lire à chaque mousemove force un calcul de layout), les
+    // mises à jour sont groupées en rAF et dédupliquées par catégorie — on
+    // n'écrit dans le DOM qu'au changement de bande survolée.
+    let hoverRect = null, hoverRaf = 0, hoverX = 0, lastI = null;
+    const updateTip = () => {
+      hoverRaf = 0;
+      const rect = hoverRect || (hoverRect = svg.getBoundingClientRect());
+      const px = (hoverX - rect.left) / rect.width * W;
       let i = Math.floor((px - M.left) / bandW);
       i = Math.max(0, Math.min(n - 1, i));
+      if (i === lastI) return;
+      lastI = i;
       focusBand.setAttribute("x", M.left + i * bandW);
       focusBand.setAttribute("width", bandW);
       focusBand.setAttribute("opacity", 0.06);
@@ -1168,8 +1176,19 @@
       tip.innerHTML = rows;
       tip.style.opacity = 1;
       placeTip(tip, rect, ((M.left + (i + 0.5) * bandW) / W) * rect.width);
+    };
+    overlay.addEventListener("mouseenter", () => { hoverRect = svg.getBoundingClientRect(); });
+    overlay.addEventListener("mousemove", evt => {
+      hoverX = evt.clientX;
+      if (!hoverRaf) hoverRaf = requestAnimationFrame(updateTip);
     });
-    overlay.addEventListener("mouseleave", () => { tip.style.opacity = 0; focusBand.setAttribute("opacity", 0); });
+    overlay.addEventListener("mouseleave", () => {
+      if (hoverRaf) { cancelAnimationFrame(hoverRaf); hoverRaf = 0; }
+      hoverRect = null;
+      lastI = null;
+      tip.style.opacity = 0;
+      focusBand.setAttribute("opacity", 0);
+    });
     svg.appendChild(overlay);
 
     container.appendChild(svg);
@@ -1178,22 +1197,7 @@
     // En cascade, une seule série : la couleur des barres (hausse/baisse/total)
     // et les valeurs ± portées au-dessus suffisent, pas de légende.
     if (cfg.legend !== false && !waterfall) {
-      const legend = document.createElement("div");
-      legend.className = "chart-legend";
-      seriesNodes.forEach(sn => {
-        const item = document.createElement("button");
-        item.type = "button";
-        item.className = "legend-item" + (sn.cfg.label.length > 16 ? " is-long" : "");
-        item.title = sn.cfg.label;
-        item.innerHTML = swatchHTML(sn.cfg.color, "bar") + `<span>${sn.cfg.label}</span>`;
-        const dim = on => { seriesNodes.forEach(o => { o.node.style.opacity = on && o !== sn ? 0.18 : 1; }); };
-        item.addEventListener("mouseenter", () => dim(true));
-        item.addEventListener("mouseleave", () => dim(false));
-        item.addEventListener("focus", () => dim(true));
-        item.addEventListener("blur", () => dim(false));
-        legend.appendChild(item);
-      });
-      container.appendChild(legend);
+      buildLegend(container, seriesNodes, { swatchKind: "bar" });
     }
 
     if (cfg.table !== false) buildDataTable(container, cfg, suffix);
@@ -1383,7 +1387,9 @@
       // d'écartement vertical (ci-dessous) sépare les libellés qui se
       // chevaucheraient encore.
       const valStr = n => fmt(n.value) + unit + (showShare ? "  ·  " + pct(n.value) + " %" : "");
-      const CHAR_W = FS * 0.56;             // largeur moyenne d'un caractère (px)
+      // Largeur moyenne d'un caractère à la taille de police du Sankey (px) —
+      // distincte du CHAR_W des axes, dont la police est fixe.
+      const SK_CHAR_W = FS * 0.56;
       // Ordonnée de la ligne médiane d'un ruban à l'abscisse `xT`. Même cubique
       // de Bézier que `ribbon()` : abscisses de contrôle au milieu, ordonnées
       // tenues (yA puis yB). On inverse x(t) par bissection puis on évalue y(t).
@@ -1429,7 +1435,7 @@
         // sont encore écartés) au lieu d'atteindre le centre jointif et de croiser
         // la voisine ; le montant reste au survol et dans le tableau.
         const nChars = (n.short || n.label).length + (!nameOnly && oneLine ? 7 : 0);
-        const textW = nChars * CHAR_W;
+        const textW = nChars * SK_CHAR_W;
         const xInner = anchor === "end" ? x - textW : x + textW;
         const xa = Math.min(x, xInner), xb = Math.max(x, xInner);
         // Cible = médiane du ruban au milieu du texte, + retouche manuelle (labelDy)
@@ -1546,14 +1552,21 @@
           tip.hidden = false;
         } else tip.hidden = true;
       };
+      // Le rect du conteneur est mesuré à l'entrée sur un ruban puis réutilisé
+      // pendant le survol : le relire à chaque mousemove forcerait un calcul de
+      // layout par mouvement de souris.
+      let hostRect = null;
       ribbonEls.forEach(p => {
         p.style.cursor = "pointer";
-        p.addEventListener("mouseenter", () => highlight(true)(p));
+        p.addEventListener("mouseenter", () => {
+          hostRect = container.getBoundingClientRect();
+          highlight(true)(p);
+        });
         p.addEventListener("mousemove", e => {
-          const rect = container.getBoundingClientRect();
+          const rect = hostRect || (hostRect = container.getBoundingClientRect());
           placeTip(tip, rect, e.clientX - rect.left);
         });
-        p.addEventListener("mouseleave", () => highlight(false)(p));
+        p.addEventListener("mouseleave", () => { hostRect = null; highlight(false)(p); });
       });
     }
 
@@ -1583,7 +1596,13 @@
     container.insertAdjacentHTML("beforeend", html);
   }
 
-  window.CORChart = { lineChart, barChart, sankeyChart, chartWidth, setAnimate, isAnimating: () => ANIMATE, swatch: swatchHTML };
+  // API publique. `el`, `interpolateY` et `attachReveal` sont partagés avec
+  // js/app.js, qui construit deux graphiques « maison » (productivité,
+  // comparaison internationale) avec les mêmes briques que le moteur.
+  window.CORChart = {
+    lineChart, barChart, sankeyChart, chartWidth,
+    swatch: swatchHTML, el, interpolateY, attachReveal
+  };
 
   /* Export de test — no-op dans le navigateur (`module` y est indéfini) ; seuls
    * les tests unitaires Node (tests/unit/) le lisent pour vérifier ces fonctions

@@ -383,7 +383,6 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .sankey .sk-name { fill: var(--encre); font-weight: 600; }
 .sankey .sk-val { fill: var(--gris); }
 .sankey .sk-name.is-solde { fill: var(--rouge); }
-.sankey .sk-center { font-size: 12px; fill: var(--encre); font-weight: 700; }
 .sankey .sk-head { font-size: 11px; fill: var(--gris); text-transform: uppercase; letter-spacing: 0.04em; }
 .sankey .sk-ribbons path { transition: fill-opacity 0.15s ease; }
 
@@ -395,7 +394,6 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 }
 .sankey-key .sk-side--in { background: var(--bleu); }
 .sankey-key .sk-side--out { background: #e8731c; }
-.sankey-key .sk-side--bal { background: var(--rouge); }
 
 @media (max-width: 480px) {
   .sankey-controls { gap: 8px 12px; }

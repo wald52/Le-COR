@@ -86,7 +86,7 @@
   }
 
   const MINI = {
-    depenses: t => miniOverlay(t, S.depensesPib || D.depensesPib, "projections", " %"),
+    depenses: t => miniOverlay(t, S.depensesPib, "projections", " %"),
     deficit: t => miniOverlay(t, S.solde, "projections", " %"),
     productivite: t => {
       const d = D.productivite;
@@ -96,9 +96,9 @@
         { min: d.rapports[0].year, max: d.rapports[d.rapports.length - 1].year },
         { min: 0, max: 2, suffix: " %" });
     },
-    realite: t => miniOverlay(t, S.fecondite || D.fecondite, "hypotheses", ""),
+    realite: t => miniOverlay(t, S.fecondite, "hypotheses", ""),
     financement: t => {
-      const d = S.fiscalisation || D.fiscalisation;
+      const d = D.fiscalisation;
       if (!d) return;
       miniLine(t, [{ ...d.realise, kind: "solid", markers: false }],
         { min: d.xMin, max: d.xMax }, { min: d.yMin, max: d.yMax, suffix: " Md€" });
@@ -678,6 +678,50 @@
   // (taille réelle, interactivité) mais SANS rejouer le tracé (sinon « rechargement »).
   const animatedDetailSections = new Set();
   let detailReady = false;          // ouverture TERMINÉE → le voile accepte la fermeture (cf. clic parasite ci-dessous)
+  let detailOpener = null;          // élément focalisé avant l'ouverture (à refocaliser après)
+  let releaseFocusTrap = null;      // retire le piège de focus de la feuille
+
+  /* ----------------------------------------------------------------------
+   * Focus de la vue détail. La feuille est une boîte de dialogue modale
+   * (role="dialog" aria-modal="true") et l'accueil passe en aria-hidden à
+   * l'ouverture : le focus DOIT quitter le carrousel, sans quoi il resterait sur
+   * une carte devenue invisible pour les lecteurs d'écran, et la tabulation
+   * continuerait de parcourir l'arrière-plan. Même contrat que la vue
+   * « Agrandir », qui l'obtient gratuitement via <dialog> (cf. js/app.js).
+   * -------------------------------------------------------------------- */
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]),' +
+    ' textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+
+  // On focalise la FEUILLE elle-même (tabindex="-1"), pas son bouton de retour :
+  // le lecteur d'écran annonce le dialogue et son libellé, la tabulation part
+  // ensuite naturellement sur le premier élément qu'elle contient, et aucun
+  // anneau de focus n'apparaît pour qui ouvre une carte à la souris ou au doigt.
+  function focusInDetail(sheet) {
+    if (!sheet || !sheet.isConnected) return;
+    if (detailEl && detailEl.contains(document.activeElement)) return;   // déjà dedans
+    sheet.setAttribute("tabindex", "-1");
+    sheet.focus({ preventScroll: true });
+  }
+
+  // Boucle la tabulation à l'intérieur de la feuille tant que le détail est
+  // ouvert. Renvoie la fonction de retrait (appelée à la fermeture).
+  function trapFocus(sheet) {
+    const onKey = e => {
+      if (e.key !== "Tab" || !detailOpen) return;
+      const items = Array.from(sheet.querySelectorAll(FOCUSABLE))
+        .filter(node => node.offsetWidth || node.offsetHeight || node === document.activeElement);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      const outside = !sheet.contains(document.activeElement);
+      if (e.shiftKey && (outside || document.activeElement === first)) {
+        e.preventDefault(); last.focus({ preventScroll: true });
+      } else if (!e.shiftKey && (outside || document.activeElement === last)) {
+        e.preventDefault(); first.focus({ preventScroll: true });
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }
 
   // Fige les animations d'ouverture : on écrit leur valeur de fin dans le style
   // inline (commitStyles) puis on les annule (cancel). Sans ça, une animation WAAPI
@@ -877,6 +921,13 @@
     sheet.addEventListener("pointerdown", stopHintOnPress);
     setupSheetDismiss(sheet);
 
+    // Le focus entre dans la feuille dès sa construction — c'est-à-dire avant
+    // que l'accueil ne devienne aria-hidden pour de bon — et la tabulation y est
+    // enfermée jusqu'à la fermeture, qui rend le focus à son point de départ.
+    detailOpener = document.activeElement;
+    releaseFocusTrap = trapFocus(sheet);
+    focusInDetail(sheet);
+
     const cardInner = cardEls[i] && cardEls[i].querySelector(".card-inner");
     return { sheet, scrim, body, backBtn, labelEl, cardInner };
   }
@@ -1008,6 +1059,13 @@
       screen.removeAttribute("aria-hidden");
       detailOpen = false;
       detailReady = false;
+      // Focus : on libère le piège, puis on le rend à l'élément qui a ouvert le
+      // détail (une carte, une flèche…) — seulement une fois l'accueil de
+      // nouveau exposé aux technologies d'assistance.
+      if (releaseFocusTrap) { releaseFocusTrap(); releaseFocusTrap = null; }
+      const opener = detailOpener;
+      detailOpener = null;
+      if (opener && opener.isConnected && opener.focus) opener.focus({ preventScroll: true });
       // Annule un éventuel rendu différé non encore déclenché (fermeture rapide
       // avant la fin de l'ouverture) et réarme l'état pour la prochaine ouverture.
       detailChartsRendered = false;
@@ -1235,13 +1293,6 @@
     storeyard.hidden = true;
     while (main.firstChild) storeyard.appendChild(main.firstChild);
     main.appendChild(storeyard);
-
-    // Le carrousel devient le seul à rendre les graphiques (via renderSection, à
-    // l'ouverture d'une carte). On coupe le rendu paresseux au défilement d'app.js :
-    // ses observateurs, restés actifs sur les #chart-* désormais masqués, se
-    // redéclencheraient quand une section reparaît dans la vue détail et retraceraient
-    // la courbe par-dessus le rendu du carrousel — d'où un double-tracé (clignotement).
-    if (window.CORApp.disableLazyCharts) window.CORApp.disableLazyCharts();
 
     // Pré-rend AU REPOS (échelonné, hors écran) TOUS les graphiques : ils sont ainsi déjà
     // à leur taille finale dès la première ouverture de leur carte, au lieu d'être rendus
