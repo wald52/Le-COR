@@ -8,7 +8,7 @@
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#16294d",
-  "theme_color": "#ffffff",
+  "theme_color": "#f2f6fa",
   "categories": ["education", "finance", "news"],
   "icons": [
     { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
