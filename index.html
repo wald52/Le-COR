@@ -665,23 +665,29 @@
         <div class="sim">
           <div class="sim-lever">
             <div class="sim-head"><span>⏳ Reculer l'âge de départ</span><strong id="lv-age-out">+0 mois</strong></div>
-            <input type="range" id="lv-age" min="0" max="40" step="1" value="0" aria-label="Recul de l'âge de départ, en mois" />
+            <input type="range" id="lv-age" min="0" max="40" step="1" value="0" aria-label="Recul de l'âge de départ" />
             <p class="sim-note" id="lv-age-note"></p>
           </div>
           <div class="sim-lever">
             <div class="sim-head"><span>💶 Augmenter les cotisations</span><strong id="lv-cot-out">+0,0 pt</strong></div>
-            <input type="range" id="lv-cot" min="0" max="60" step="1" value="0" aria-label="Hausse du taux de cotisation, en dixièmes de point" />
+            <input type="range" id="lv-cot" min="0" max="60" step="1" value="0" aria-label="Hausse du taux de cotisation" />
             <p class="sim-note" id="lv-cot-note"></p>
           </div>
           <div class="sim-lever">
             <div class="sim-head"><span>📉 Baisser le niveau des pensions</span><strong id="lv-pen-out">−0,0 %</strong></div>
-            <input type="range" id="lv-pen" min="0" max="36" step="1" value="0" aria-label="Baisse du niveau des pensions, en demi-points de pourcentage" />
+            <input type="range" id="lv-pen" min="0" max="36" step="1" value="0" aria-label="Baisse du niveau des pensions" />
             <p class="sim-note" id="lv-pen-note"></p>
           </div>
         </div>
         <div class="sim-gauge">
           <div class="gauge-track"><div id="gauge-fill" class="gauge-fill"></div></div>
-          <p id="gauge-msg" class="gauge-msg">Déplacez les curseurs…</p>
+          <!-- Région vivante : le verdict de la jauge est le RÉSULTAT du
+               simulateur. Sans elle, bouger un curseur ne produit aucune
+               annonce au lecteur d'écran. `polite` laisse le navigateur
+               n'annoncer que le dernier état une fois le geste terminé (pas un
+               message par pixel de glissement) ; `atomic` fait relire la
+               phrase entière, dont le pourcentage en <strong>. -->
+          <p id="gauge-msg" class="gauge-msg" aria-live="polite" aria-atomic="true">Déplacez les curseurs…</p>
         </div>
         <p class="chart-source" id="lv-source"></p>
         <div class="takeaway">
@@ -711,7 +717,12 @@
         <div id="explorer-themes" class="exp-tabs" role="group" aria-label="Thèmes"></div>
         <div id="explorer-indicators" class="exp-chips" role="group" aria-label="Indicateurs"></div>
         <figure class="chart-card">
-          <figcaption class="chart-title">
+          <!-- Région vivante : cliquer une puce d'indicateur remplace le titre
+               et la description ci-dessous, et redessine le graphique. Sans
+               elle, le changement est invisible au lecteur d'écran — le focus
+               reste sur la puce et rien n'annonce ce qui est désormais
+               affiché. `atomic` : on relit le couple titre + description. -->
+          <figcaption class="chart-title" aria-live="polite" aria-atomic="true">
             <strong id="exp-label">—</strong>
             <span id="exp-desc"></span>
           </figcaption>

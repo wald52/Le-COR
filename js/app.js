@@ -784,9 +784,19 @@
       const months = +elAge.value;
       const cotPts = +elCot.value / 10;
       const penPct = +elPen.value / 2;
-      id("lv-age-out").textContent = "+" + months + " mois";
-      id("lv-cot-out").textContent = "+" + f1(cotPts) + " pt";
-      id("lv-pen-out").textContent = "−" + f1(penPct) + " %";
+      const ageTxt = "+" + months + " mois";
+      const cotTxt = "+" + f1(cotPts) + " pt";
+      const penTxt = "−" + f1(penPct) + " %";
+      id("lv-age-out").textContent = ageTxt;
+      id("lv-cot-out").textContent = cotTxt;
+      id("lv-pen-out").textContent = penTxt;
+      // Le curseur porte des ENTIERS d'un pas arbitraire (dixièmes de point,
+      // demi-points) : sans `aria-valuetext`, le lecteur d'écran annonce « 24 »
+      // là où l'écran affiche « +2,4 pt ». On lui donne la même chaîne qu'à
+      // l'œil — celle qu'on vient de calculer, donc jamais désynchronisée.
+      elAge.setAttribute("aria-valuetext", ageTxt);
+      elCot.setAttribute("aria-valuetext", cotTxt);
+      elPen.setAttribute("aria-valuetext", penTxt);
       id("lv-age-note").textContent =
         "âge effectif de départ : " + f1(L.age.ref) + " → " + f1(L.age.ref + months / 12) + " ans";
       id("lv-cot-note").textContent =

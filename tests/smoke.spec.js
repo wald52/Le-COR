@@ -94,6 +94,61 @@ test("la page 404 renvoie vers l'accueil et les mentions légales", async ({ pag
   await expect(page.locator('footer.site-footer a[href*="legal.html"]')).toBeVisible();
 });
 
+test("la page légale mène au dépôt et au COR (pas de cul-de-sac)", async ({ page }) => {
+  await page.goto("/legal.html");
+  const footer = page.locator("body > footer.site-footer");
+  await expect(footer.locator('a[href*="github.com"]')).toBeVisible();
+  await expect(footer.locator('a[href*="cor-retraites.fr"]')).toBeVisible();
+  // Pas de lien vers la page courante.
+  await expect(footer.locator('a[href*="legal.html"]')).toHaveCount(0);
+});
+
+test("simulateur : les curseurs annoncent leur valeur en clair (aria-valuetext)", async ({ page }) => {
+  // Les curseurs portent des ENTIERS d'un pas arbitraire : 24 crans = +2,4 pt.
+  // Sans aria-valuetext, le lecteur d'écran annonce « 24 ». Le contrat testé
+  // ici est que l'attribut dise TOUJOURS la même chose que la valeur à l'écran.
+  await page.goto("/#simulateur");
+
+  // Contrat : pour chaque levier, aria-valuetext == le texte affiché à côté.
+  const sameAsDisplayed = async () => {
+    for (const k of ["age", "cot", "pen"]) {
+      const spoken = await page.locator(`.cd-body #lv-${k}`).getAttribute("aria-valuetext");
+      const shown = (await page.locator(`.cd-body #lv-${k}-out`).textContent()).trim();
+      expect(spoken, `levier ${k}`).toBe(shown);
+    }
+  };
+
+  await sameAsDisplayed();
+  const cot = page.locator(".cd-body #lv-cot");
+  await cot.fill("24");
+  await cot.dispatchEvent("input");
+  // 24 crans = +2,4 pt : sans l'attribut, le lecteur d'écran annoncerait « 24 ».
+  await expect(page.locator(".cd-body #lv-cot-out")).toHaveText("+2,4 pt");
+  await expect(cot).toHaveAttribute("aria-valuetext", "+2,4 pt");
+  await sameAsDisplayed();
+});
+
+test("simulateur : le verdict de la jauge est une région vivante", async ({ page }) => {
+  // Le résultat du simulateur se réécrit sans déplacer le focus : sans
+  // aria-live, bouger un curseur ne produit AUCUNE annonce.
+  await page.goto("/#simulateur");
+  const gauge = page.locator(".cd-body #gauge-msg");
+  await expect(gauge).toHaveAttribute("aria-live", "polite");
+  await expect(gauge).toHaveAttribute("aria-atomic", "true");
+  await page.locator(".cd-body #lv-age").fill("12");
+  await page.locator(".cd-body #lv-age").dispatchEvent("input");
+  await expect(gauge).toContainText(/comblé à/i);
+});
+
+test("explorateur : le titre du graphique est une région vivante", async ({ page }) => {
+  // Cliquer une puce remplace titre + description et redessine le graphique,
+  // sans bouger le focus : le changement doit être annoncé.
+  await page.goto("/#explorer");
+  const cap = page.locator(".cd-body #explorer figcaption.chart-title");
+  await expect(cap).toHaveAttribute("aria-live", "polite");
+  await expect(cap).toHaveAttribute("aria-atomic", "true");
+});
+
 test("le logo/lien « Le Modèle Social Français » est visible sur l'accueil", async ({ page }) => {
   await page.goto("/");
   const ms = page.locator('.ms-logo[href*="linktr.ee"]');

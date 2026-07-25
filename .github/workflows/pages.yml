@@ -1,9 +1,10 @@
 name: Déploiement GitHub Pages
 
-# Publie le site sur GitHub Pages en EXCLUANT les fichiers-source du COR
-# (data/Données du COR/) : ces 225 Mo restent dans le dépôt comme preuve, mais
-# n'alourdissent pas le site déployé. La suppression n'a lieu que dans le
-# checkout éphémère du job — la branche main n'est jamais modifiée.
+# Publie le site sur GitHub Pages en EXCLUANT ce qui n'a pas à être servi : les
+# fichiers-source du COR (data/Données du COR/, 225 Mo), l'outillage de
+# développement et les images non référencées. Tout cela reste dans le dépôt ;
+# la suppression n'a lieu que dans le checkout éphémère du job — la branche main
+# n'est jamais modifiée. Voir l'étape « Préparer le site » pour le détail.
 #
 # ⚠️ Prérequis (une fois) : Settings › Pages › Build and deployment › Source
 #    doit être réglé sur « GitHub Actions ».
@@ -31,8 +32,30 @@ jobs:
       - name: Récupérer le dépôt
         uses: actions/checkout@v7
 
-      - name: Préparer le site (exclure les fichiers-preuve lourds du COR)
-        run: rm -rf "data/Données du COR"
+      # Le téléversement prend « path: . » : sans ce ménage, TOUT le dépôt part
+      # sur Pages. Suppressions limitées au checkout éphémère du job — la branche
+      # main n'est jamais modifiée, tous ces fichiers restent versionnés.
+      #
+      # On GARDE volontairement : les css/*.css et js/*.js non minifiés (lire la
+      # source en regard du .min fait partie de la transparence du projet),
+      # notes/, et README/CHANGELOG/CONTRIBUTING/LICENSE.
+      - name: Préparer le site (exclure ce qui n'a pas à être publié)
+        run: |
+          # Fichiers-preuve du COR : 225 Mo qui restent dans le dépôt comme
+          # preuve, mais n'ont pas à alourdir le site déployé.
+          rm -rf "data/Données du COR"
+          # Outillage de développement : jamais chargé par une page.
+          rm -rf tests tools
+          rm -f package.json package-lock.json eslint.config.mjs \
+                playwright.config.js .prettierrc.json .prettierignore CLAUDE.md
+          # Originaux d'avant la conversion WebP (~1,3 Mo) : aucun HTML, CSS, JS,
+          # manifeste ni service worker ne les référence — seuls les .webp le sont.
+          # Ils restent versionnés, tools/optimize-images.py s'en sert.
+          rm -f images/*.jpg
+          # Autres fichiers non référencés (vérifiés un à un).
+          rm -f images/intro-cor.webp icons/le-modele-social-francais.png \
+                icons/icon-no-bg.svg icons/make_icons.py
+          echo "Poids du site déployé : $(du -sh --exclude=.git . | cut -f1)"
 
       - name: Configurer Pages
         uses: actions/configure-pages@v6

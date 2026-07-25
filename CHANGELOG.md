@@ -20,8 +20,40 @@ Toutes les évolutions notables du site. Format inspiré de
   de `data/cor-explorer.generated.js` (468 Ko) échouait en silence, laissant la
   section 11 vide et muette sur réseau lent ou coupé. Un message s'affiche
   désormais, avec une action « Réessayer ».
+- **Annonce des résultats interactifs aux lecteurs d'écran.** Le document ne
+  comptait qu'une seule région vivante (`#toast`) : les deux fonctions les plus
+  interactives du site changeaient en silence.
+  - Simulateur (§10) : le verdict de la jauge (`#gauge-msg`) devient une région
+    `aria-live="polite" aria-atomic="true"` — bouger un curseur produit enfin une
+    annonce.
+  - Curseurs du simulateur : `aria-valuetext` porte désormais la valeur *lisible*
+    (« +2,4 pt »), là où le curseur expose l'entier brut de son pas (« 24 »).
+    L'attribut réutilise la chaîne déjà calculée pour l'affichage, donc ne peut
+    pas se désynchroniser ; les `aria-label` perdent leur explication d'unité
+    (« en dixièmes de point »), devenue inutile et trompeuse.
+  - Explorateur (§11) : le titre du graphique (`figcaption`) devient une région
+    vivante — changer d'indicateur ne déplace pas le focus et n'annonçait donc
+    rien.
+- **Pied de page sur `legal.html`** : la page était un cul-de-sac (aucun lien
+  vers le dépôt ni vers le COR, seulement « Retour au site »). Même pied de page
+  que l'accueil et la 404, moins le lien vers elle-même.
+- **Quatre tests de bout en bout** couvrant ces contrats (`tests/smoke.spec.js`),
+  la suite e2e étant bloquante en CI.
 
 ### Modifié
+
+- **Déploiement Pages** : l'étape de préparation ne retirait que
+  `data/Données du COR`, si bien que le reste du dépôt partait sur l'URL publique.
+  Elle exclut désormais aussi l'outillage de développement (`tests/`, `tools/`,
+  `package*.json`, configs ESLint/Prettier/Playwright, `CLAUDE.md`) et les images
+  non référencées — les six `images/*.jpg` d'avant la conversion WebP (~1,3 Mo,
+  cités par aucun HTML/CSS/JS/manifeste/service worker), `intro-cor.webp`,
+  `le-modele-social-francais.png`, `icon-no-bg.svg`, `make_icons.py`. Le site
+  déployé passe de 3,2 Mo à 1,6 Mo. Suppressions limitées au checkout éphémère du
+  job : tous ces fichiers restent versionnés (les `.jpg` alimentent
+  `tools/optimize-images.py`). Les `css/*.css` et `js/*.js` non minifiés restent
+  publiés — lire la source en regard du `.min` fait partie de la transparence du
+  projet.
 
 - **`manifest.webmanifest`** : `background_color` passe du bleu nuit `#16294d`
   au clair `#f2f6fa` (l'écran de démarrage de l'app installée n'affiche plus un
