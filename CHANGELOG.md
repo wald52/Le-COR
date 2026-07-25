@@ -97,10 +97,14 @@ Toutes les évolutions notables du site. Format inspiré de
     bienvenu : il n'est plus atteignable au clavier derrière un écran opaque.
   - Mesure locale avant/après (Lighthouse 13, profil mobile) : CLS **0,253 →
     0,008**, sous-score **0,49 → 1,00**, sans régression des autres métriques.
-- **Préchargement de l'élément LCP** : `<link rel="preload" as="image">` sur la
-  photo de la 1re carte. Le scanner de préchargement ne la découvrait qu'après
-  avoir traversé tout le `<head>` ; sa requête part désormais en parallèle des
-  feuilles de style. Le `<img>` garde `fetchpriority="high"` — une seule requête.
+  - Le préchargement de l'élément LCP (`<link rel="preload" as="image">` sur la
+    photo de la 1re carte), d'abord ajouté par précaution, a été **retiré après
+    mesure** : il ne rapporte rien (LCP 1,4 s → 1,5 s sur le site déployé ; A/B
+    local de 5 runs par variante : 3 ms d'écart sur le FCP, 5 ms sur le LCP,
+    très en dessous du bruit). La photo est le 1er élément du `<body>`, donc
+    déjà découverte tôt, et porte `fetchpriority="high"` : la précharger ne
+    ferait que lui disputer la bande passante avec la feuille de style — le
+    raisonnement même qui vaut déjà pour les scripts.
 
 ## [1.0.0] – 2026-06-27
 

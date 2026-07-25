@@ -41,12 +41,13 @@
   <link rel="stylesheet" href="./css/style.min.css" />
   <link rel="stylesheet" href="./css/cards.min.css" />
 
-  <!-- Élément LCP : la photo de la 1re carte (#boot-splash, plus bas dans le
-       document). Le scanner de préchargement ne la découvre qu'après avoir
-       traversé tout le <head> ; ce preload lance sa requête en parallèle des
-       feuilles de style au lieu de l'enchaîner derrière. Le <img> garde
-       `fetchpriority="high"` : une seule et même requête, pas de doublon. -->
-  <link rel="preload" as="image" href="./images/accueil-lecteur-cor.webp" fetchpriority="high" />
+  <!-- On NE précharge PAS non plus la photo de la 1re carte (élément LCP) : un
+       `rel="preload" as="image"` a été mesuré, il ne rapporte rien. En audit sur
+       le site déployé le LCP est passé de 1,4 s à 1,5 s ; en A/B local (5 runs
+       par variante) l'écart est de 3 ms sur le FCP et 5 ms sur le LCP, soit très
+       en dessous du bruit de mesure. La photo est déjà découverte tôt (elle est
+       le 1er élément du <body>) et porte `fetchpriority="high"` ; la précharger
+       ne ferait que lui disputer la bande passante avec la feuille de style. -->
 
   <!-- Les scripts sont chargés en fin de page avec `defer` (voir avant
        </body>). On NE les précharge PAS : un `rel="preload" as="script"` les
