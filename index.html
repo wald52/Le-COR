@@ -41,6 +41,13 @@
   <link rel="stylesheet" href="./css/style.min.css" />
   <link rel="stylesheet" href="./css/cards.min.css" />
 
+  <!-- Élément LCP : la photo de la 1re carte (#boot-splash, plus bas dans le
+       document). Le scanner de préchargement ne la découvre qu'après avoir
+       traversé tout le <head> ; ce preload lance sa requête en parallèle des
+       feuilles de style au lieu de l'enchaîner derrière. Le <img> garde
+       `fetchpriority="high"` : une seule et même requête, pas de doublon. -->
+  <link rel="preload" as="image" href="./images/accueil-lecteur-cor.webp" fetchpriority="high" />
+
   <!-- Les scripts sont chargés en fin de page avec `defer` (voir avant
        </body>). On NE les précharge PAS : un `rel="preload" as="script"` les
        téléchargerait en priorité haute, en concurrence de bande passante avec

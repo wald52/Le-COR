@@ -28,6 +28,20 @@ body.mode-carousel {
    court-circuité, le carrousel monté (body.mode-carousel) le masque tout de même. */
 body.mode-carousel #boot-splash { display: none !important; }
 
+/* Le pied de page vit HORS de <main> (cf. index.html) : il reste le seul chemin
+   vers legal.html sans JavaScript. Mais quand le carrousel vide <main> dans
+   #story-sections[hidden], le document passe de ~15 000 px à 0 et le footer
+   REMONTE d'un coup dans le viewport. Il y est invisible (recouvert par
+   .card-screen, position:fixed;inset:0), seulement l'API Layout Instability de
+   Chrome ne fait pas d'analyse d'occlusion : elle compte le déplacement. Mesuré
+   à 0,245 de CLS sur 0,253 — à lui seul l'essentiel du score perdu en
+   performance. On le masque donc en mode carrousel : la classe est posée dans la
+   MÊME tâche synchrone que le déplacement du contenu, donc le footer n'a jamais
+   de position d'arrivée à décaler (un nœud `display:none` ne produit aucun
+   décalage). Le lien légal reste servi par `.cs-legal` ; sans JavaScript,
+   `body.mode-carousel` n'existe pas et le footer est intact. */
+body.mode-carousel .site-footer { display: none; }
+
 /* ---------- Écran carousel ---------- */
 .card-screen {
   position: fixed;

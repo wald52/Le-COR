@@ -68,13 +68,39 @@ Toutes les évolutions notables du site. Format inspiré de
   l'extraction automatique et contredisait le site ; il est remplacé par la
   description réelle de la chaîne de données et un renvoi vers la note d'audit.
   La présentation de l'interface (carrousel de cartes) est mise à jour.
-- Cache du service worker porté à `v75`.
+- Cache du service worker porté à `v76`.
 - **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
   (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
   d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus
   d'accordéon, puisqu'il n'y a qu'une lecture). La lecture officielle du COR —
   convention de tout le site — est rappelée dans le paragraphe d'introduction, et
   la lecture « médiane » était redondante avec l'encadré « Ce qu'il faut retenir ».
+
+### Corrigé
+
+- **Score de performance Lighthouse : 87 → 100** (audit mobile de la page
+  d'accueil déployée). Tout le déficit venait d'un seul décalage de mise en page
+  (CLS de **0,253**, sous-score 0,49 sur une métrique qui pèse 25 % — les quatre
+  autres, LCP/TBT/FCP/Speed Index, étaient déjà au maximum).
+  - **Cause** : le pied de page vit hors de `<main>` (c'est le seul chemin vers
+    les mentions légales sans JavaScript). Quand le carrousel vide `<main>` dans
+    `#story-sections[hidden]`, le document passe de ~15 000 px à 0 et le pied de
+    page remonte d'un coup dans la fenêtre. Il y est invisible — `.card-screen`
+    (`position:fixed;inset:0`) le recouvre — mais l'API *Layout Instability* de
+    Chrome ne fait pas d'analyse d'occlusion : elle compte le déplacement. À lui
+    seul, il pesait **0,245 des 0,253** mesurés.
+  - **Correctif** : `body.mode-carousel .site-footer { display: none }`. La
+    classe est posée dans la même tâche synchrone que le déplacement du contenu,
+    donc le pied de page n'a jamais de position d'arrivée à décaler. Sans
+    JavaScript, `body.mode-carousel` n'existe pas : le pied de page et son lien
+    vers `legal.html` restent intacts (repli LCEN vérifié). Effet de bord
+    bienvenu : il n'est plus atteignable au clavier derrière un écran opaque.
+  - Mesure locale avant/après (Lighthouse 13, profil mobile) : CLS **0,253 →
+    0,008**, sous-score **0,49 → 1,00**, sans régression des autres métriques.
+- **Préchargement de l'élément LCP** : `<link rel="preload" as="image">` sur la
+  photo de la 1re carte. Le scanner de préchargement ne la découvrait qu'après
+  avoir traversé tout le `<head>` ; sa requête part désormais en parallèle des
+  feuilles de style. Le `<img>` garde `fetchpriority="high"` — une seule requête.
 
 ## [1.0.0] – 2026-06-27
 
