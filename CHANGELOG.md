@@ -3,10 +3,40 @@
 Toutes les évolutions notables du site. Format inspiré de
 [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
-## [Non publié]
+## [1.1.0] – 2026-07-25
+
+### Ajouté
+
+- **Pied de page du document** (hors `<main>`, donc conservé hors du mode
+  carrousel) : mentions légales, code source, site du COR. Sans JavaScript,
+  c'était le chaînon manquant — la page des mentions légales n'avait aucun lien
+  entrant (LCEN).
+- **Titre de niveau 1 dans le repli `<noscript>`** : l'unique `<h1>` du document
+  appartenant à l'accueil (masqué sans JS), la page n'en avait aucun.
+- **Page `404.html`** : la navigation vers une URL inexistante affichait la page
+  d'erreur générique (en anglais) de GitHub Pages. Précachée par le service
+  worker.
+- **États de chargement et d'erreur de l'explorateur** : le chargement paresseux
+  de `data/cor-explorer.generated.js` (468 Ko) échouait en silence, laissant la
+  section 11 vide et muette sur réseau lent ou coupé. Un message s'affiche
+  désormais, avec une action « Réessayer ».
 
 ### Modifié
 
+- **`manifest.webmanifest`** : `background_color` passe du bleu nuit `#16294d`
+  au clair `#f2f6fa` (l'écran de démarrage de l'app installée n'affiche plus un
+  flash sombre avant une interface claire) ; `orientation` passe de
+  `portrait-primary` à `any` (le paysage était refusé, y compris sur tablette) ;
+  `start_url` passe de `./index.html` à `./`, l'URL canonique du site.
+- **`legal.html` — confidentialité** : ajout de la mention du stockage local
+  (`cor-interactions`, `cor-install-dismissed`, `cor-install-done`, avec leur
+  finalité) et correction de la formulation du cache hors-ligne, actif dès la
+  première visite et non à la seule installation.
+- **`README.md`** : l'avertissement « valeurs interpolées » datait d'avant
+  l'extraction automatique et contredisait le site ; il est remplacé par la
+  description réelle de la chaîne de données et un renvoi vers la note d'audit.
+  La présentation de l'interface (carrousel de cartes) est mise à jour.
+- Cache du service worker porté à `v75`.
 - **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
   (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
   d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus

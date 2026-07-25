@@ -57,6 +57,43 @@ test("un lien « Mentions légales » est accessible depuis l'accueil (LCEN/RGPD
   await expect(legal).toBeVisible();
 });
 
+test("explorateur : échec de chargement → message + réessai qui aboutit", async ({ page }) => {
+  // Les données de l'explorateur (468 Ko) sont chargées paresseusement : sur
+  // réseau coupé, la section doit le DIRE et offrir un réessai, au lieu de
+  // rester une carte vide.
+  let blocked = true;
+  await page.route("**/cor-explorer.generated.js", r => (blocked ? r.abort() : r.continue()));
+  await page.goto("/#explorer");
+
+  await expect(page.locator("#exp-label")).toHaveText(/indisponibles/i);
+  const action = page.locator("#toast:not([hidden]) #toast-action");
+  await expect(action).toHaveText(/Réessayer/i);
+
+  // Le toast doit rester CLIQUABLE au-dessus de la feuille détail (z-index).
+  blocked = false;
+  await action.click();
+  await expect(page.locator("#explorer-themes .exp-tab").first()).toBeVisible();
+  await expect(page.locator("#exp-label")).not.toHaveText(/indisponibles/i);
+});
+
+test("le pied de page survit au montage du carousel (repli sans JS / LCEN)", async ({ page }) => {
+  await page.goto("/");
+  // Placé hors de <main>, il n'est PAS déplacé dans le réservoir caché
+  // (#story-sections) : il reste dans le document, simplement recouvert par
+  // l'écran carousel. C'est le seul chemin vers legal.html sans JavaScript.
+  const footer = page.locator("body > footer.site-footer");
+  await expect(footer).toBeAttached();
+  await expect(footer.locator('a[href*="legal.html"]')).toHaveCount(1);
+  await expect(page.locator("#story-sections footer.site-footer")).toHaveCount(0);
+});
+
+test("la page 404 renvoie vers l'accueil et les mentions légales", async ({ page }) => {
+  await page.goto("/404.html");
+  await expect(page.locator("h1")).toHaveText(/n'existe pas/i);
+  await expect(page.locator('.nf-actions a[href="./"]')).toBeVisible();
+  await expect(page.locator('footer.site-footer a[href*="legal.html"]')).toBeVisible();
+});
+
 test("le logo/lien « Le Modèle Social Français » est visible sur l'accueil", async ({ page }) => {
   await page.goto("/");
   const ms = page.locator('.ms-logo[href*="linktr.ee"]');

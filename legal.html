@@ -92,9 +92,17 @@
             n'est utilisé.</li>
           <li><strong>Traitement local :</strong> tous les graphiques, calculs et simulations s'exécutent
             directement dans votre navigateur. Aucune donnée ne quitte votre appareil.</li>
-          <li><strong>PWA (application hors-ligne) :</strong> si vous installez le site en tant
-            qu'application, les fichiers sont mis en cache localement via un Service Worker pour
-            permettre l'utilisation hors connexion. Ces données restent sur votre appareil.</li>
+          <li><strong>Mise en cache hors-ligne (Service Worker) :</strong> dès la première visite,
+            que le site soit installé en application ou non, les fichiers du site (pages, styles,
+            scripts, données du COR) sont mis en cache localement pour permettre la consultation
+            hors connexion. Ces fichiers restent sur votre appareil.</li>
+          <li><strong>Stockage local (<code>localStorage</code>) :</strong> le site enregistre sur
+            votre appareil trois informations techniques — un compteur d'interactions
+            (<code>cor-interactions</code>) et deux indicateurs de choix
+            (<code>cor-install-dismissed</code>, <code>cor-install-done</code>) — dans le seul but
+            de ne pas vous reproposer l'installation de l'application si vous l'avez déjà refusée
+            ou effectuée. Aucun identifiant, aucun profil, aucune transmission : ces valeurs ne
+            quittent jamais votre navigateur et disparaissent si vous effacez les données du site.</li>
         </ul>
       </section>
 
@@ -126,7 +134,7 @@
         </p>
       </section>
 
-      <p class="legal-updated">Dernière mise à jour : juin 2026</p>
+      <p class="legal-updated">Dernière mise à jour : juillet 2026</p>
 
     </div>
   </main>

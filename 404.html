@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Même CSP que les autres pages (site statique, sans backend). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>Page introuvable — Le COR sous l'œil des citoyens</title>
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#f2f6fa" />
+  <meta name="color-scheme" content="only light" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="./css/style.min.css" />
+  <style>
+    .nf-wrap {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 72px 20px 64px;
+      text-align: center;
+    }
+    .nf-code {
+      font-size: 3.4rem;
+      font-weight: 800;
+      color: var(--bleu);
+      margin: 0 0 8px;
+      line-height: 1;
+    }
+    .nf-wrap p { color: var(--gris); }
+    .nf-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .nf-btn {
+      display: inline-block;
+      padding: 11px 20px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      background: var(--bleu);
+      color: #fff;
+    }
+    .nf-btn.secondary {
+      background: #fff;
+      color: var(--bleu);
+      border: 1px solid var(--gris-clair);
+    }
+  </style>
+</head>
+<body>
+
+  <a class="skip-link" href="#top">Aller au contenu</a>
+
+  <header class="site-header">
+    <a href="./" class="brand">
+      <span class="brand-text">Ceci est mon</span>
+      <span class="brand-mark">COR</span>
+    </a>
+  </header>
+
+  <main id="top">
+    <div class="nf-wrap">
+      <p class="nf-code">404</p>
+      <h1>Cette page n'existe pas</h1>
+      <p>
+        Le lien que vous avez suivi est peut-être périmé, ou l'adresse comporte une
+        coquille. Tout le contenu du site — les douze sections, l'explorateur et le
+        simulateur — est accessible depuis l'accueil.
+      </p>
+      <div class="nf-actions">
+        <a class="nf-btn" href="./">Retour à l'accueil</a>
+        <a class="nf-btn secondary" href="./#methode">Méthode &amp; sources</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <nav aria-label="Liens de bas de page">
+      <a href="./legal.html">Mentions légales &amp; confidentialité</a>
+      <a href="https://github.com/wald52/Le-COR" target="_blank" rel="noopener">Code source et données</a>
+    </nav>
+  </footer>
+
+</body>
+</html>

@@ -465,6 +465,26 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
   border-radius: var(--rayon); color: var(--encre);
 }
 .noscript-note a { font-weight: 600; }
+.noscript-title { max-width: var(--largeur); margin: 28px auto 0; padding: 0 20px; }
+
+/* Pied de page du document (hors <main>, cf. index.html) : il porte les liens
+   obligatoires — mentions légales, source — pour la lecture par défilement et
+   sans JavaScript. En mode carousel, l'écran `.card-screen` (position:fixed) le
+   recouvre : le carrousel a son propre lien légal (`.cs-legal`). */
+.site-footer {
+  border-top: 1px solid var(--gris-clair);
+  background: var(--fond-alt);
+  padding: 22px 20px 28px;
+  font-size: 0.86rem;
+  color: var(--gris);
+  text-align: center;
+}
+.site-footer nav {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 8px 18px; margin-bottom: 10px;
+}
+.site-footer a { color: var(--bleu-clair); font-weight: 600; }
+.site-footer p { margin: 0 auto; max-width: 60ch; }
 
 /* Bouton « copier le lien » d'une section, à côté de son titre. */
 .anchor-link {
@@ -477,9 +497,13 @@ h2:hover .anchor-link, .anchor-link:focus-visible { opacity: 1; }
 .anchor-link .icon { width: 0.85em; height: 0.85em; }
 @media (hover: none) { .anchor-link { opacity: 1; } }
 
-/* Toast (mise à jour / partage) */
+/* Toast (partage, erreurs). z-index au-dessus de TOUTES les couches du mode
+   carrousel — en particulier la fiche détail (.card-detail, z-index:80), d'où
+   partent la copie de lien et le réessai de l'explorateur : en dessous, le
+   message était masqué par la feuille et son bouton d'action ne recevait plus
+   le clic. */
 .toast {
-  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 70;
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 110;
   background: var(--encre); color: #fff; border-radius: 12px; padding: 12px 16px;
   display: flex; align-items: center; gap: 14px; box-shadow: var(--ombre); max-width: 92vw;
 }

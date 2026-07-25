@@ -919,13 +919,40 @@
   // avant la fin du chargement passeraient tous le garde et construiraient
   // l'explorateur en double (boutons de thèmes dupliqués).
   let explorerPromise = null;
+
+  // Message posé dans le titre de la carte de l'explorateur tant qu'il n'y a pas
+  // de graphique à montrer (chargement en cours, ou échec). `#exp-label` affiche
+  // « — » dans le HTML statique : sans cela, un réseau lent ou coupé laisse une
+  // carte vide et muette.
+  function explorerNotice(msg) {
+    const label = document.getElementById("exp-label");
+    if (label) label.textContent = msg;
+    const desc = document.getElementById("exp-desc");
+    if (desc) desc.textContent = "";
+  }
+
   function ensureExplorer() {
     if (explorerPromise) return explorerPromise;
+    explorerNotice("Chargement des indicateurs…");
     explorerPromise = loadScript("./data/cor-explorer.generated.js").then(() => {
       if (window.COR_EXPLORER) S.explorer = window.COR_EXPLORER.explorer;
+      // Script chargé mais vide (fichier tronqué par un cache intermédiaire) :
+      // `renderExplorer` sortirait sans rien afficher, laissant le message de
+      // chargement à l'écran. On bascule sur le message d'erreur.
+      if (!S.explorer || !S.explorer.themes || !S.explorer.themes.length) {
+        throw new Error("Données de l'explorateur absentes");
+      }
       renderExplorer();
       setupChartTools();
-    }).catch(() => { explorerPromise = null; });
+    }).catch(() => {
+      // On remet la promesse à null AVANT de proposer le réessai : le rappel
+      // repasse alors par un vrai chargement (le cache de `loadScript` est lui
+      // aussi purgé, sinon la promesse rejetée serait resservie telle quelle).
+      explorerPromise = null;
+      scriptCache.delete("./data/cor-explorer.generated.js");
+      explorerNotice("Indicateurs indisponibles — vérifiez votre connexion.");
+      toast("Impossible de charger les indicateurs.", "Réessayer", ensureExplorer);
+    });
     return explorerPromise;
   }
 

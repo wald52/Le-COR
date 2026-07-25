@@ -18,9 +18,12 @@ des données de l'INSEE, de la Dares, etc.).
 
 ## Ce que montre le site
 
-Le site s'ouvre sur une **section d'accueil** — le diagramme de Sankey
-« D'où vient l'argent des retraites, et où va-t-il ? » —, puis se lit comme un
-parcours en **trois chapitres** (13 sections au total) :
+Le site s'ouvre sur un **carrousel de cartes** (une carte par section, que l'on
+fait défiler au doigt, à la souris ou au clavier) ; ouvrir une carte déploie la
+section complète — texte, graphique interactif, encadré « ce qu'il faut
+retenir ». Sans JavaScript, la même matière se lit comme une page classique à
+défilement. L'ensemble forme un parcours en **trois chapitres**
+(accueil + 12 sections) :
 
 **Chapitre 1 — Le constat** (combien on dépense, et des prévisions qui bougent)
 1. **Le graphique clé** — part des dépenses de retraite dans le PIB :
@@ -50,6 +53,9 @@ parcours en **trois chapitres** (13 sections au total) :
 - **PWA** (Progressive Web App) : installable et **utilisable hors-ligne**
   grâce au service worker (`sw.js`) et au manifeste (`manifest.webmanifest`).
 - **Responsive** et accessible (navigation clavier, libellés ARIA).
+- **Aucun traceur** : pas d'analytique, pas de cookie, aucune requête vers un
+  tiers. Le seul stockage local sert à ne pas reproposer l'installation de la
+  PWA (voir [`legal.html`](legal.html)).
 
 ## Lancer en local
 
@@ -66,17 +72,25 @@ Pour le lint, les tests de bout en bout et le guide de contribution, voir
 
 ## Mettre à jour les données
 
-Toutes les séries sont dans **`data/data.js`**, avec leur source. Pour
-remplacer une courbe par les chiffres **exacts** d'un fichier Excel du COR, il
-suffit d'éditer le tableau `points` correspondant — aucune autre modification
-n'est nécessaire.
+Les séries affichées viennent des **fichiers Excel officiels du COR**, extraits
+automatiquement par `tools/extract_cor.py` vers deux artefacts committés :
 
-> ⚠️ **Honnêteté sur les données** : cette première version est *pédagogique*.
-> Les valeurs clés (points de départ, points 2070, hypothèses de référence)
-> sont reprises des **synthèses officielles du COR** ; les points intermédiaires
-> des courbes longues sont **interpolés** pour la lisibilité. Pour une analyse
-> fine, brancher les fichiers Excel année par année (voir l'onglet
-> « Méthode & sources » du site).
+- `data/cor-series.generated.js` (`window.COR_SERIES`) — les séries des sections ;
+- `data/cor-explorer.generated.js` (`window.COR_EXPLORER`) — l'explorateur.
+
+`data/data.js` (`window.COR_DATA`) reste saisi à la main : il porte quelques
+séries non extractibles (`productivite`, `fiscalisation`, `hypothesesTable`,
+`macro`) et sert de **secours** si un fichier généré ne charge pas.
+
+Pour intégrer un nouveau rapport : déposer ses fichiers sous
+`data/Données du COR/`, relancer `python3 tools/extract_cor.py`, puis committer
+les artefacts régénérés.
+
+> **Honnêteté sur les données** : les chiffres publiés ont été confrontés un par
+> un aux fichiers officiels — voir
+> [`notes/audit-exactitude-donnees.md`](notes/audit-exactitude-donnees.md).
+> Les rares valeurs calculées par le site (conversions en milliards d'euros,
+> parts) sont signalées sous le graphique concerné.
 
 ## Régénérer le logo et les icônes
 
