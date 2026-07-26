@@ -557,7 +557,14 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
    grande que la position de la section dans la feuille ramène ce calcul à
    scrollTop 0 (valeur bornée) : déclaratif, sans lutter contre le navigateur ni
    minuter de correction. */
-.cd-body .band { padding-top: 14px; scroll-margin-top: 96px; }
+/* `content-visibility: visible` annule le `auto` posé sur `.band` (css/style.css)
+   pour la seule section ouverte en vue détail : c'est la seule qu'on REGARDE et
+   qu'on fait défiler, elle doit être rendue d'un bloc. Le gain du `auto` porte
+   sur le premier rendu de la page, pas ici — et sa mise en page paresseuse
+   pendant le défilement de la feuille serait perceptible. Cela retire aussi le
+   `contain: paint` implicite, qui rognerait ce qui déborde de la section
+   (infobulles des graphiques). */
+.cd-body .band { padding-top: 14px; scroll-margin-top: 96px; content-visibility: visible; }
 .cd-body .band.alt { background: var(--fond); }
 
 /* Bouton de retour EN BAS du descriptif : la pilule .cta du site (style inchangé),

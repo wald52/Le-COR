@@ -68,7 +68,7 @@ Toutes les évolutions notables du site. Format inspiré de
   l'extraction automatique et contredisait le site ; il est remplacé par la
   description réelle de la chaîne de données et un renvoi vers la note d'audit.
   La présentation de l'interface (carrousel de cartes) est mise à jour.
-- Cache du service worker porté à `v76`.
+- Cache du service worker porté à `v77`.
 - **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
   (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
   d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus
@@ -105,6 +105,21 @@ Toutes les évolutions notables du site. Format inspiré de
     déjà découverte tôt, et porte `fetchpriority="high"` : la précharger ne
     ferait que lui disputer la bande passante avec la feuille de style — le
     raisonnement même qui vaut déjà pour les scripts.
+- **Mise en page des sections invisibles au premier rendu** (`content-visibility:
+  auto` sur `.band`). Au chargement, le navigateur mettait en page les 13 sections
+  (~3 000 éléments) alors qu'elles sont **recouvertes** par l'accueil statique
+  (`#boot-splash`, `position:fixed;inset:0`, opaque) et que le carrousel les
+  déplace, quelques millisecondes plus tard, dans `#story-sections[hidden]` où
+  elles ne comptent plus. Ce travail entièrement perdu formait une tâche longue de
+  ~470 ms attribuée au document : elle retardait le FCP et, selon qu'elle tombait
+  avant ou après lui, gonflait le Total Blocking Time (mesuré jusqu'à +457 ms sur
+  un seul run). Mesure sur 11 runs (Lighthouse 13, profil mobile) : « Style &
+  Layout » **523 ms → 382 ms** en médiane, minimums 485 ms → 350 ms (sans
+  recouvrement). La section ouverte en vue détail neutralise la règle
+  (`.cd-body .band { content-visibility: visible }`) : c'est la seule qu'on
+  regarde et qu'on fait défiler. Vérifié : sans JavaScript, les 13 sections
+  gardent une hauteur normale (repli par défilement intact) ; le CLS reste à
+  0,006 et les 38 tests de bout en bout passent.
 
 ## [1.0.0] – 2026-06-27
 

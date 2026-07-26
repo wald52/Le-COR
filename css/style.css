@@ -83,7 +83,22 @@ a { color: var(--bleu-clair); }
 .cta:hover { transform: translateY(-1px); }
 
 /* ---------- Bandes / sections ---------- */
-.band { padding: 56px 0; }
+/* `content-visibility: auto` : le navigateur saute la mise en page et la
+   peinture des sections hors écran. Au premier rendu, les 13 sections (~3 000
+   éléments) sont mises en page ALORS QUE PERSONNE NE LES VOIT — #boot-splash
+   (position:fixed;inset:0, opaque) les recouvre — et, quelques millisecondes
+   plus tard, le carrousel les déplace dans #story-sections[hidden] où elles ne
+   comptent plus du tout. C'était du travail intégralement perdu : une tâche
+   longue de ~470 ms attribuée au document, qui retardait le FCP et, selon
+   qu'elle tombait avant ou après lui, gonflait le Total Blocking Time.
+   Mesuré (Lighthouse 13 mobile, 11 runs) : « Style & Layout » 523 ms → 382 ms
+   en médiane (minimums 485 ms → 350 ms, sans recouvrement).
+   `contain-intrinsic-size: auto 700px` donne une hauteur estimée aux sections
+   non rendues, et le mot-clé `auto` mémorise leur hauteur réelle une fois
+   rendues — la barre de défilement ne saute donc pas en lecture sans
+   JavaScript. Les sections ouvertes en vue détail neutralisent la règle
+   (cf. `.cd-body .band` dans css/cards.css). */
+.band { padding: 56px 0; content-visibility: auto; contain-intrinsic-size: auto 700px; }
 .band.alt { background: var(--fond-alt); }
 .band h2 { font-size: clamp(1.4rem, 3vw, 2rem); margin: 0 0 12px; }
 /* Le texte courant occupe toute la largeur du conteneur, aligné sur les
