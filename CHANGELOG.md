@@ -68,7 +68,7 @@ Toutes les évolutions notables du site. Format inspiré de
   l'extraction automatique et contredisait le site ; il est remplacé par la
   description réelle de la chaîne de données et un renvoi vers la note d'audit.
   La présentation de l'interface (carrousel de cartes) est mise à jour.
-- Cache du service worker porté à `v77`.
+- Cache du service worker porté à `v78`.
 - **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
   (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
   d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus
@@ -105,6 +105,32 @@ Toutes les évolutions notables du site. Format inspiré de
     déjà découverte tôt, et porte `fetchpriority="high"` : la précharger ne
     ferait que lui disputer la bande passante avec la feuille de style — le
     raisonnement même qui vaut déjà pour les scripts.
+- **Total Blocking Time : les deux tâches longues du chargement.** Une fois le
+  CLS réglé et la mise en page allégée, le TBT restait le seul frein (124-372 ms
+  sur trois audits mobiles du site déployé, soit un score oscillant entre 91 et
+  99). Les traces désignaient deux coupables, reproductibles d'un run à l'autre.
+  - **Le traçage des mini-graphiques au montage du carrousel** (~112 ms des
+    ~127 ms du montage, profilé à CPU ×4 — l'essentiel de la tâche longue
+    attribuée à `js/cards.js`). `drawVisibleMinis()` traçait les cartes ±2 d'un
+    seul tenant, alors que le pré-traçage en temps mort juste en dessous couvre
+    déjà les mêmes cartes, dans le même ordre, à raison d'un mini par rappel.
+    L'appel synchrone est retiré : la carte active à l'ouverture est une carte
+    photo (aucun mini à tracer), et tous les minis sont en place ~600 ms après
+    `load` sans bloquer le fil principal. La navigation rappelle
+    `drawVisibleMinis()` et `drawMini` est idempotent : aucune carte ne peut
+    rester sans son mini.
+  - **Le pré-rendu des graphiques, une section à la fois.** Trois sections en
+    portent deux (`deficit`, `realite`, `financement`) : les tracer d'un bloc
+    formait des tâches de ~145 ms (~95 ms de TBT chacune). `prerenderAllCharts`
+    travaille désormais sur une file plate d'appels de dessin élémentaires — un
+    GRAPHIQUE par temps mort — et démarre après l'événement `load` plutôt qu'au
+    montage, pour ne plus disputer le fil principal à la fin du chargement.
+    `sectionRendered` n'est marqué qu'après le dernier graphique de la section :
+    ouvrir une carte à mi-pré-rendu retrace la section entière au lieu de la
+    laisser incomplète.
+  - Mesure locale, 5 runs (Lighthouse 13, profil mobile) : **TBT médian 92 ms →
+    0 ms** (maximum 5 ms), plus aucune tâche longue au chargement. CLS inchangé
+    à 0,006, 17 tests unitaires et 38 tests e2e au vert.
 - **Mise en page des sections invisibles au premier rendu** (`content-visibility:
   auto` sur `.band`). Au chargement, le navigateur mettait en page les 13 sections
   (~3 000 éléments) alors qu'elles sont **recouvertes** par l'accueil statique

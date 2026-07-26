@@ -1319,7 +1319,19 @@
     // après la montée de la feuille (le conteneur sauterait de min-height:300px à la hauteur
     // du SVG → « redimensionnement » juste avant le tracé). Le tracé des courbes est rejoué
     // à l'ouverture (cf. buildDetail), sur le SVG déjà rendu, sans reconstruction.
-    if (window.CORApp.prerenderAllCharts) window.CORApp.prerenderAllCharts();
+    //
+    // Démarré APRÈS l'événement `load`, et non ici (DOMContentLoaded) : lancé au
+    // montage, il disputait le fil principal à la fin du chargement de la page
+    // (images, service worker) au moment précis où le visiteur commence à
+    // pouvoir interagir. Ce n'est pas un report de complaisance : ouvrir une
+    // carte avant la fin du pré-rendu reste correct, `renderSection` appelle
+    // `renderSectionOnce` qui rattrape la section à l'ouverture — le pré-rendu
+    // n'est qu'une avance prise, jamais une dépendance.
+    const startPrerender = () => {
+      if (window.CORApp.prerenderAllCharts) window.CORApp.prerenderAllCharts();
+    };
+    if (document.readyState === "complete") startPrerender();
+    else window.addEventListener("load", startPrerender, { once: true });
 
     // Libellé d'aide intégré à la flèche « suivante » (comme la bulle de retour
     // du détail). Verbe adapté à la plateforme : « Glissez » au tactile (on fait
@@ -1399,10 +1411,18 @@
     document.body.classList.add("mode-carousel");
     setupGestures();
 
-    // Premier rendu + minis visibles.
+    // Premier rendu. Les minis ne sont PAS tracés ici : `drawVisibleMinis()`
+    // trace les cartes ±2, ce qui coûtait 112 ms des ~127 ms du montage (profilé
+    // à CPU ×4) — l'essentiel de la tâche longue attribuée à ce fichier au
+    // chargement, et donc du Total Blocking Time restant. Le pré-traçage en
+    // temps mort juste en dessous couvre exactement les mêmes cartes, dans le
+    // même ordre (il part de l'index 0), à raison d'un mini par rappel : le
+    // résultat visuel est identique à quelques millisecondes près, sans bloquer
+    // le fil principal. La navigation rappelle `drawVisibleMinis()` de son côté,
+    // et `drawMini` est idempotent (garde `miniDrawn`) : aucune carte ne peut
+    // rester sans son mini.
     offset = 0; index = 0;
     applyTransforms(0);
-    drawVisibleMinis();
 
     // Pré-trace les minis hors écran quand le navigateur est libre : plus aucun
     // mini n'est construit sur la 1re frame d'un changement de carte (fin des

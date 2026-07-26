@@ -1664,13 +1664,32 @@
     // sinon le conteneur passe de min-height:300px à la hauteur du SVG au rendu différé
     // (« redimensionnement » juste avant le tracé). Les courbes gardent leur tracé : il est
     // rejoué à l'ouverture via __revealReset/__revealPlay, sans reconstruire le SVG.
+    // Granularité : UN GRAPHIQUE par temps mort, pas une section. Trois sections
+    // en portent deux (`deficit`, `realite`, `financement`) : les tracer d'un
+    // seul tenant formait une tâche de ~145 ms, soit ~95 ms de Total Blocking
+    // Time à elle seule (mesuré sur le site déployé). Une file plate d'appels de
+    // dessin élémentaires divise ces tâches par deux.
+    //
+    // `sectionRendered` n'est marqué qu'APRÈS le dernier graphique de la section :
+    // si le visiteur ouvre la carte alors que le pré-rendu est à mi-chemin,
+    // renderSectionOnce retrace la section entière (résultat correct) au lieu de
+    // sortir en croyant le travail fait (une carte resterait vide).
     prerenderAllCharts() {
       const ids = ["presentation", "depenses", "deficit", "productivite", "realite", "niveau", "financement", "monde"];
+      const queue = [];
+      ids.forEach(id => {
+        if (sectionRendered.has(id)) return;
+        if (id === "financement") queue.push(setupSankeyControls);
+        (SECTION_CHARTS[id] || []).forEach(draw => queue.push(() => draw(false)));
+        queue.push(() => sectionRendered.add(id));
+      });
+      queue.push(setupChartTools, reserveTitleSpaceForTools);
+
       const ric = window.requestIdleCallback || (fn => setTimeout(fn, 1));
       let i = 0;
       const step = () => {
-        if (i >= ids.length) { setupChartTools(); reserveTitleSpaceForTools(); return; }
-        renderSectionOnce(ids[i++]);
+        if (i >= queue.length) return;
+        queue[i++]();
         ric(step);
       };
       ric(step);
