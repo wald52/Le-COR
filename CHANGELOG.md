@@ -68,7 +68,7 @@ Toutes les évolutions notables du site. Format inspiré de
   l'extraction automatique et contredisait le site ; il est remplacé par la
   description réelle de la chaîne de données et un renvoi vers la note d'audit.
   La présentation de l'interface (carrousel de cartes) est mise à jour.
-- Cache du service worker porté à `v80`.
+- Cache du service worker porté à `v81`.
 - **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
   (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
   d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus
@@ -145,6 +145,17 @@ Toutes les évolutions notables du site. Format inspiré de
     Résultat local (5 runs) : la fenêtre de chargement ne contient plus **qu'une
     seule tâche longue, celle du document** — plus aucune tâche JavaScript, et
     un TBT de 0 ms sur les cinq runs sans aucun écart.
+  - **Les treize mini-graphiques des cartes, eux aussi à l'interaction.** Même
+    logique, dernier gisement : le pré-traçage en temps mort dessinait les minis
+    des treize cartes juste après le montage. Or au repos une seule carte est
+    regardée — l'accueil, une photo sans mini. Coût mesuré : **~85 ms de
+    JavaScript** (CPU ×4, médiane sur 5 chargements) *plus* la mise en page et la
+    peinture qu'ils déclenchent, sur des cartes que personne ne regarde encore.
+    La file démarre désormais au premier contact, via le même déclencheur que le
+    pré-rendu des graphiques (`startOnFirstInteraction`, en capture pour survivre
+    au `setPointerCapture` du carrousel). Vérifié par capture d'écran : l'écran
+    au repos est identique — la carte d'accueil occupe toute la largeur, aucune
+    voisine n'est visible. « Style & Layout » local : 272 ms → 233 ms.
   - Mesure locale, 5 runs (Lighthouse 13, profil mobile) : **TBT médian 92 ms →
     0 ms**. Sur les runs non parasités par la machine de mesure, la fenêtre de
     chargement ne contient plus **aucune tâche longue de JavaScript** — il ne

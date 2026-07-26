@@ -307,6 +307,27 @@
    * section soit prête avant l'ouverture, et la navigation étend la file au fur
    * et à mesure. `prerenderSections` déduplique de son côté.
    * -------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+   * Exécute `fn` au PREMIER signe d'interaction (doigt, souris, clavier,
+   * molette), une seule fois. Sert à ne rien préparer tant que le visiteur
+   * n'a pas bougé : au repos il ne regarde que la carte d'accueil, qui est une
+   * photo sans mini et sans vue détail. Tout ce qui est préparé « au cas où »
+   * pendant le chargement ne fait qu'allonger les tâches du fil principal.
+   * -------------------------------------------------------------------- */
+  const FIRST_INTERACTION = ["pointerdown", "keydown", "wheel", "touchstart"];
+  function startOnFirstInteraction(fn) {
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      FIRST_INTERACTION.forEach(ev => window.removeEventListener(ev, go, true));
+      fn();
+    };
+    // Capture : le carrousel arrête certains gestes (setPointerCapture,
+    // stopPropagation sur les flèches) avant qu'ils n'atteignent `window`.
+    FIRST_INTERACTION.forEach(ev => window.addEventListener(ev, go, { capture: true, passive: true }));
+  }
+
   function prerenderAround() {
     if (!window.CORApp || !window.CORApp.prerenderSections) return;
     const ids = [];
@@ -1351,9 +1372,7 @@
     // une carte reste correct : `renderSection` appelle `renderSectionOnce`, qui
     // rattrape la section à l'ouverture — le pré-rendu est une avance prise,
     // jamais une dépendance.
-    const startPrerender = () => prerenderAround();
-    ["pointerdown", "keydown", "wheel"].forEach(ev =>
-      window.addEventListener(ev, startPrerender, { once: true, passive: true }));
+    startOnFirstInteraction(prerenderAround);
 
     // Libellé d'aide intégré à la flèche « suivante » (comme la bulle de retour
     // du détail). Verbe adapté à la plateforme : « Glissez » au tactile (on fait
@@ -1462,7 +1481,18 @@
       drawMini(miniPrefetchIdx++);
       idlePrefetch(prefetchStep);
     };
-    idlePrefetch(prefetchStep);
+    // …mais SEULEMENT à partir de la première interaction, comme le pré-rendu des
+    // graphiques (cf. startPrerender plus bas). Au repos, une seule carte est
+    // réellement regardée — la carte d'accueil, qui est une photo et n'a pas de
+    // mini. Tracer les treize pendant le chargement coûtait ~85 ms de JavaScript
+    // (CPU ×4, médiane sur 5 chargements) PLUS la mise en page et la peinture
+    // qu'ils déclenchent, sur des cartes que personne ne regarde encore : c'était
+    // le dernier gros poste de « Style & Layout » de la fenêtre de chargement.
+    // Dès le premier contact, la file démarre et prend son avance pendant le
+    // geste ; `drawVisibleMinis()` (appelé par `springTo`) reste le filet qui
+    // garantit ±2 cartes tracées à chaque changement, et `drawMini` est
+    // idempotent : rien n'est tracé deux fois.
+    startOnFirstInteraction(() => idlePrefetch(prefetchStep));
 
     // Déploie le libellé d'aide de la flèche « suivante » après un court délai,
     // puis le replie à la première prise en main (premier appui sur le carrousel,
