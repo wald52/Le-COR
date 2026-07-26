@@ -68,7 +68,7 @@ Toutes les évolutions notables du site. Format inspiré de
   l'extraction automatique et contredisait le site ; il est remplacé par la
   description réelle de la chaîne de données et un renvoi vers la note d'audit.
   La présentation de l'interface (carrousel de cartes) est mise à jour.
-- Cache du service worker porté à `v79`.
+- Cache du service worker porté à `v80`.
 - **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
   (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
   d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus
@@ -133,6 +133,18 @@ Toutes les évolutions notables du site. Format inspiré de
     corrects : `renderSection` rattrape la section à l'ouverture. `explorer`
     reste hors périmètre (ses 468 Ko doivent rester paresseux) et les outils
     sont posés sur la seule section tracée, au lieu de re-balayer le document.
+  - **Le dernier graphique du chargement, déclenché par l'interaction.** Même
+    réduit aux cartes voisines, il restait un graphique tracé pendant le
+    chargement (~145 ms attribués à `js/app.js` sur le site déployé). Or la
+    carte d'accueil est `noDetail` : tant que le visiteur n'a pas bougé, il ne
+    peut rien ouvrir, donc rien préparer n'est utile. La file démarre désormais
+    au **premier contact** (`pointerdown`, `keydown` ou `wheel`) et non au
+    chargement : elle prend son avance pendant le geste de swipe, bien avant que
+    la carte voisine puisse être ouverte. Profilage à CPU ×4 : `init()` ne pèse
+    que 5,5 ms, tout le reste de la tâche était le tracé du graphique.
+    Résultat local (5 runs) : la fenêtre de chargement ne contient plus **qu'une
+    seule tâche longue, celle du document** — plus aucune tâche JavaScript, et
+    un TBT de 0 ms sur les cinq runs sans aucun écart.
   - Mesure locale, 5 runs (Lighthouse 13, profil mobile) : **TBT médian 92 ms →
     0 ms**. Sur les runs non parasités par la machine de mesure, la fenêtre de
     chargement ne contient plus **aucune tâche longue de JavaScript** — il ne

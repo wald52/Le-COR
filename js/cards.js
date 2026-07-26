@@ -1337,16 +1337,23 @@
     // du SVG → « redimensionnement » juste avant le tracé). Le tracé des courbes est rejoué
     // à l'ouverture (cf. buildDetail), sur le SVG déjà rendu, sans reconstruction.
     //
-    // Démarré APRÈS l'événement `load`, et non ici (DOMContentLoaded) : lancé au
-    // montage, il disputait le fil principal à la fin du chargement de la page
-    // (images, service worker) au moment précis où le visiteur commence à
-    // pouvoir interagir. Ce n'est pas un report de complaisance : ouvrir une
-    // carte avant la fin du pré-rendu reste correct, `renderSection` appelle
-    // `renderSectionOnce` qui rattrape la section à l'ouverture — le pré-rendu
-    // n'est qu'une avance prise, jamais une dépendance.
-    const startPrerender = () => { prerenderAround(); };
-    if (document.readyState === "complete") startPrerender();
-    else window.addEventListener("load", startPrerender, { once: true });
+    // Déclenché par la PREMIÈRE INTERACTION, et non par le chargement de la page.
+    // La carte d'accueil (index 0) est `noDetail` : elle n'ouvre rien. Tant que
+    // le visiteur n'a pas bougé, aucun graphique ne peut donc être demandé, et
+    // en préparer un pendant le chargement ne servait qu'à alourdir le fil
+    // principal — c'était la dernière tâche longue de la fenêtre de chargement
+    // (~145 ms attribués à js/app.js sur le site déployé).
+    //
+    // Dès le premier contact (doigt, souris ou clavier), la file démarre : elle
+    // a donc de l'avance pendant tout le geste de swipe, bien avant que la carte
+    // voisine puisse être ouverte. `springTo` l'étend ensuite à chaque
+    // changement de carte. Et si le visiteur va plus vite que la file, ouvrir
+    // une carte reste correct : `renderSection` appelle `renderSectionOnce`, qui
+    // rattrape la section à l'ouverture — le pré-rendu est une avance prise,
+    // jamais une dépendance.
+    const startPrerender = () => prerenderAround();
+    ["pointerdown", "keydown", "wheel"].forEach(ev =>
+      window.addEventListener(ev, startPrerender, { once: true, passive: true }));
 
     // Libellé d'aide intégré à la flèche « suivante » (comme la bulle de retour
     // du détail). Verbe adapté à la plateforme : « Glissez » au tactile (on fait
