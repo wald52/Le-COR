@@ -99,6 +99,21 @@ a { color: var(--bleu-clair); }
    JavaScript. Les sections ouvertes en vue détail neutralisent la règle
    (cf. `.cd-body .band` dans css/cards.css). */
 .band { padding: 56px 0; content-visibility: auto; contain-intrinsic-size: auto 700px; }
+/* …et tant que l'accueil statique (#boot-splash) recouvre l'écran, on va plus
+   loin : `hidden` au lieu de `auto`. `auto` ne saute que les sections HORS
+   écran ; la première reste mise en page alors qu'elle est, comme les autres,
+   invisible sous un calque opaque en position:fixed — et toutes finissent
+   `display:none` dans #story-sections[hidden] quelques millisecondes plus tard,
+   au montage du carrousel. Leur mise en page initiale n'est donc jamais vue par
+   personne. Mesure (Lighthouse 13 mobile, 5 runs par variante) : « Style &
+   Layout » 332 ms → 186 ms, et la tâche longue du document (88 ms) disparaît
+   complètement — à comparer au plafond théorique de 181 ms obtenu en RETIRANT
+   purement et simplement le contenu des sections du HTML.
+   Le sélecteur cesse de s'appliquer de lui-même dès que #boot-splash est retiré
+   (les sections rejoignent alors le réservoir caché), et le repli sans
+   JavaScript le neutralise explicitement (cf. le <style> du <noscript> dans
+   index.html) : la lecture par défilement garde ses 13 sections. */
+#boot-splash ~ .band { content-visibility: hidden; }
 .band.alt { background: var(--fond-alt); }
 .band h2 { font-size: clamp(1.4rem, 3vw, 2rem); margin: 0 0 12px; }
 /* Le texte courant occupe toute la largeur du conteneur, aligné sur les

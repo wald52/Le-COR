@@ -126,7 +126,7 @@
            statique (#boot-splash) pour laisser apparaître la page à défilement
            classique. Le CSP autorise `style-src 'unsafe-inline'` ; une règle CSS
            s'applique globalement quelle que soit sa position dans le document. -->
-      <style>#boot-splash{display:none!important}</style>
+      <style>#boot-splash{display:none!important}#boot-splash ~ .band{content-visibility:visible!important}</style>
       <!-- L'unique <h1> du document est celui de l'accueil (#boot-splash, puis
            celui du carrousel monté en JS) : masqué ci-dessus, il laisserait la
            page sans titre de niveau 1. On le rétablit ici. -->

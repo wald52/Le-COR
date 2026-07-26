@@ -68,7 +68,7 @@ Toutes les évolutions notables du site. Format inspiré de
   l'extraction automatique et contredisait le site ; il est remplacé par la
   description réelle de la chaîne de données et un renvoi vers la note d'audit.
   La présentation de l'interface (carrousel de cartes) est mise à jour.
-- Cache du service worker porté à `v81`.
+- Cache du service worker porté à `v82`.
 - **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
   (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
   d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus
@@ -156,6 +156,24 @@ Toutes les évolutions notables du site. Format inspiré de
     au `setPointerCapture` du carrousel). Vérifié par capture d'écran : l'écran
     au repos est identique — la carte d'accueil occupe toute la largeur, aucune
     voisine n'est visible. « Style & Layout » local : 272 ms → 233 ms.
+  - **La mise en page initiale des sections, supprimée sans rien retirer du
+    HTML.** Dernier poste : une tâche longue du document de 206 à 225 ms
+    (+156 à +175 de TBT). Décomposition : « Parse HTML & CSS » ne pèse que
+    32-39 ms — le document n'est pas coûteux à parser, c'est « Style & Layout »
+    qui domine. `content-visibility: auto` ne sautait que les sections HORS
+    écran ; la première restait mise en page, alors qu'elle est, comme les
+    autres, invisible sous `#boot-splash` (calque opaque `position:fixed`) et
+    qu'elles finissent toutes `display:none` dans `#story-sections[hidden]`
+    quelques millisecondes plus tard. Une règle `#boot-splash ~ .band {
+    content-visibility: hidden }` supprime cette mise en page jamais vue.
+    Mesure (5 runs par variante) : « Style & Layout » **332 ms → 186 ms** et la
+    **tâche longue du document disparaît** (88 ms → 0) — à comparer au plafond
+    de 181 ms obtenu en retirant purement et simplement le contenu des sections
+    du HTML. Le gain est donc pris **sans sacrifier l'indexation ni le repli
+    sans JavaScript** : le sélecteur cesse de s'appliquer dès que `#boot-splash`
+    est retiré, et le `<noscript>` le neutralise explicitement. Vérifié sans
+    JavaScript : 13 sections en `content-visibility: visible`, aucune de hauteur
+    nulle, lien légal accessible.
   - Mesure locale, 5 runs (Lighthouse 13, profil mobile) : **TBT médian 92 ms →
     0 ms**. Sur les runs non parasités par la machine de mesure, la fenêtre de
     chargement ne contient plus **aucune tâche longue de JavaScript** — il ne
