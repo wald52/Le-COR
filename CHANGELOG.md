@@ -68,7 +68,7 @@ Toutes les évolutions notables du site. Format inspiré de
   l'extraction automatique et contredisait le site ; il est remplacé par la
   description réelle de la chaîne de données et un renvoi vers la note d'audit.
   La présentation de l'interface (carrousel de cartes) est mise à jour.
-- Cache du service worker porté à `v78`.
+- Cache du service worker porté à `v79`.
 - **Section « D'où vient vraiment l'argent des retraites ? »** : les trois lectures
   (A/B/C) sont resserrées sur la seule lecture critique « avant subventions
   d'équilibre » et son tableau (≈ 87 Md€), désormais affichée directement (plus
@@ -119,18 +119,26 @@ Toutes les évolutions notables du site. Format inspiré de
     `load` sans bloquer le fil principal. La navigation rappelle
     `drawVisibleMinis()` et `drawMini` est idempotent : aucune carte ne peut
     rester sans son mini.
-  - **Le pré-rendu des graphiques, une section à la fois.** Trois sections en
-    portent deux (`deficit`, `realite`, `financement`) : les tracer d'un bloc
-    formait des tâches de ~145 ms (~95 ms de TBT chacune). `prerenderAllCharts`
-    travaille désormais sur une file plate d'appels de dessin élémentaires — un
-    GRAPHIQUE par temps mort — et démarre après l'événement `load` plutôt qu'au
-    montage, pour ne plus disputer le fil principal à la fin du chargement.
-    `sectionRendered` n'est marqué qu'après le dernier graphique de la section :
-    ouvrir une carte à mi-pré-rendu retrace la section entière au lieu de la
-    laisser incomplète.
+  - **Le pré-rendu des graphiques : proportionnel à ce que le visiteur peut
+    atteindre.** `prerenderAllCharts` traçait les huit sections après `load`,
+    d'abord une section par temps mort (tâches de ~145 ms), puis un graphique
+    par temps mort — sans suffire : sur un audit du site déployé, il restait des
+    tâches de 126 à 167 ms attribuées à `js/app.js`, l'essentiel du TBT.
+    Remplacé par `CORApp.prerenderSections(ids)`, alimenté par les sections des
+    cartes **voisines** de la carte courante (±1), et étendu par la navigation.
+    Au chargement, le visiteur est sur la carte d'accueil, qui n'a aucun
+    graphique : **un seul** est préparé au lieu de dix. Une carte est toujours
+    prête avant qu'on puisse l'ouvrir (il faut naviguer jusqu'à elle), et les
+    chemins directs — lien profond `#monde`, saut par les pastilles — restent
+    corrects : `renderSection` rattrape la section à l'ouverture. `explorer`
+    reste hors périmètre (ses 468 Ko doivent rester paresseux) et les outils
+    sont posés sur la seule section tracée, au lieu de re-balayer le document.
   - Mesure locale, 5 runs (Lighthouse 13, profil mobile) : **TBT médian 92 ms →
-    0 ms** (maximum 5 ms), plus aucune tâche longue au chargement. CLS inchangé
-    à 0,006, 17 tests unitaires et 38 tests e2e au vert.
+    0 ms**. Sur les runs non parasités par la machine de mesure, la fenêtre de
+    chargement ne contient plus **aucune tâche longue de JavaScript** — il ne
+    reste qu'une tâche document de ~55 ms. CLS inchangé à 0,006 ; lint,
+    17 tests unitaires et 38 tests e2e au vert ; liens profonds et saut par
+    pastilles vérifiés sur des sections jamais pré-rendues.
 - **Mise en page des sections invisibles au premier rendu** (`content-visibility:
   auto` sur `.band`). Au chargement, le navigateur mettait en page les 13 sections
   (~3 000 éléments) alors qu'elles sont **recouvertes** par l'accueil statique

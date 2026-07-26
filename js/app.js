@@ -859,7 +859,7 @@
    * Rendu des graphiques par SECTION.
    * Construire les neuf graphiques SVG au chargement saturait le thread principal
    * (Total Blocking Time) et enchaînait les reflows. Chaque section n'est donc
-   * tracée qu'une fois — au pré-rendu en temps mort (prerenderAllCharts) ou à la
+   * tracée qu'une fois — au pré-rendu en temps mort (prerenderSections) ou à la
    * première ouverture de sa carte — puis jamais re-tracée, sauf changement réel
    * de largeur de fenêtre (rotation) : la mise en page d'un graphique dépend de
    * la largeur (seuil « étroit », marges d'axes, étiquettes).
@@ -886,6 +886,34 @@
 
   // Sections déjà tracées (pré-rendu au repos OU 1re ouverture).
   const sectionRendered = new Set();
+
+  /* ----------------------------------------------------------------------
+   * File de pré-rendu : un appel de dessin élémentaire par temps mort.
+   * Alimentée à la demande par `CORApp.prerenderSections` (voir plus bas) ;
+   * une seule boucle tourne à la fois, les ajouts en cours de route sont
+   * simplement consommés à la suite. `sectionQueued` évite d'empiler deux fois
+   * la même section quand la navigation redemande ses voisines.
+   * `explorer` est hors périmètre : il chargerait 468 Ko de données.
+   * -------------------------------------------------------------------- */
+  const PRERENDERABLE = new Set([
+    "presentation", "depenses", "deficit", "productivite",
+    "realite", "niveau", "financement", "monde"
+  ]);
+  const sectionQueued = new Set();
+  const prerenderQueue = [];
+  let prerenderRunning = false;
+  function pumpPrerender() {
+    if (prerenderRunning || !prerenderQueue.length) return;
+    prerenderRunning = true;
+    const ric = window.requestIdleCallback || (fn => setTimeout(fn, 1));
+    const step = () => {
+      const job = prerenderQueue.shift();
+      if (!job) { prerenderRunning = false; return; }
+      job();
+      ric(step);
+    };
+    ric(step);
+  }
   function renderSectionOnce(id) {
     if (sectionRendered.has(id)) return;
     sectionRendered.add(id);
@@ -1456,7 +1484,7 @@
   function ensureStaticContent() {
     while (staticStepIdx < staticSteps.length) staticSteps[staticStepIdx++]();
   }
-  // Étalement : un morceau par temps mort (même motif que prerenderAllCharts).
+  // Étalement : un morceau par temps mort (même motif que la file de pré-rendu).
   function scheduleStaticContent() {
     const ric = window.requestIdleCallback || (fn => setTimeout(fn, 1));
     const step = () => {
@@ -1469,7 +1497,7 @@
 
   function init() {
     // La présentation est le carrousel (js/cards.js) : il pilote le rendu des
-    // graphiques (prerenderAllCharts au repos, renderSection à l'ouverture d'une
+    // graphiques (prerenderSections au repos, renderSection à l'ouverture d'une
     // carte). init() ne fait que câbler les outils communs ; le contenu des
     // sections (scheduleStaticContent) et le tracé des graphiques sont différés.
     scheduleStaticContent();
@@ -1659,40 +1687,50 @@
       ensureSectionPngCache(sec);
     },
     ensureExplorer,
-    // Pré-rend TOUS les graphiques au repos (échelonné en requestIdleCallback), une seule
-    // fois, pour qu'ils soient déjà à leur taille finale dès la 1re ouverture d'une carte —
-    // sinon le conteneur passe de min-height:300px à la hauteur du SVG au rendu différé
-    // (« redimensionnement » juste avant le tracé). Les courbes gardent leur tracé : il est
-    // rejoué à l'ouverture via __revealReset/__revealPlay, sans reconstruire le SVG.
-    // Granularité : UN GRAPHIQUE par temps mort, pas une section. Trois sections
-    // en portent deux (`deficit`, `realite`, `financement`) : les tracer d'un
-    // seul tenant formait une tâche de ~145 ms, soit ~95 ms de Total Blocking
-    // Time à elle seule (mesuré sur le site déployé). Une file plate d'appels de
-    // dessin élémentaires divise ces tâches par deux.
+    // Pré-rend les graphiques au repos pour qu'ils soient déjà à leur taille
+    // finale dès l'ouverture de leur carte — sinon le conteneur passe de
+    // min-height:300px à la hauteur du SVG au rendu différé (« redimensionnement »
+    // juste avant le tracé). Le tracé des courbes est rejoué à l'ouverture via
+    // __revealReset/__revealPlay, sans reconstruire le SVG.
+    //
+    // On ne pré-rend QUE les sections demandées — en pratique celles des cartes
+    // voisines de la carte courante (cf. js/cards.js), pas les huit d'un bloc.
+    // Le travail devient proportionnel à ce que le visiteur peut atteindre :
+    // au chargement il est sur la carte d'accueil, qui n'a aucun graphique, et
+    // seule sa voisine est préparée. Tracer les huit après `load` formait une
+    // rafale de tâches de 126 à 167 ms, soit l'essentiel du Total Blocking Time
+    // restant (mesuré sur le site déployé). La navigation étend la file au fur
+    // et à mesure : une carte est toujours prête avant qu'on puisse l'ouvrir.
+    //
+    // Granularité : UN GRAPHIQUE par temps mort, pas une section — trois d'entre
+    // elles en portent deux (`deficit`, `realite`, `financement`).
     //
     // `sectionRendered` n'est marqué qu'APRÈS le dernier graphique de la section :
     // si le visiteur ouvre la carte alors que le pré-rendu est à mi-chemin,
     // renderSectionOnce retrace la section entière (résultat correct) au lieu de
     // sortir en croyant le travail fait (une carte resterait vide).
-    prerenderAllCharts() {
-      const ids = ["presentation", "depenses", "deficit", "productivite", "realite", "niveau", "financement", "monde"];
-      const queue = [];
-      ids.forEach(id => {
-        if (sectionRendered.has(id)) return;
-        if (id === "financement") queue.push(setupSankeyControls);
-        (SECTION_CHARTS[id] || []).forEach(draw => queue.push(() => draw(false)));
-        queue.push(() => sectionRendered.add(id));
+    prerenderSections(ids) {
+      (ids || []).forEach(id => {
+        // `explorer` est exclu : son pré-rendu déclencherait le chargement des
+        // 468 Ko de données de l'explorateur, qui doit rester paresseux.
+        if (!PRERENDERABLE.has(id) || sectionRendered.has(id) || sectionQueued.has(id)) return;
+        sectionQueued.add(id);
+        const charts = SECTION_CHARTS[id] || [];
+        if (id === "financement") prerenderQueue.push(setupSankeyControls);
+        charts.forEach(draw => prerenderQueue.push(() => draw(false)));
+        prerenderQueue.push(() => {
+          sectionRendered.add(id);
+          // Outils (agrandir / télécharger) posés sur la SEULE section qui vient
+          // d'être tracée : `setupChartTools()` sans argument re-balaierait tout
+          // le document (~3 000 éléments) à chaque section.
+          const sec = document.getElementById(id);
+          if (sec) setupChartTools(sec);
+          if (!document.documentElement.style.getPropertyValue("--chart-tools-w")) {
+            reserveTitleSpaceForTools();
+          }
+        });
       });
-      queue.push(setupChartTools, reserveTitleSpaceForTools);
-
-      const ric = window.requestIdleCallback || (fn => setTimeout(fn, 1));
-      let i = 0;
-      const step = () => {
-        if (i >= queue.length) return;
-        queue[i++]();
-        ric(step);
-      };
-      ric(step);
+      pumpPrerender();
     }
   };
 

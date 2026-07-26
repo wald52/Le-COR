@@ -300,6 +300,22 @@
     miniDrawn.add(i);
     try { MINI[card.image.mini](chartEls[i]); } catch (e) { miniDrawn.delete(i); }
   }
+  /* ----------------------------------------------------------------------
+   * Prépare (au repos, un graphique par temps mort) les sections des cartes
+   * voisines de la carte courante — jamais les huit d'un coup. Le visiteur ne
+   * peut ouvrir que la carte active : préparer ±1 suffit toujours à ce que la
+   * section soit prête avant l'ouverture, et la navigation étend la file au fur
+   * et à mesure. `prerenderSections` déduplique de son côté.
+   * -------------------------------------------------------------------- */
+  function prerenderAround() {
+    if (!window.CORApp || !window.CORApp.prerenderSections) return;
+    const ids = [];
+    for (let i = index - 1; i <= index + 1; i++) {
+      if (i >= 0 && i < cards.length) ids.push(cards[i].image.section);
+    }
+    window.CORApp.prerenderSections(ids);
+  }
+
   function drawVisibleMinis() {
     // ±2 (pas seulement les voisines immédiates) : un swipe rapide peut « dépasser »
     // le pré-tracé en temps mort et atteindre une carte dont le SVG n'est pas encore
@@ -398,6 +414,7 @@
     if (target !== index) document.dispatchEvent(new CustomEvent("cor:interaction"));
     index = target;
     drawVisibleMinis();
+    prerenderAround();
     if (reduceMotion()) {
       offset = target; vel = 0;
       applyTransforms(offset);
@@ -1327,9 +1344,7 @@
     // carte avant la fin du pré-rendu reste correct, `renderSection` appelle
     // `renderSectionOnce` qui rattrape la section à l'ouverture — le pré-rendu
     // n'est qu'une avance prise, jamais une dépendance.
-    const startPrerender = () => {
-      if (window.CORApp.prerenderAllCharts) window.CORApp.prerenderAllCharts();
-    };
+    const startPrerender = () => { prerenderAround(); };
     if (document.readyState === "complete") startPrerender();
     else window.addEventListener("load", startPrerender, { once: true });
 
