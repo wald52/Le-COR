@@ -277,15 +277,27 @@ body:not(.cards-detail-seen) .card.is-active .card-cta {
 }
 
 /* ---------- Pagination (dots) ---------- */
+/* La rangée est servie VIDE dans index.html et remplie par js/cards.js (les
+   libellés des pastilles reprennent les titres des cartes, qui vivent dans le
+   JavaScript). `min-height` lui donne dès le premier rendu la hauteur qu'elle
+   aura une fois remplie : sans elle, la rangée grandit de la hauteur d'une
+   pastille au montage, `.cs-viewport` (flex: 1 1 auto) rétrécit d'autant, et la
+   carte d'accueil — centrée verticalement — REMONTE. Chrome compte ce
+   déplacement (0,021 de CLS mesuré sur le site déployé, soit les trois quarts du
+   total) parce que la carte est désormais le même nœud avant et après le
+   montage. La valeur suit `--cs-dot-size` : seul le rembourrage vertical
+   (14 px + 4 px) est répété ci-dessous. */
+:root { --cs-dot-size: 8px; }
 .cs-dots {
   flex: none;
   display: flex;
   justify-content: center;
   gap: 8px;
   padding: 14px 0 4px;
+  min-height: calc(var(--cs-dot-size) + 14px + 4px);
 }
 .cs-dot {
-  width: 8px; height: 8px;
+  width: var(--cs-dot-size); height: var(--cs-dot-size);
   padding: 0;
   border: 0;
   border-radius: 999px;

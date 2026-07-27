@@ -135,6 +135,27 @@
           </div>
         </div>
       </div>
+      <!-- Les deux éléments de pied d'écran sont servis en HTML, et EUX SEULS :
+           ce sont les seuls du châssis à occuper de la HAUTEUR. L'écran est une
+           colonne flex où `.cs-viewport` prend la place restante ; les ajouter au
+           montage la raccourcissait de 45 px, ce qui faisait remonter de 23 px la
+           carte d'accueil, centrée verticalement. Depuis qu'elle est adoptée
+           (donc le même nœud avant et après le montage), Chrome compte ce
+           déplacement : 0,021 de CLS sur le site déployé, les trois quarts du
+           total. Les flèches et le logo partenaire, eux, restent créés en
+           JavaScript : `position:absolute`, ils ne pèsent pas sur la hauteur du
+           viewport et ne décalaient donc rien — les servir ici ne ferait
+           qu'alourdir le premier rendu (mesuré : tâche la plus longue 92 → 111 ms
+           à CPU ×8, à cause de leurs deux SVG et de la requête d'image du logo).
+
+           La rangée de pastilles est servie VIDE : le libellé de chaque pastille
+           reprend le titre de sa carte, qui vit dans js/cards.js — on ne le
+           duplique pas ici. `.cs-dots` réserve sa hauteur en CSS (min-height),
+           si bien que les remplir ne déplace rien. -->
+      <nav class="cs-dots" aria-label="Pagination des cartes"></nav>
+      <!-- Lien légal discret en pied d'écran (LCEN / RGPD) : toujours accessible
+           depuis l'accueil. legal.html porte aussi la section confidentialité. -->
+      <a class="cs-legal" href="./legal.html">Mentions légales</a>
     </section>
 
     <noscript>

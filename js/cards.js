@@ -1466,15 +1466,22 @@
     // jamais une dépendance.
     startOnFirstInteraction(prerenderAround);
 
+    // Rangée de pastilles et lien légal : servis en HTML (ils occupent de la
+    // hauteur, cf. index.html), on les ADOPTE. Le reste du châssis est créé ici.
+    dotsWrap = screen.querySelector(".cs-dots");
+    if (!dotsWrap) return;                 // HTML inattendu
+
     // Libellé d'aide intégré à la flèche « suivante » (comme la bulle de retour
     // du détail). Verbe adapté à la plateforme : « Glissez » au tactile (on fait
     // défiler les cartes), « Cliquez » au pointeur fin (souris).
     const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
     const navLabel = coarse ? "Glissez pour explorer" : "Cliquez pour explorer";
 
-    // Affordances purement interactives, absentes du HTML statique : elles ne
-    // servent à rien sans JavaScript et leur libellé dépend du pointeur.
-    // Injectées en un seul fragment pour n'invalider la mise en page qu'une fois.
+    // Affordances en `position:absolute` : elles se superposent à l'écran sans
+    // peser sur la hauteur du viewport, donc leur ajout après le premier rendu
+    // ne décale rien. Les créer ici plutôt que de les servir en HTML garde le
+    // premier rendu au plus léger (leurs deux SVG et la requête d'image du logo
+    // y coûtaient 19 ms sur la tâche la plus longue, à CPU ×8).
     //
     // Le logo/lien partenaire « Le Modèle Social Français » — pastille ronde dorée
     // en haut à droite de l'accueil (badge 🔗 + infobulle), pointant vers le
@@ -1482,22 +1489,16 @@
     // pas capté par les gestes du carrousel. Ouvre dans un nouvel onglet
     // (target=_blank + rel de sécurité). Masqué avec l'accueil (aria-hidden)
     // quand un détail est ouvert.
-    const chrome = document.createElement("div");
-    chrome.innerHTML =
+    const logo = document.createElement("div");
+    logo.innerHTML =
       '<a class="ms-logo" href="https://linktr.ee/lemodelesocialfrancais" ' +
       'target="_blank" rel="noopener noreferrer" ' +
       'title="Le Modèle Social Français — voir mon Linktree">' +
       '<img class="ms-logo-img" src="./icons/le-modele-social-francais.webp" ' +
       'alt="Le Modèle Social Français" width="40" height="40" decoding="async" />' +
       '<span class="ms-logo-tip">🔗 Mon Linktree</span>' +
-      "</a>" +
-      '<nav class="cs-dots" aria-label="Pagination des cartes"></nav>' +
-      // Lien légal discret en pied d'écran (LCEN / RGPD) : toujours accessible
-      // depuis l'accueil. legal.html porte aussi la section confidentialité.
-      '<a class="cs-legal" href="./legal.html">Mentions légales</a>';
-    // `.ms-logo` en tête (position:absolute, il se superpose), le reste en pied.
-    screen.insertBefore(chrome.firstElementChild, screen.firstChild);
-    while (chrome.firstChild) screen.appendChild(chrome.firstChild);
+      "</a>";
+    screen.insertBefore(logo.firstElementChild, screen.firstChild);
 
     // Flèches de navigation, dans le viewport (au-dessus de la piste).
     const navs = document.createElement("div");
@@ -1513,8 +1514,6 @@
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
       "</button>";
     while (navs.firstChild) viewport.appendChild(navs.firstChild);
-
-    dotsWrap = screen.querySelector(".cs-dots");
 
     // La 1re carte est déjà dans la piste (HTML statique) : on l'ADOPTE. Les
     // douze autres reçoivent leur coquille ici (position, rôle ARIA, libellé,

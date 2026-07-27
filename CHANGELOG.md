@@ -244,6 +244,39 @@ Toutes les évolutions notables du site. Format inspiré de
     navigateur sépare déjà de lui-même l'exécution du script et la mise en page
     qui suit ; différer le montage le fait retomber dans la tâche du minuteur,
     où construction, recalcul de style *et* mise en page se retrouvent réunis.
+- **Décalage de la carte d'accueil au montage du carrousel** (régression
+  introduite par l'adoption de l'écran ci-dessus). CLS **0,028 → 0,006**, la
+  valeur d'avant. Le score n'y perdait rien (le seuil du 1,00 est à 0,1), mais
+  le saut était réel et visible : après avoir peint l'accueil, le navigateur
+  remontait la carte de **23 px**.
+  - **Cause** : l'écran est une colonne flex où `.cs-viewport` prend la place
+    restante (`flex: 1 1 auto`). Le montage y ajoutait en pied la rangée de
+    pastilles (26 px) et le lien légal (19 px) : le viewport perdait 45 px et la
+    carte, centrée verticalement, remontait de 23 px. Le décalage existait déjà
+    avant, mais l'ancien `#boot-splash` était *retiré* et la carte du carrousel
+    était un **nœud neuf** — l'API *Layout Instability* n'avait rien à comparer.
+    Depuis que la carte est adoptée, c'est le même nœud avant et après : Chrome
+    compte le déplacement. Il pesait 0,021 des 0,028 mesurés (le reste est le
+    déploiement de la bulle « Glissez pour explorer », inchangé depuis toujours).
+  - **Correctif** : servir en HTML les deux seuls éléments du châssis qui
+    occupent de la HAUTEUR — `<nav class="cs-dots">` (vide) et le lien légal —
+    et réserver en CSS la hauteur d'une rangée de pastilles
+    (`.cs-dots { min-height: calc(var(--cs-dot-size) + 14px + 4px) }`), pour que
+    les remplir en JavaScript ne déplace rien. Les pastilles restent générées en
+    JavaScript : leur libellé reprend le titre de chaque carte, qui vit dans
+    `js/cards.js` — on ne le duplique pas dans le HTML.
+  - **Ce qu'il ne fallait PAS faire, mesuré** : servir *tout* le châssis en HTML
+    (flèches de navigation et logo partenaire compris). Ces deux-là sont en
+    `position:absolute` : ils ne pèsent pas sur la hauteur du viewport et ne
+    décalaient donc rien — mais leurs deux SVG et la requête d'image du logo
+    alourdissaient le premier rendu. A/B entrelacé, 12 paires, CPU ×8 : tâche la
+    plus longue **92 → 111 ms**, TBT **86 → 99**. Ils restent créés en JavaScript.
+  - Vérifié géométriquement (scripts du carrousel bloqués pour figer l'état
+    d'avant montage) : hauteur du viewport **737 → 692 px** et carte **183 →
+    160 px** avant correctif, **692 → 692** et **160 → 160** après. A/B
+    entrelacé de contrôle : TBT 96,9 → 98,1 et tâche la plus longue 90 → 93 ms,
+    soit aucun coût. Rendu identique en capture d'écran, replis sans JavaScript
+    et `chart.min.js` bloqué revérifiés, 38 tests e2e au vert.
 - **Mise en page des sections invisibles au premier rendu** (`content-visibility:
   auto` sur `.band`). Au chargement, le navigateur mettait en page les 13 sections
   (~3 000 éléments) alors qu'elles sont **recouvertes** par l'accueil statique
