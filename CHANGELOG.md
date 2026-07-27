@@ -180,6 +180,70 @@ Toutes les évolutions notables du site. Format inspiré de
     reste qu'une tâche document de ~55 ms. CLS inchangé à 0,006 ; lint,
     17 tests unitaires et 38 tests e2e au vert ; liens profonds et saut par
     pastilles vérifiés sur des sections jamais pré-rendues.
+- **Total Blocking Time : le montage du carrousel lui-même.** Trois nouveaux
+  audits du site déployé (Lighthouse 13.3, mobile) donnaient 95, 98 et 99 de
+  performance : **FCP, LCP, CLS et Speed Index sont au maximum sur les trois**,
+  et le TBT (122, 152 et 250 ms) est le seul poste à céder des points. Le seuil
+  est net — il faut **rester sous ~95 ms** pour que l'arrondi tombe sur 100.
+  Les rapports le disent aussi : le fil principal n'a **aucune** tâche de plus
+  de 50 ms *réelles*, seulement 3 à 4 tâches de 25 à 45 ms que la simulation
+  (CPU ×4) porte à 84-181 ms ; et « Style & Layout » (426-440 ms) y pèse plus
+  lourd que l'exécution du JavaScript (133-156 ms). C'est donc la mise en page
+  du montage, pas le script, qu'il fallait alléger. Deux gisements, tous deux
+  du travail intégralement perdu :
+  - **Les treize cartes étaient construites d'un bloc, alors qu'une seule est
+    regardée.** Le carrousel bâtissait les treize cartes complètes au montage :
+    285 boîtes à mettre en page dans la première frame, soit une tâche de
+    107 ms (trace locale, CPU ×8) dont 80 ms de `Layout` pur. Or les cartes
+    au-delà de `hideDist` sont hors écran et déjà `visibility:hidden` : jamais
+    peintes. Désormais le montage ne pose que les **coquilles** (position, rôle
+    ARIA, libellé, `tabindex` — une boîte de taille fixe qui ne coûte presque
+    rien) et ne monte le contenu que des cartes visibles ; les autres suivent
+    une par temps mort, dans la file de pré-tracé existante, ou à la demande dès
+    qu'elles franchissent le seuil de visibilité. Le clavier, les pastilles de
+    pagination et les liens profonds sont inchangés (ils s'appuient sur la
+    coquille), et `hydrateCard` est idempotent : aucun chemin ne peut afficher
+    une carte vide. Objets remis en page au montage : **285 → 82**.
+  - **L'accueil était mis en page et peint DEUX FOIS.** `#boot-splash` était un
+    calque jetable, « réplique exacte de la 1re carte », que `CardSwipeScreen`
+    retirait pour rebâtir à l'identique l'écran, l'en-tête et cette même carte :
+    le navigateur mettait en page et peignait ~26 ms (CPU ×8) de calque, puis
+    ~59 ms pour le carrousel qui le remplaçait. Le HTML sert maintenant
+    directement la structure définitive (`#card-screen`, `.cs-viewport`,
+    `.cs-track` et la carte 0), que le JavaScript **adopte** : il n'ajoute que
+    ce qui manque (coquilles des douze autres cartes, flèches, pagination, logo
+    partenaire, lien légal). Rien de ce qui est déjà affiché n'est détaché ni
+    reconstruit. Objets **remis** en page au montage : **82 → 69**, et le `<h1>`
+    comme l'image LCP restent le même nœud du début à la fin.
+  - **Le document faisait 7 800 px de haut sous l'écran d'accueil.** Les
+    13 sections sautées par `content-visibility: hidden` gardaient la hauteur
+    *estimée* de `contain-intrinsic-size: auto 700px` : la tâche de premier
+    rendu mettait en page et **peignait** une surface de 412 × 7 823 px que
+    personne ne voit (relevé dans la trace : `Paint` de ce clip exact). Un
+    `contain-intrinsic-size: 0` sur la même règle replie le document à la
+    hauteur de l'écran — 7 823 px → 1 241 px, `Paint` ramené au viewport. Le
+    repli sans JavaScript remet `content-visibility: visible`, qui rend
+    `contain-intrinsic-size` inopérant : la lecture par défilement retrouve ses
+    hauteurs réelles (vérifié : 21 161 px de document, sections intactes).
+  - Mesure locale en **A/B entrelacé** — deux copies du site servies en
+    parallèle, chargements alternés, navigateur neuf à chaque fois, CPU ×8,
+    10 paires — sur la trace brute du fil principal : **TBT 81 → 57 ms**
+    (−30 %), **tâche la plus longue 100 → 81 ms**, deuxième 82 → 70 ms,
+    « Style & Layout » 235 → 219 ms. Le TBT ne comptant que ce qui dépasse
+    50 ms par tâche, raboter les sommets rapporte plus que la somme.
+  - Vérifié : rendu de l'accueil identique au pixel près (capture d'écran) ;
+    `viewBox` des sept mini-graphiques **identiques** à l'octet ; structure DOM
+    du carrousel monté inchangée (mêmes enfants, même ordre) ; les treize cartes
+    finissent montées après les temps morts. Replis testés — sans JavaScript,
+    l'écran d'accueil est masqué et les 13 sections reprennent leur hauteur
+    normale ; `js/chart.min.js` bloqué, l'écran est retiré et la page à
+    défilement prend le relais. Lint, 17 tests unitaires et 38 tests e2e au vert.
+  - **Piste écartée, mesurée** : sortir le montage du carrousel dans sa propre
+    tâche (`setTimeout` 0) pour couper la tâche « scripts + montage ». C'est
+    nettement moins bon — tâche la plus longue **83 → 119 ms** — car le
+    navigateur sépare déjà de lui-même l'exécution du script et la mise en page
+    qui suit ; différer le montage le fait retomber dans la tâche du minuteur,
+    où construction, recalcul de style *et* mise en page se retrouvent réunis.
 - **Mise en page des sections invisibles au premier rendu** (`content-visibility:
   auto` sur `.band`). Au chargement, le navigateur mettait en page les 13 sections
   (~3 000 éléments) alors qu'elles sont **recouvertes** par l'accueil statique

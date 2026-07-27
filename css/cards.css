@@ -23,11 +23,6 @@ body.mode-carousel {
 /* Le contenu d'origine sert de réservoir aux vues détail. */
 #story-sections[hidden] { display: none !important; }
 
-/* Filet de sécurité : l'accueil statique (#boot-splash, cf. index.html) est
-   normalement retiré par CardSwipeScreen au montage. Si le retrait était
-   court-circuité, le carrousel monté (body.mode-carousel) le masque tout de même. */
-body.mode-carousel #boot-splash { display: none !important; }
-
 /* Le pied de page vit HORS de <main> (cf. index.html) : il reste le seul chemin
    vers legal.html sans JavaScript. Mais quand le carrousel vide <main> dans
    #story-sections[hidden], le document passe de ~15 000 px à 0 et le footer

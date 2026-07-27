@@ -33,10 +33,11 @@
 
   // Sécurité : si le moteur de graphiques ou l'API app ne sont pas chargés, on
   // ne fait rien (la page reste la version à défilement classique) — mais on
-  // retire d'abord l'accueil statique (#boot-splash), sinon il masquerait la
-  // page à défilement qui prend le relais.
+  // retire d'abord l'écran d'accueil (#card-screen, servi en HTML), sinon il
+  // masquerait la page à défilement qui prend le relais. Sans son montage il
+  // n'est qu'une image figée : ni flèches, ni pagination, ni ouverture.
   if (!window.CORChart || !window.CORApp) {
-    const s = document.getElementById("boot-splash");
+    const s = document.getElementById("card-screen");
     if (s) s.remove();
     return;
   }
@@ -193,6 +194,7 @@
   const chartEls = [];   // calque .card-chart de chaque carte (parallax)
   const dotEls = [];
   const miniDrawn = new Set(); // cartes dont le mini-graphique est déjà tracé
+  const hydrated = new Set();  // cartes dont le contenu interne est monté (cf. hydrateCard)
   const lastZ = [];            // dernier zIndex écrit par carte (évite les ré-écritures par frame)
   const lastHidden = [];       // dernier état visibility écrit par carte (même principe)
   let lastActive = -1;         // dernier indice actif poussé aux points/flèches/classe is-active
@@ -234,6 +236,64 @@
       el.setAttribute("tabindex", "0");
       el.setAttribute("aria-label", card.title + " — ouvrir");
     }
+
+    cardEls[i] = el;
+    return el;
+  }
+
+  /* ----------------------------------------------------------------------
+   * Adopte les cartes déjà présentes dans la piste (servies en HTML par
+   * index.html — en pratique la seule carte d'accueil, cards[0]). Elles sont
+   * déjà mises en page et peintes quand les scripts s'exécutent : les
+   * enregistrer telles quelles évite de les reconstruire, donc de refaire la
+   * mise en page et la peinture de ce que le visiteur voit déjà.
+   *
+   * L'appariement se fait sur `data-index`, que le HTML porte exactement comme
+   * le poserait `CardItem`. Une carte statique dont l'indice ne correspond à
+   * rien est retirée : mieux vaut la reconstruire que d'afficher un contenu
+   * désaccordé du modèle de données.
+   * -------------------------------------------------------------------- */
+  function adoptStaticCard() {
+    [...track.children].forEach(el => {
+      const i = Number(el.dataset.index);
+      if (!Number.isInteger(i) || i < 0 || i >= cards.length || cardEls[i]) { el.remove(); return; }
+      const chart = el.querySelector(".card-chart");
+      if (!chart) { el.remove(); return; }    // coquille sans contenu : à reconstruire
+      cardEls[i] = el;
+      chartEls[i] = chart;
+      hydrated.add(i);
+    });
+  }
+
+  /* ----------------------------------------------------------------------
+   * Monte le CONTENU d'une carte (fond, visuel, dégradé, textes) dans sa
+   * coquille. Séparé de `CardItem` pour que le montage du carrousel n'ait à
+   * construire que les cartes réellement visibles.
+   *
+   * Pourquoi : les 13 cartes construites d'un bloc représentaient 285 boîtes à
+   * mettre en page dans la première frame du carrousel — une tâche longue de
+   * ~107 ms (profilé à CPU ×8) dont 80 ms de `Layout` pur, plus le recalcul de
+   * style qui l'accompagne dans la tâche d'exécution des scripts. Or une seule
+   * carte est regardée à l'arrivée : les autres sont hors écran (au-delà de
+   * `hideDist`) et déjà `visibility:hidden`, donc jamais peintes. On ne monte
+   * donc que celles-là, et les autres suivent — une par temps mort dans la file
+   * de pré-tracé, ou à la demande dès qu'elles franchissent le seuil de
+   * visibilité (`applyTransforms`), c'est-à-dire toujours avant d'être vues.
+   *
+   * La coquille, elle, existe dès le montage pour les treize : elle porte le
+   * rôle ARIA, le libellé, le `tabindex` et la transform de position. Le
+   * clavier, les points de pagination et les liens profonds fonctionnent donc
+   * exactement comme avant, sur une boîte de taille fixe (var(--card-w/h)) dont
+   * la mise en page ne coûte presque rien.
+   *
+   * Idempotent (garde `hydrated`) : appelable depuis n'importe quel chemin.
+   * -------------------------------------------------------------------- */
+  function hydrateCard(i) {
+    if (i < 0 || i >= cards.length || hydrated.has(i)) return cardEls[i];
+    const el = cardEls[i];
+    if (!el) return null;
+    hydrated.add(i);
+    const card = cards[i];
 
     const inner = document.createElement("div");
     inner.className = "card-inner";
@@ -285,8 +345,14 @@
     inner.appendChild(text);
     el.appendChild(inner);
 
-    cardEls[i] = el;
     chartEls[i] = chart;
+    // Décalage parallax de la carte à sa position ACTUELLE : une carte montée en
+    // cours de route (temps mort ou franchissement du seuil de visibilité) doit
+    // arriver avec le même décalage que si elle avait été montée d'origine —
+    // sinon son graphique sauterait au premier `applyTransforms` suivant.
+    const dp = clamp(i - offset, -1, 1);
+    chart.style.transform =
+      `translate3d(${(-dp * STEP * PARALLAX_AMOUNT).toFixed(2)}px,0,0)`;
     return el;
   }
 
@@ -297,6 +363,10 @@
     if (i < 0 || i >= cards.length || miniDrawn.has(i)) return;
     const card = cards[i];
     if (!card.image.mini || !MINI[card.image.mini]) return;
+    // Le calque .card-chart n'existe qu'une fois la carte montée. On monte donc
+    // avant de tracer : le moteur de graphiques mesure la largeur utile du
+    // conteneur (chartWidth), qui vaut 0 tant qu'il n'est pas dans le document.
+    hydrateCard(i);
     miniDrawn.add(i);
     try { MINI[card.image.mini](chartEls[i]); } catch (e) { miniDrawn.delete(i); }
   }
@@ -357,7 +427,16 @@
       // Cartes entièrement hors écran : masquées (ni peintes ni composées).
       // Écrit seulement au franchissement du seuil, pas à chaque frame.
       const hidden = dist > hideDist;
-      if (lastHidden[i] !== hidden) { el.style.visibility = hidden ? "hidden" : ""; lastHidden[i] = hidden; }
+      if (lastHidden[i] !== hidden) {
+        // Une carte qui entre dans l'écran doit avoir son contenu : on la monte
+        // ici si la file de temps mort ne l'a pas encore fait. Le montage a lieu
+        // au FRANCHISSEMENT du seuil seulement (une carte à la fois, jamais en
+        // pleine rafale), et la carte est de toute façon sur le point d'être
+        // peinte : le travail n'est pas ajouté, il est déplacé au plus tard.
+        if (!hidden) hydrateCard(i);
+        el.style.visibility = hidden ? "hidden" : "";
+        lastHidden[i] = hidden;
+      }
       const ad = clamp(dist, 0, 1);
       const scale = lerp(ACTIVE_SCALE, INACTIVE_SCALE, ad);
       const opacity = lerp(1, 0.55, ad);
@@ -825,6 +904,11 @@
     if (card.noDetail) return null;       // carte sans descriptif détaillé
     const section = storeyard.querySelector("#" + CSS.escape(card.image.section));
     if (!section) return null;
+    // Filet : l'ouverture d'un détail lit `.card-inner` (fondu de la carte
+    // d'origine pendant le FLIP). En pratique on n'ouvre que la carte active,
+    // donc déjà montée — mais un lien profond ouvre la carte cible dès le
+    // montage du carrousel, avant que la file de temps mort n'ait tourné.
+    hydrateCard(i);
     setAnimating(false);   // un détail s'ouvre : les cartes vont être figées/recouvertes
     detailOpen = true;
     detailReady = false;           // réarmé à chaque ouverture (voir garde du voile plus bas)
@@ -1323,20 +1407,22 @@
   });
 
   /* ======================================================================
-   * CardSwipeScreen — assemble l'écran et remplace l'accueil.
+   * CardSwipeScreen — anime l'écran d'accueil déjà servi en HTML.
    * ==================================================================== */
   function CardSwipeScreen() {
     const main = document.getElementById("top") || document.querySelector("main");
     if (!main) return;
 
-    // Retire l'accueil statique (#boot-splash) qui recouvrait le contenu détaillé
-    // pendant le chargement des scripts `defer`. Tout CardSwipeScreen s'exécute en
-    // UNE tâche synchrone : le navigateur ne repeint qu'à la fin, quand le vrai
-    // .card-screen est déjà monté et le contenu déplacé dans #story-sections[hidden].
-    // Aucune peinture intermédiaire → pas de re-flash. On le retire (plutôt que de le
-    // masquer) pour éviter toute collision de sélecteurs (.cs-title, .card.is-active…).
-    const bootSplash = document.getElementById("boot-splash");
-    if (bootSplash) bootSplash.remove();
+    // L'écran d'accueil (#card-screen) et sa 1re carte sont DÉJÀ dans le document
+    // (cf. index.html) : on les adopte au lieu de les reconstruire. Tout
+    // CardSwipeScreen s'exécute en UNE tâche synchrone : le navigateur ne
+    // repeint qu'à la fin, une fois les autres cartes ajoutées et le contenu
+    // déplacé dans #story-sections[hidden] → aucune peinture intermédiaire.
+    screen = document.getElementById("card-screen");
+    if (!screen) return;                 // HTML inattendu : on laisse la page à défilement
+    viewport = screen.querySelector(".cs-viewport");
+    track = screen.querySelector(".cs-track");
+    if (!viewport || !track) return;
 
     // Source unique : les constantes JS pilotent les variables CSS des cartes.
     const root = document.documentElement.style;
@@ -1346,10 +1432,16 @@
 
     // Réservoir : on déplace tout le contenu existant de <main> dans un conteneur
     // caché. Les <section> y restent disponibles comme contenu des vues détail.
+    // L'écran d'accueil en est exclu : il RESTE en place, sans être ni détaché ni
+    // rattaché (le détacher forcerait le navigateur à remettre en page et à
+    // repeindre de zéro tout ce qu'il vient d'afficher).
     storeyard = document.createElement("div");
     storeyard.id = "story-sections";
     storeyard.hidden = true;
-    while (main.firstChild) storeyard.appendChild(main.firstChild);
+    let node = screen.nextSibling;
+    while (node) { const next = node.nextSibling; storeyard.appendChild(node); node = next; }
+    node = screen.previousSibling;
+    while (node) { const prev = node.previousSibling; storeyard.insertBefore(node, storeyard.firstChild); node = prev; }
     main.appendChild(storeyard);
 
     // Pré-rend AU REPOS (échelonné, hors écran) TOUS les graphiques : ils sont ainsi déjà
@@ -1380,18 +1472,18 @@
     const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
     const navLabel = coarse ? "Glissez pour explorer" : "Cliquez pour explorer";
 
-    // Écran carousel.
-    screen = document.createElement("section");
-    screen.id = "card-screen";
-    screen.className = "card-screen";
-    screen.setAttribute("aria-label", "Carousel — Ceci est mon COR");
-    screen.innerHTML =
-      // Logo/lien partenaire « Le Modèle Social Français » — pastille ronde dorée
-      // fixée en haut à droite de l'accueil (badge 🔗 + infobulle), pointant vers
-      // le Linktree. Enfant direct de l'écran (hors .cs-viewport) : le clic n'est
-      // pas capté par les gestes du carrousel. Rendu identique au site partenaire
-      // (joursderetraite). Ouvre dans un nouvel onglet (target=_blank + rel de
-      // sécurité). Masqué avec l'accueil (aria-hidden) quand un détail est ouvert.
+    // Affordances purement interactives, absentes du HTML statique : elles ne
+    // servent à rien sans JavaScript et leur libellé dépend du pointeur.
+    // Injectées en un seul fragment pour n'invalider la mise en page qu'une fois.
+    //
+    // Le logo/lien partenaire « Le Modèle Social Français » — pastille ronde dorée
+    // en haut à droite de l'accueil (badge 🔗 + infobulle), pointant vers le
+    // Linktree — est enfant direct de l'écran (hors .cs-viewport) : le clic n'est
+    // pas capté par les gestes du carrousel. Ouvre dans un nouvel onglet
+    // (target=_blank + rel de sécurité). Masqué avec l'accueil (aria-hidden)
+    // quand un détail est ouvert.
+    const chrome = document.createElement("div");
+    chrome.innerHTML =
       '<a class="ms-logo" href="https://linktr.ee/lemodelesocialfrancais" ' +
       'target="_blank" rel="noopener noreferrer" ' +
       'title="Le Modèle Social Français — voir mon Linktree">' +
@@ -1399,12 +1491,17 @@
       'alt="Le Modèle Social Français" width="40" height="40" decoding="async" />' +
       '<span class="ms-logo-tip">🔗 Mon Linktree</span>' +
       "</a>" +
-      '<header class="cs-head">' +
-      '<p class="cs-kicker">Outil citoyen · données publiques du COR</p>' +
-      '<h1 class="cs-title">Ceci est mon COR</h1>' +
-      "</header>" +
-      '<div class="cs-viewport">' +
-      '<div class="cs-track"></div>' +
+      '<nav class="cs-dots" aria-label="Pagination des cartes"></nav>' +
+      // Lien légal discret en pied d'écran (LCEN / RGPD) : toujours accessible
+      // depuis l'accueil. legal.html porte aussi la section confidentialité.
+      '<a class="cs-legal" href="./legal.html">Mentions légales</a>';
+    // `.ms-logo` en tête (position:absolute, il se superpose), le reste en pied.
+    screen.insertBefore(chrome.firstElementChild, screen.firstChild);
+    while (chrome.firstChild) screen.appendChild(chrome.firstChild);
+
+    // Flèches de navigation, dans le viewport (au-dessus de la piste).
+    const navs = document.createElement("div");
+    navs.innerHTML =
       '<button class="cs-nav cs-nav-prev" type="button" aria-label="Carte précédente">' +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>' +
       "</button>" +
@@ -1414,20 +1511,18 @@
       '<button class="cs-nav cs-nav-next is-hint" type="button" aria-label="Carte suivante">' +
       '<span class="cs-nav-label">' + navLabel + "</span>" +
       '<svg class="icon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
-      "</button>" +
-      "</div>" +
-      '<nav class="cs-dots" aria-label="Pagination des cartes"></nav>' +
-      // Lien légal discret en pied d'écran (LCEN / RGPD) : toujours accessible
-      // depuis l'accueil. legal.html porte aussi la section confidentialité.
-      '<a class="cs-legal" href="./legal.html">Mentions légales</a>';
+      "</button>";
+    while (navs.firstChild) viewport.appendChild(navs.firstChild);
 
-    main.insertBefore(screen, storeyard);
-
-    viewport = screen.querySelector(".cs-viewport");
-    track = screen.querySelector(".cs-track");
     dotsWrap = screen.querySelector(".cs-dots");
 
-    cards.forEach((c, i) => track.appendChild(CardItem(c, i)));
+    // La 1re carte est déjà dans la piste (HTML statique) : on l'ADOPTE. Les
+    // douze autres reçoivent leur coquille ici (position, rôle ARIA, libellé,
+    // tabindex) ; leur CONTENU est monté par `hydrateCard`, appelé juste en
+    // dessous par `applyTransforms(0)` pour les seules cartes visibles, puis en
+    // temps mort pour les autres.
+    adoptStaticCard();
+    cards.forEach((c, i) => { if (!cardEls[i]) track.appendChild(CardItem(c, i)); });
 
     cards.forEach((c, i) => {
       const dot = document.createElement("button");
@@ -1471,14 +1566,21 @@
     // (garde `miniDrawn`) → sans effet s'il est déjà tracé.
     const idlePrefetch = window.requestIdleCallback
       || (cb => setTimeout(() => cb({ timeRemaining: () => 0 }), 200));
-    // Un mini par rappel idle : les tracer tous dans un seul rappel formait une
-    // longue tâche au chargement (Total Blocking Time). `drawMini` est idempotent
-    // (garde `miniDrawn`) → les minis déjà tracés par la navigation sont sautés.
+    // Une carte par rappel idle : tout faire dans un seul rappel formait une
+    // longue tâche au chargement (Total Blocking Time). Chaque pas monte la carte
+    // (hydrateCard) PUIS trace son mini s'il y en a un — les cartes sans mini
+    // (photo d'accueil, icônes) ont besoin du premier sans le second, sinon
+    // elles ne seraient montées qu'au franchissement du seuil de visibilité.
+    // Les deux opérations sont idempotentes (gardes `hydrated` / `miniDrawn`) :
+    // ce que la navigation a déjà fait est sauté.
     let miniPrefetchIdx = 0;
+    const cardReady = i => hydrated.has(i) && (miniDrawn.has(i) || !cards[i].image.mini);
     const prefetchStep = () => {
-      while (miniPrefetchIdx < cards.length && miniDrawn.has(miniPrefetchIdx)) miniPrefetchIdx++;
+      while (miniPrefetchIdx < cards.length && cardReady(miniPrefetchIdx)) miniPrefetchIdx++;
       if (miniPrefetchIdx >= cards.length) return;
-      drawMini(miniPrefetchIdx++);
+      const i = miniPrefetchIdx++;
+      hydrateCard(i);
+      drawMini(i);
       idlePrefetch(prefetchStep);
     };
     // …mais SEULEMENT à partir de la première interaction, comme le pré-rendu des
@@ -1548,6 +1650,13 @@
 
   // L'API CORApp est posée à la fin de app.js (même cycle de scripts `defer`,
   // app.js avant cards.js) : à ce stade tout est prêt.
+  //
+  // Le montage reste SYNCHRONE dans l'évaluation du script. Le repousser dans sa
+  // propre tâche (`setTimeout` 0) a été mesuré : c'est nettement moins bon
+  // (tâche la plus longue 83 → 119 ms, CPU ×8, médiane sur 7 chargements). Le
+  // navigateur sépare déjà de lui-même l'exécution du script et la mise en page
+  // qui suit ; différer le montage le fait retomber dans la tâche du minuteur,
+  // où construction, recalcul de style ET mise en page se retrouvent réunis.
   function boot() { CardSwipeScreen(); }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);

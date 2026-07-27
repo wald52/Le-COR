@@ -92,43 +92,59 @@
 
   <main id="top">
 
-    <!-- Accueil statique affiché AVANT le boot du carrousel (js/cards.js) : il
-         évite le flash de la description détaillée sous les scripts `defer`.
-         Réplique exacte de la 1re carte (cards[0], carte photo, sans détail).
-         Retiré par CardSwipeScreen au montage ; masqué sans JS via le <style>
-         du <noscript> ci-dessous. Réutilise les classes du carrousel
-         (css/cards.css) : aucun style nouveau. -->
-    <div id="boot-splash" class="card-screen">
+    <!-- Accueil : c'est DÉJÀ l'écran du carrousel, servi en HTML statique.
+         Il s'affiche avant même le chargement des scripts `defer` (évitant le
+         flash de la page à défilement qui suit), puis js/cards.js l'ADOPTE tel
+         quel au montage — il ne le remplace pas.
+
+         Pourquoi l'adopter plutôt que le reconstruire : jusqu'ici cet accueil
+         était un calque jetable (#boot-splash) et CardSwipeScreen rebâtissait à
+         l'identique l'écran, l'en-tête et la 1re carte. Le navigateur mettait
+         donc en page et peignait DEUX FOIS la même image : une fois ~26 ms
+         (CPU ×8) pour le calque, puis ~59 ms pour le carrousel qui le
+         remplaçait. En servant directement la structure définitive, la seconde
+         mise en page ne porte plus que sur ce que le JavaScript ajoute
+         réellement (coquilles des 12 autres cartes, flèches, pagination).
+
+         La 1re carte est la réplique exacte de cards[0] (js/cards.js) : carte
+         photo, sans vue détail. `data-index`/`data-section` sont ceux que pose
+         CardItem — le code d'adoption s'y fie.
+         Sans JavaScript, tout l'écran est masqué par le <style> du <noscript>
+         ci-dessous et la page à défilement prend le relais. -->
+    <section id="card-screen" class="card-screen" aria-label="Carousel — Ceci est mon COR">
       <header class="cs-head">
         <p class="cs-kicker">Outil citoyen · données publiques du COR</p>
         <h1 class="cs-title">Ceci est mon COR</h1>
       </header>
       <div class="cs-viewport">
-        <div class="card card--no-detail is-active" role="img" aria-label="À quoi sert ce site ?">
-          <div class="card-inner" style="--theme:#0e7490">
-            <div class="card-bg"></div>
-            <div class="card-chart card-chart--photo">
-              <img class="card-photo" src="./images/accueil-lecteur-cor.webp" alt=""
-                   width="340" height="520" loading="eager" fetchpriority="high" decoding="async" />
-            </div>
-            <div class="card-overlay"></div>
-            <div class="card-text">
-              <h2 class="card-title">À quoi sert ce site&nbsp;?</h2>
-              <p class="card-sub">Chaque année, le COR projette nos retraites jusqu'en 2070. Ce site superpose ses rapports de 2001 à 2026&nbsp;: change-t-il d'avis, et ses prévisions se réalisent-elles&nbsp;?</p>
+        <div class="cs-track">
+          <div class="card card--no-detail is-active" data-index="0" data-section="presentation"
+               role="img" aria-label="À quoi sert ce site ?">
+            <div class="card-inner" style="--theme:#0e7490">
+              <div class="card-bg"></div>
+              <div class="card-chart card-chart--photo">
+                <img class="card-photo" src="./images/accueil-lecteur-cor.webp" alt=""
+                     width="340" height="520" loading="eager" fetchpriority="high" decoding="async" />
+              </div>
+              <div class="card-overlay"></div>
+              <div class="card-text">
+                <h2 class="card-title">À quoi sert ce site&nbsp;?</h2>
+                <p class="card-sub">Chaque année, le COR projette nos retraites jusqu'en 2070. Ce site superpose ses rapports de 2001 à 2026&nbsp;: change-t-il d'avis, et ses prévisions se réalisent-elles&nbsp;?</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
     <noscript>
-      <!-- Sans JavaScript, le carrousel ne se monte jamais : on masque l'accueil
-           statique (#boot-splash) pour laisser apparaître la page à défilement
-           classique. Le CSP autorise `style-src 'unsafe-inline'` ; une règle CSS
+      <!-- Sans JavaScript, le carrousel ne s'anime jamais : on masque son écran
+           (#card-screen) pour laisser apparaître la page à défilement classique.
+           Le CSP autorise `style-src 'unsafe-inline'` ; une règle CSS
            s'applique globalement quelle que soit sa position dans le document. -->
-      <style>#boot-splash{display:none!important}#boot-splash ~ .band{content-visibility:visible!important}</style>
-      <!-- L'unique <h1> du document est celui de l'accueil (#boot-splash, puis
-           celui du carrousel monté en JS) : masqué ci-dessus, il laisserait la
+      <style>#card-screen{display:none!important}#card-screen ~ .band{content-visibility:visible!important}</style>
+      <!-- L'unique <h1> du document est celui de l'accueil (#card-screen, dont
+           le carrousel hérite au montage) : masqué ci-dessus, il laisserait la
            page sans titre de niveau 1. On le rétablit ici. -->
       <h1 class="noscript-title">Ceci est mon COR</h1>
       <p class="noscript-note">

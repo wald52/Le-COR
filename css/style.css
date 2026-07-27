@@ -85,8 +85,8 @@ a { color: var(--bleu-clair); }
 /* ---------- Bandes / sections ---------- */
 /* `content-visibility: auto` : le navigateur saute la mise en page et la
    peinture des sections hors écran. Au premier rendu, les 13 sections (~3 000
-   éléments) sont mises en page ALORS QUE PERSONNE NE LES VOIT — #boot-splash
-   (position:fixed;inset:0, opaque) les recouvre — et, quelques millisecondes
+   éléments) sont mises en page ALORS QUE PERSONNE NE LES VOIT — l'écran
+   d'accueil #card-screen (position:fixed;inset:0, opaque) les recouvre — et, quelques millisecondes
    plus tard, le carrousel les déplace dans #story-sections[hidden] où elles ne
    comptent plus du tout. C'était du travail intégralement perdu : une tâche
    longue de ~470 ms attribuée au document, qui retardait le FCP et, selon
@@ -99,7 +99,7 @@ a { color: var(--bleu-clair); }
    JavaScript. Les sections ouvertes en vue détail neutralisent la règle
    (cf. `.cd-body .band` dans css/cards.css). */
 .band { padding: 56px 0; content-visibility: auto; contain-intrinsic-size: auto 700px; }
-/* …et tant que l'accueil statique (#boot-splash) recouvre l'écran, on va plus
+/* …et tant que l'accueil (#card-screen) recouvre l'écran, on va plus
    loin : `hidden` au lieu de `auto`. `auto` ne saute que les sections HORS
    écran ; la première reste mise en page alors qu'elle est, comme les autres,
    invisible sous un calque opaque en position:fixed — et toutes finissent
@@ -109,11 +109,26 @@ a { color: var(--bleu-clair); }
    Layout » 332 ms → 186 ms, et la tâche longue du document (88 ms) disparaît
    complètement — à comparer au plafond théorique de 181 ms obtenu en RETIRANT
    purement et simplement le contenu des sections du HTML.
-   Le sélecteur cesse de s'appliquer de lui-même dès que #boot-splash est retiré
-   (les sections rejoignent alors le réservoir caché), et le repli sans
+   Le sélecteur cesse de s'appliquer de lui-même au montage du carrousel (les
+   sections rejoignent le réservoir caché #story-sections et ne sont plus des
+   sœurs de #card-screen), et le repli sans
    JavaScript le neutralise explicitement (cf. le <style> du <noscript> dans
-   index.html) : la lecture par défilement garde ses 13 sections. */
-#boot-splash ~ .band { content-visibility: hidden; }
+   index.html) : la lecture par défilement garde ses 13 sections.
+
+   `contain-intrinsic-size: 0` s'ajoute au `hidden` : sans lui, les 13 sections
+   sautées gardent la hauteur ESTIMÉE de la règle ci-dessus (13 × 700 px) et le
+   document mesure ~7 800 px de haut sous le calque d'accueil. Le navigateur met
+   alors en page et PEINT une surface de 412 × 7 800 px que personne ne voit
+   (relevé dans la trace : `Paint` de clip 412×7823 dans la tâche de premier
+   rendu). En repliant les boîtes à 0, le document se limite à l'écran : la
+   tâche de premier rendu perd sa mise en page et sa peinture hors écran.
+   Aucune conséquence visible : #card-screen est en position:fixed et recouvre
+   l'écran, et le montage du carrousel déplace de toute façon les sections dans
+   #story-sections[hidden]. Le repli sans JavaScript remet
+   `content-visibility: visible`, qui rend `contain-intrinsic-size` inopérant
+   (il ne s'applique qu'au contenu sauté) : la page à défilement retrouve ses
+   hauteurs réelles. */
+#card-screen ~ .band { content-visibility: hidden; contain-intrinsic-size: 0; }
 .band.alt { background: var(--fond-alt); }
 .band h2 { font-size: clamp(1.4rem, 3vw, 2rem); margin: 0 0 12px; }
 /* Le texte courant occupe toute la largeur du conteneur, aligné sur les
