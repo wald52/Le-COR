@@ -153,9 +153,16 @@
            duplique pas ici. `.cs-dots` réserve sa hauteur en CSS (min-height),
            si bien que les remplir ne déplace rien. -->
       <nav class="cs-dots" aria-label="Pagination des cartes"></nav>
-      <!-- Lien légal discret en pied d'écran (LCEN / RGPD) : toujours accessible
-           depuis l'accueil. legal.html porte aussi la section confidentialité. -->
-      <a class="cs-legal" href="./legal.html">Mentions légales</a>
+      <!-- Liens discrets en pied d'écran, toujours accessibles depuis l'accueil :
+           les mentions légales (LCEN / RGPD ; legal.html porte aussi la section
+           confidentialité) et le signalement d'erreur. Une seule LIGNE flex :
+           l'écran est une colonne, deux éléments empilés rallongeraient le pied
+           d'écran et raccourciraient d'autant `.cs-viewport` (cf. le CLS de la
+           carte d'accueil, centrée verticalement). -->
+      <nav class="cs-legal" aria-label="Liens légaux et signalement">
+        <a href="./legal.html">Mentions légales</a>
+        <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">Signaler une erreur</a>
+      </nav>
     </section>
 
     <noscript>
@@ -839,6 +846,13 @@
             Le code et les données sont <strong>ouverts</strong> :
             <a href="https://github.com/wald52/Le-COR" target="_blank" rel="noopener">dépôt GitHub</a>.
           </p>
+          <p>
+            <strong>Un chiffre vous semble faux&nbsp;?</strong> Chaque valeur affichée est
+            vérifiable dans les fichiers Excel du COR archivés avec le site — et les erreurs
+            restent possibles. Signalez-la&nbsp;:
+            <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">ouvrir un signalement</a>.
+            Toute correction documentée est la bienvenue.
+          </p>
 
           <h3>Sources</h3>
           <p class="method-note">
@@ -864,6 +878,7 @@
     <nav aria-label="Liens de bas de page">
       <a href="./legal.html">Mentions légales &amp; confidentialité</a>
       <a href="https://github.com/wald52/Le-COR" target="_blank" rel="noopener">Code source et données</a>
+      <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">Signaler une erreur</a>
       <a href="https://www.cor-retraites.fr/" target="_blank" rel="noopener">Site officiel du COR</a>
     </nav>
     <p>

@@ -309,18 +309,26 @@ body:not(.cards-detail-seen) .card.is-active .card-cta {
 
 /* Lien légal en pied d'écran : discret (petit, gris atténué) mais lisible et
    focalisable au clavier — accessible depuis l'accueil (LCEN / RGPD). */
+/* Rangée de liens discrets (mentions légales, signalement d'erreur). Flex en
+   LIGNE : la hauteur reste celle d'une seule ligne de texte, comme du temps où
+   `.cs-legal` était l'unique lien — le pied d'écran ne grandit pas et la carte
+   d'accueil ne se redécale pas. */
 .cs-legal {
   flex: none;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
   margin: 0 auto;
   padding: 2px 0 0;
   font-size: 0.66rem;
+}
+.cs-legal a {
   color: var(--gris);
   opacity: 0.7;
   text-decoration: none;
 }
-.cs-legal:hover { opacity: 1; text-decoration: underline; }
-.cs-legal:focus-visible { outline: 2px solid var(--bleu); outline-offset: 2px; opacity: 1; }
+.cs-legal a:hover { opacity: 1; text-decoration: underline; }
+.cs-legal a:focus-visible { outline: 2px solid var(--bleu); outline-offset: 2px; opacity: 1; }
 
 /* ---------- Logo partenaire « Le Modèle Social Français » ----------
    Pastille ronde dorée fixée en haut à droite de l'accueil (carrousel), reprise

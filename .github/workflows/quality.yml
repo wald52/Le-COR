@@ -60,8 +60,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Installer le navigateur Playwright
-        run: npx playwright install --with-deps chromium
+      - name: Installer les navigateurs Playwright
+        # WebKit en plus de Chromium : le projet « mobile-webkit » rejoue la
+        # suite sur le moteur de Safari iOS (cf. playwright.config.js).
+        run: npx playwright install --with-deps chromium webkit
       - name: Tests de bout en bout
         run: npm test
       - uses: actions/upload-artifact@v7

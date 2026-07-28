@@ -53,8 +53,17 @@ test("un repli <noscript> est présent dans le document", async ({ page }) => {
 
 test("un lien « Mentions légales » est accessible depuis l'accueil (LCEN/RGPD)", async ({ page }) => {
   await page.goto("/");
-  const legal = page.locator('.cs-legal[href*="legal.html"]');
+  const legal = page.locator('.cs-legal a[href*="legal.html"]');
   await expect(legal).toBeVisible();
+});
+
+test("un signalement d'erreur est accessible depuis l'accueil, carousel compris", async ({ page }) => {
+  // Le site n'a pas d'autre canal de retour : l'éditeur est anonyme (LCEN
+  // art. 6-III-2). Le lien doit rester atteignable dans l'écran carousel, qui
+  // recouvre le pied de page du document.
+  await page.goto("/");
+  await expect(page.locator('.cs-legal a[href*="issues/new"]')).toBeVisible();
+  await expect(page.locator('body > footer.site-footer a[href*="issues/new"]')).toHaveCount(1);
 });
 
 test("explorateur : échec de chargement → message + réessai qui aboutit", async ({ page }) => {
@@ -97,7 +106,9 @@ test("la page 404 renvoie vers l'accueil et les mentions légales", async ({ pag
 test("la page légale mène au dépôt et au COR (pas de cul-de-sac)", async ({ page }) => {
   await page.goto("/legal.html");
   const footer = page.locator("body > footer.site-footer");
-  await expect(footer.locator('a[href*="github.com"]')).toBeVisible();
+  // Deux liens github.com désormais (dépôt + signalement) : on cible le dépôt.
+  await expect(footer.locator('a[href$="/Le-COR"]')).toBeVisible();
+  await expect(footer.locator('a[href*="issues/new"]')).toBeVisible();
   await expect(footer.locator('a[href*="cor-retraites.fr"]')).toBeVisible();
   // Pas de lien vers la page courante.
   await expect(footer.locator('a[href*="legal.html"]')).toHaveCount(0);

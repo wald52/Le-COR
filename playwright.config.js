@@ -5,6 +5,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 8000;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
+// Chromium uniquement (cf. la note sur les projets, plus bas).
+const CLIPBOARD = ["clipboard-read", "clipboard-write"];
 
 export default defineConfig({
   testDir: "./tests",
@@ -15,8 +17,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "list" : "line",
   use: {
-    baseURL: BASE_URL,
-    permissions: ["clipboard-read", "clipboard-write"]
+    baseURL: BASE_URL
   },
   webServer: {
     command: `python3 -m http.server ${PORT}`,
@@ -24,17 +25,30 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 30_000
   },
+  // Les permissions presse-papier sont déclarées PAR PROJET, pas dans le `use`
+  // global : elles n'existent que dans Chromium. WebKit rejette la création même
+  // du contexte (« Unknown permission: clipboard-write »), ce qui ferait échouer
+  // la totalité de ses tests avant le premier `goto`.
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], permissions: CLIPBOARD },
       testIgnore: /swipe\.spec\.js/
     },
     {
       // Contexte tactile (hasTouch) pour le geste de fermeture par glissement.
       name: "mobile",
-      use: { ...devices["Pixel 5"] },
+      use: { ...devices["Pixel 5"], permissions: CLIPBOARD },
       testMatch: /swipe\.spec\.js/
+    },
+    {
+      // WebKit tactile (iPhone) : l'interaction centrale du site est un
+      // carrousel au doigt, et Safari iOS est une part majeure du trafic mobile
+      // français. Les deux projets ci-dessus tournent sur Chromium — un défaut
+      // propre à WebKit (glissement, dialog, scroll momentum, préfixes CSS)
+      // passerait inaperçu. On y rejoue la suite complète.
+      name: "mobile-webkit",
+      use: { ...devices["iPhone 13"] }
     }
   ]
 });

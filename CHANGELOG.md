@@ -76,6 +76,59 @@ Toutes les évolutions notables du site. Format inspiré de
   convention de tout le site — est rappelée dans le paragraphe d'introduction, et
   la lecture « médiane » était redondante avec l'encadré « Ce qu'il faut retenir ».
 
+## [1.2.0] – 2026-07-28
+
+### Ajouté
+
+- **Un canal de signalement d'erreur**, jusqu'ici absent : le site menait au
+  dépôt (« Code source et données ») mais jamais au suivi des tickets. Un site
+  dont la crédibilité repose entièrement sur l'exactitude de ses chiffres, et
+  dont l'éditeur est anonyme (LCEN art. 6-III-2), doit offrir un moyen de le
+  contredire. Le lien « Signaler une erreur » est ajouté :
+  - au pied de page des trois pages (`index.html`, `legal.html`, `404.html`) ;
+  - au pied de l'écran carrousel, qui recouvre ce pied de page — `.cs-legal`
+    devient une rangée de deux liens. Elle reste sur **une seule ligne** (flex
+    en ligne) : l'écran est une colonne flex où `.cs-viewport` prend la place
+    restante, et tout allongement du pied d'écran redécalerait la carte
+    d'accueil, centrée verticalement (le CLS corrigé en 1.1.x) ;
+  - dans la section « Méthode & sources », sous « À propos », là où le lecteur
+    qui doute d'un chiffre se trouve ;
+  - dans `legal.html` §1, comme moyen de contact de l'éditeur — l'anonymat
+    reste licite, un canal public le rend tenable (rectification, droit de
+    réponse).
+- **Tests sur WebKit** (`playwright.config.js`, projet `mobile-webkit`,
+  `devices["iPhone 13"]`). L'interaction centrale du site est un carrousel au
+  doigt et Safari iOS pèse lourd dans le trafic mobile français ; les deux
+  projets existants tournent tous les deux sur Chromium (Desktop Chrome et
+  Pixel 5). Un défaut propre à WebKit — glissement, `<dialog>`, inertie de
+  défilement, préfixes `-webkit-` — serait passé inaperçu. La CI installe
+  désormais `chromium webkit`.
+- **Deux tests de bout en bout** : le lien de signalement doit être visible
+  dans l'écran carrousel *et* présent dans le pied de page du document.
+
+  Premier enseignement du nouveau projet, dès sa mise en place : les
+  permissions presse-papier étaient déclarées dans le `use` **global** de
+  Playwright, or elles n'existent que dans Chromium. WebKit refusait la
+  création du contexte (« Unknown permission: clipboard-write ») et **aucun**
+  de ses tests n'atteignait le premier `goto`. Elles sont désormais déclarées
+  par projet. Les 78 tests passent sur les trois projets.
+
+### Modifié
+
+- **Les seuils Lighthouse assertent en `error`, à 95 %** (`lighthouserc.json`),
+  au lieu de `warn` à 80 % (performance) et 90 % (le reste). Les quatre
+  catégories tiennent **100 %** sur les deux pages auditées depuis le
+  27/07/2026 ; des seuils très en dessous du réel ne signalaient plus rien. Une
+  régression rend maintenant le job visible. Le `continue-on-error` du job
+  `audit` est conservé : il tourne **après** le déploiement, le rendre bloquant
+  n'annulerait pas une mise en ligne déjà faite. Seule exception maintenue : le
+  SEO de `legal.html` (50 %), volontairement en `noindex`.
+- **`CONTRIBUTING.md`** : la liste des trois endroits portant la date de mise à
+  jour (pied de page d'`index.html`, `legal.html`, `sitemap.xml`) est
+  documentée — ils se désynchronisent sinon à chaque nouveau rapport du COR.
+- **`sitemap.xml`** : `lastmod` remis à la date réelle du dernier changement.
+- Cache du service worker porté à `v83`.
+
 ### Corrigé
 
 - **Score de performance Lighthouse : 87 → 100** (audit mobile de la page

@@ -77,8 +77,14 @@ jobs:
         uses: actions/deploy-pages@v5
 
   # Audit qualité du site RÉELLEMENT déployé (vrai chemin /Le-COR/, CSP, URLs
-  # absolues du JSON-LD/sitemap). S'exécute après « deploy » ; informatif au
-  # début (continue-on-error) — il ne bloque jamais la mise en ligne.
+  # absolues du JSON-LD/sitemap). S'exécute après « deploy ».
+  #
+  # Les seuils Lighthouse assertent en `error` depuis que les quatre catégories
+  # tiennent 100 % : une régression doit être VISIBLE (job rouge), pas noyée
+  # dans un avertissement. Le `continue-on-error` reste, lui, volontaire : il
+  # porte sur le job, pas sur les seuils — l'audit tourne APRÈS le déploiement,
+  # le rendre bloquant n'annulerait pas une mise en ligne déjà faite et
+  # masquerait le reste du rapport. Il alerte, il ne barre pas la route.
   audit:
     needs: deploy
     runs-on: ubuntu-latest
@@ -142,7 +148,8 @@ jobs:
             out += '| `' + u + '` | '
               + cats.map(c => pct(r.summary[c[0]])).join(' | ') + ' |\n';
           }
-          out += '\nSeuils visés : Performance ≥ 80 %, autres ≥ 90 %.';
+          out += '\nSeuil : 95 % dans chaque catégorie (les quatre sont à 100 % au 27/07/2026). '
+            + 'Exception : le SEO de `legal.html`, volontairement en `noindex`.';
 
           // Détail : audits d'accessibilité non parfaits (score < 1), page par
           // page, pour cibler les corrections sans deviner. On lit le rapport

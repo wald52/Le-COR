@@ -49,6 +49,12 @@ La première exécution des tests télécharge le navigateur :
   linter.
 - Pour remplacer une courbe par des chiffres exacts ponctuels, éditer le tableau
   `points` correspondant dans `data/data.js` — aucune autre modification requise.
+- **La date de mise à jour est écrite en dur à trois endroits**, à toucher
+  ensemble lors de l'intégration d'un nouveau rapport, sans quoi elles se
+  désynchronisent :
+  1. le pied de page d'`index.html` (« Dernière mise à jour : … ») ;
+  2. `legal.html` (`.legal-updated`, en bas de page) ;
+  3. `sitemap.xml` (`<lastmod>`, au format `AAAA-MM-JJ`).
 
 ## Ajouter ou modifier un graphique
 
