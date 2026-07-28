@@ -131,6 +131,37 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Corrigé
 
+- **Cartes voisines blanches au chargement, sur ordinateur.** Sur un écran
+  large, les deux cartes visibles à droite de l'accueil se peignaient blanches,
+  puis se remplissaient de leur graphique au premier geste du visiteur.
+  - **Cause** : le report du tracé des minis au premier contact (« Ne trace plus
+    les mini-graphiques pendant le chargement non plus ») reposait sur
+    l'hypothèse qu'au repos, une seule carte est regardée. Elle est vraie sur
+    mobile, fausse sur ordinateur : le seuil `hideDist`, volontairement large
+    (une carte entière de marge), monte et laisse paraître les cartes 1 et 2 dès
+    ~1 000 px de large. Montées sans leur graphique, elles n'affichaient que le
+    dégradé de `.card-bg`, qui finit en blanc.
+  - **Correctif** : séparer le seuil de *masquage* (`hideDist`, marge large) du
+    seuil de *visibilité réelle* (`paintDist`, géométrique et sans marge). Le
+    montage trace désormais, de façon synchrone et avant la première peinture,
+    les minis des seules cartes que le visiteur voit vraiment
+    (`drawPaintedMinis`) ; le redimensionnement de la fenêtre fait de même.
+  - **Contrat de performance préservé** : `paintDist` vaut 0,98 sur le profil
+    mobile audité par Lighthouse (412 px) — aucune voisine n'y est visible, donc
+    **aucun mini n'est tracé au chargement** et le Total Blocking Time est
+    inchangé. Mesuré au repos, sans interaction : 0 mini à 390, 393 et 412 px ;
+    2 minis à 1 280 et 1 440 px, exactement les deux cartes visibles.
+  - Même défaut traité sur les cartes « photo » : leur `<img>` est chargée en
+    `eager` (et non `lazy`) dès lors que la carte est réellement à l'écran, et
+    porte ses dimensions intrinsèques comme le fait déjà le HTML statique de la
+    carte d'accueil.
+  - Test de non-régression (`tests/smoke.spec.js`) formulé comme un invariant
+    plutôt que sur une largeur donnée : au chargement, sans aucune interaction,
+    toute carte dont la boîte peinte croise la fenêtre porte son visuel. Il est
+    donc juste sur les trois profils Playwright — il échoue sur le code
+    précédent en 1 280 px, et reste vert en 390 px.
+- Cache du service worker porté à `v84`.
+
 - **Score de performance Lighthouse : 87 → 100** (audit mobile de la page
   d'accueil déployée). Tout le déficit venait d'un seul décalage de mise en page
   (CLS de **0,253**, sous-score 0,49 sur une métrique qui pèse 25 % — les quatre

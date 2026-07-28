@@ -204,8 +204,23 @@
   // translate3d). Marge large (CARD_WIDTH entier au lieu d'une demi-carte) pour
   // couvrir échelle/rotation. Recalculée au resize (rotation d'écran).
   let hideDist = Infinity;
+  // Distance (en cartes) au-delà de laquelle une carte n'est plus RÉELLEMENT à
+  // l'écran. Contrairement à `hideDist`, ce seuil est géométrique et SANS marge :
+  // une carte latérale est peinte à l'échelle INACTIVE_SCALE, elle mord donc sur
+  // le viewport tant que `dist × STEP − CARD_WIDTH × INACTIVE_SCALE / 2` reste
+  // sous la demi-largeur de la fenêtre. Sert à décider ce qui doit porter son
+  // visuel dès la PREMIÈRE peinture (cf. drawPaintedMinis) : une carte que le
+  // visiteur voit ne doit jamais être blanche, une carte qu'il ne voit pas ne
+  // doit rien coûter au chargement.
+  //   412 px (profil Lighthouse mobile) → 0,98 : la carte d'accueil seule.
+  //   1280-1440 px (bureau)             → 2,2-2,4 : les cartes 1 et 2 aussi.
+  // L'inclinaison de 2° est ignorée sciemment : elle n'ajouterait qu'un coin de
+  // ~8 px en bord d'écran, et suffirait à faire basculer le profil mobile
+  // au-dessus de 1 — donc à retracer au chargement ce que l'on vient d'économiser.
+  let paintDist = Infinity;
   function computeHideDist() {
     hideDist = (window.innerWidth / 2 + CARD_WIDTH) / STEP;
+    paintDist = (window.innerWidth / 2 + (CARD_WIDTH * INACTIVE_SCALE) / 2) / STEP;
   }
 
   let screen, viewport, track, dotsWrap, prevBtn, nextBtn;
@@ -310,13 +325,19 @@
       img.className = "card-photo";
       img.src = card.image.photo;
       img.alt = "";
-      // La 1re carte est visible d'emblée : c'est l'élément LCP. On la charge en
-      // priorité (eager + fetchpriority) au lieu de `lazy`, qui retarderait son
-      // affichage et pénaliserait le score performance. Les autres cartes,
-      // hors écran au départ, restent en `lazy`.
-      if (i === 0) {
+      // Dimensions intrinsèques, comme le fait le HTML statique de la carte 0 :
+      // sans elles le navigateur met en page une image de taille inconnue, puis
+      // la remet en page une fois l'entête décodé.
+      img.width = CARD_WIDTH;
+      img.height = CARD_HEIGHT;
+      // Une carte réellement à l'écran (cf. paintDist) ne doit pas se peindre
+      // blanche en attendant son image : `.card-chart--photo` a un fond #fff.
+      // On la charge donc en `eager`, sans attendre le calcul d'intersection du
+      // chargement paresseux. `fetchpriority` reste réservé à la carte 0, seul
+      // élément LCP. Les cartes hors écran, elles, gardent `lazy`.
+      if (Math.abs(i - offset) <= paintDist) {
         img.loading = "eager";
-        img.fetchPriority = "high";
+        if (i === 0) img.fetchPriority = "high";
       } else {
         img.loading = "lazy";
       }
@@ -413,6 +434,21 @@
     // construit → il serait bâti en pleine frame (micro-saccade). Tracer un cran plus
     // loin donne une marge. `drawMini` est idempotent (garde `miniDrawn`).
     for (let i = index - 2; i <= index + 2; i++) drawMini(i);
+  }
+
+  /* ----------------------------------------------------------------------
+   * Trace les minis des seules cartes RÉELLEMENT visibles (cf. paintDist).
+   * Complément de `drawVisibleMinis` : celui-ci vise la fluidité du swipe
+   * (±2 cartes, une avance), celui-là la justesse de l'image (0 carte blanche).
+   *
+   * Appelé au montage, avant que le navigateur ne peigne, et après un
+   * redimensionnement : élargir la fenêtre fait entrer une carte qui, sinon,
+   * resterait blanche jusqu'au premier contact. `drawMini` est idempotent.
+   * -------------------------------------------------------------------- */
+  function drawPaintedMinis() {
+    for (let i = 0; i < cards.length; i++) {
+      if (Math.abs(i - offset) <= paintDist) drawMini(i);
+    }
   }
 
   /* ----------------------------------------------------------------------
@@ -1546,18 +1582,24 @@
     document.body.classList.add("mode-carousel");
     setupGestures();
 
-    // Premier rendu. Les minis ne sont PAS tracés ici : `drawVisibleMinis()`
-    // trace les cartes ±2, ce qui coûtait 112 ms des ~127 ms du montage (profilé
-    // à CPU ×4) — l'essentiel de la tâche longue attribuée à ce fichier au
-    // chargement, et donc du Total Blocking Time restant. Le pré-traçage en
-    // temps mort juste en dessous couvre exactement les mêmes cartes, dans le
-    // même ordre (il part de l'index 0), à raison d'un mini par rappel : le
-    // résultat visuel est identique à quelques millisecondes près, sans bloquer
-    // le fil principal. La navigation rappelle `drawVisibleMinis()` de son côté,
-    // et `drawMini` est idempotent (garde `miniDrawn`) : aucune carte ne peut
-    // rester sans son mini.
+    // Premier rendu. Les minis des cartes HORS ÉCRAN ne sont pas tracés ici :
+    // `drawVisibleMinis()` trace les cartes ±2, ce qui coûtait 112 ms des ~127 ms
+    // du montage (profilé à CPU ×4) — l'essentiel de la tâche longue attribuée à
+    // ce fichier au chargement, et donc du Total Blocking Time restant. Le
+    // pré-traçage en temps mort juste en dessous couvre les mêmes cartes, à
+    // raison d'un mini par rappel, sans bloquer le fil principal.
+    //
+    // Les cartes RÉELLEMENT à l'écran, elles, sont tracées ici et de façon
+    // synchrone (`drawPaintedMinis`), avant que le navigateur ne peigne : sur un
+    // écran large, `applyTransforms` monte les voisines sous le seuil de
+    // masquage, et sans leur graphique elles se peignaient blanches puis se
+    // remplissaient au premier contact. Une carte visible ne doit jamais être
+    // blanche. Le coût suit exactement ce que le visiteur voit : nul sur mobile
+    // (paintDist < 1 → la seule carte visible est l'accueil, une photo sans
+    // mini), deux minis sur un écran de bureau.
     offset = 0; index = 0;
     applyTransforms(0);
+    drawPaintedMinis();
 
     // Pré-trace les minis hors écran quand le navigateur est libre : plus aucun
     // mini n'est construit sur la 1re frame d'un changement de carte (fin des
@@ -1615,7 +1657,7 @@
       clearTimeout(rt);
       rt = setTimeout(() => {
         computeHideDist();
-        if (!detailOpen) applyTransforms(offset);
+        if (!detailOpen) { applyTransforms(offset); drawPaintedMinis(); }
       }, 150);
     });
 

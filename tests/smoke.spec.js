@@ -25,6 +25,52 @@ test("le carousel affiche des cartes, des dots et un graphique sur une carte", a
   await expect(page.locator(".card.is-active .card-chart .chart-svg")).toBeVisible();
 });
 
+test("au chargement, aucune carte visible n'est peinte sans son visuel", async ({ page }) => {
+  // Régression (ordinateur) : les optimisations Lighthouse avaient repoussé le
+  // tracé des minis au premier contact, sur l'hypothèse « aucune voisine n'est
+  // visible au repos » — vraie sur mobile, fausse sur un écran large, où le
+  // seuil de masquage laisse paraître les cartes 1 et 2. Elles se peignaient
+  // blanches (fond .card-bg / .card-chart--photo) puis se remplissaient.
+  //
+  // On vérifie l'INVARIANT, pas une largeur : toute carte dont la boîte peinte
+  // croise le viewport porte son visuel. Le test est donc juste sur les trois
+  // projets (bureau 1280 px : cartes 0-2 ; mobile ~390 px : carte 0 seule).
+  await page.goto("/");
+  await expect(page.locator("body.mode-carousel")).toBeAttached();
+  // Aucune interaction : ni clic, ni touche, ni molette — c'est précisément ce
+  // qui déclenchait le rattrapage et masquait le défaut.
+  const inspect = () => page.evaluate(() =>
+    [...document.querySelectorAll(".cs-track .card")]
+      .filter(el => getComputedStyle(el).visibility !== "hidden")
+      .filter(el => {
+        const r = el.getBoundingClientRect();
+        return r.right > 0 && r.left < window.innerWidth;
+      })
+      .map(el => {
+        const img = el.querySelector("img.card-photo");
+        const hasVisual = !!(
+          el.querySelector(".card-chart svg") ||
+          el.querySelector(".card-icon") ||
+          (img && img.complete && img.naturalWidth > 0)
+        );
+        return hasVisual ? null : el.dataset.section;
+      })
+      .filter(Boolean));
+
+  // Le défaut ne se répare pas tout seul (il attend une interaction) : laisser
+  // du temps ne masque donc rien, cela absorbe seulement le décodage de l'image.
+  await expect.poll(inspect).toEqual([]);
+  // …et il y avait bien des cartes à vérifier.
+  const count = await page.evaluate(() =>
+    [...document.querySelectorAll(".cs-track .card")]
+      .filter(el => getComputedStyle(el).visibility !== "hidden")
+      .filter(el => {
+        const r = el.getBoundingClientRect();
+        return r.right > 0 && r.left < window.innerWidth;
+      }).length);
+  expect(count).toBeGreaterThan(0);
+});
+
 test("la carte « financement » ouvre le Sankey de la structure des ressources (unité + année)", async ({ page }) => {
   // Lien profond : ouvre directement la vue détail de la section financement.
   await page.goto("/#financement");
