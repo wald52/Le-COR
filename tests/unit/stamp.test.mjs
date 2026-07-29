@@ -67,7 +67,11 @@ test("le service worker précache exactement les URLs que les pages demandent", 
   const sw = read("sw.js");
   assert.match(sw, /const VERSION = "[0-9a-f]{8}";/, "sw.js : bloc généré absent ou non régénéré.");
 
-  const precached = new Set([...sw.matchAll(/"(\.\/[^"]*)"/g)].map(m => m[1]));
+  // Le seul bloc généré : ailleurs, sw.js cite « ./index.html » (repli de
+  // navigation), qui n'est pas une entrée de la liste de précache.
+  const list = sw.match(/const ASSETS = \[([\s\S]*?)\];/);
+  assert.ok(list, "sw.js : liste de précache introuvable.");
+  const precached = new Set([...list[1].matchAll(/"(\.\/[^"]*)"/g)].map(m => m[1]));
   for (const file of REFERRERS) {
     for (const { url, stamp } of referencesOf(file)) {
       if (!stamp) continue;

@@ -19,8 +19,17 @@ import { dirname, join } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // La liste de précache que tools/stamp-assets.mjs a écrite dans sw.js : c'est la
-// définition même de « la génération », donc ce que le cache doit contenir.
-const ASSETS = [...readFileSync(join(root, "sw.js"), "utf8").matchAll(/"(\.\/[^"]*)"/g)].map(m => m[1]);
+// définition même de « la génération », donc ce que le cache doit contenir. On
+// lit le seul bloc généré — ailleurs, sw.js cite « ./index.html » (repli de
+// navigation), qui n'est pas une entrée de la liste.
+const ASSETS = [...precacheBlock().matchAll(/"(\.\/[^"]*)"/g)].map(m => m[1]);
+
+function precacheBlock() {
+  const sw = readFileSync(join(root, "sw.js"), "utf8");
+  const block = sw.match(/const ASSETS = \[([\s\S]*?)\];/);
+  if (!block) throw new Error("sw.js : liste de précache introuvable.");
+  return block[1];
+}
 
 // Chromium seulement : Playwright n'émule pas la coupure réseau de la même
 // façon sur tous les moteurs, et le reste de la suite couvre déjà WebKit pour
