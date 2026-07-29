@@ -63,8 +63,17 @@ La première exécution des tests télécharge le navigateur :
   données repliable** (accessibilité). Renseignez `cfg.ariaLabel`.
 - L'assemblage des sections et le branchement des données se font dans
   `js/app.js`.
-- Après toute modification d'un asset servi, **incrémentez la version du cache**
-  dans `sw.js` (`const CACHE = "le-cor-citoyen-vNN"`).
+- Après toute modification d'un asset servi, lancez **`npm run build:min`** et
+  committez le résultat. La commande minifie les sources, puis estampille les
+  URLs d'assets d'un hachage de contenu (`?v=…`) dans les documents, les scripts
+  minifiés et la liste de précache de `sw.js`. Il n'y a plus de version de cache
+  à incrémenter à la main : le hachage la remplace.
+
+  Cet estampillage est ce qui garantit qu'une page ne mélange jamais des
+  fichiers de générations différentes — une URL estampillée désigne un contenu
+  immuable. L'oublier ne casse pas le site, mais fige le cache des visiteurs sur
+  l'ancienne version ; la CI le refuse (« garde-fou anti-dérive »), et
+  `npm run test:unit` le signale.
 
 ## Avant d'ouvrir une contribution
 

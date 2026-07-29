@@ -38,8 +38,8 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/style.min.css" />
-  <link rel="stylesheet" href="./css/cards.min.css" />
+  <link rel="stylesheet" href="./css/style.min.css?v=3feb15ff" />
+  <link rel="stylesheet" href="./css/cards.min.css?v=ce450145" />
 
   <!-- On NE précharge PAS non plus la photo de la 1re carte (élément LCP) : un
        `rel="preload" as="image"` a été mesuré, il ne rapporte rien. En audit sur
@@ -123,7 +123,7 @@
             <div class="card-inner" style="--theme:#0e7490">
               <div class="card-bg"></div>
               <div class="card-chart card-chart--photo">
-                <img class="card-photo" src="./images/accueil-lecteur-cor.webp" alt=""
+                <img class="card-photo" src="./images/accueil-lecteur-cor.webp?v=aab23ce6" alt=""
                      width="340" height="520" loading="eager" fetchpriority="high" decoding="async" />
               </div>
               <div class="card-overlay"></div>
@@ -910,10 +910,10 @@
     <button id="toast-action" type="button"></button>
   </div>
 
-  <script defer src="./data/data.js"></script>
-  <script defer src="./data/cor-series.generated.js"></script>
-  <script defer src="./js/chart.min.js"></script>
-  <script defer src="./js/app.min.js"></script>
-  <script defer src="./js/cards.min.js"></script>
+  <script defer src="./data/data.js?v=a8cd02db"></script>
+  <script defer src="./data/cor-series.generated.js?v=4ae8d1db"></script>
+  <script defer src="./js/chart.min.js?v=938a5649"></script>
+  <script defer src="./js/app.min.js?v=388185c0"></script>
+  <script defer src="./js/cards.min.js?v=a7d93c04"></script>
 </body>
 </html>

@@ -117,7 +117,9 @@ test("explorateur : échec de chargement → message + réessai qui aboutit", as
   // réseau coupé, la section doit le DIRE et offrir un réessai, au lieu de
   // rester une carte vide.
   let blocked = true;
-  await page.route("**/cor-explorer.generated.js", r => (blocked ? r.abort() : r.continue()));
+  // `*` final : l'URL porte un estampillage de version (`?v=…`, cf.
+  // tools/stamp-assets.mjs), que le motif doit accepter.
+  await page.route("**/cor-explorer.generated.js*", r => (blocked ? r.abort() : r.continue()));
   await page.goto("/#explorer");
 
   await expect(page.locator("#exp-label")).toHaveText(/indisponibles/i);

@@ -11,7 +11,7 @@
     "format": "prettier --check \"{js,data}/**/*.js\" \"*.html\" \"css/**/*.css\"",
     "format:fix": "prettier --write \"{js,data}/**/*.js\" \"*.html\" \"css/**/*.css\"",
     "serve": "python3 -m http.server 8000",
-    "build:min": "node tools/minify-assets.mjs",
+    "build:min": "node tools/minify-assets.mjs && node tools/stamp-assets.mjs",
     "test": "playwright test",
     "test:unit": "node --test \"tests/unit/**/*.test.mjs\""
   },

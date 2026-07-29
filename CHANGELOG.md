@@ -3,6 +3,51 @@
 Toutes les évolutions notables du site. Format inspiré de
 [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## [Non publié]
+
+### Modifié
+
+- **Stratégie de cache : cohérence de génération garantie.** La stratégie
+  « réseau d'abord » uniforme donnait bien la dernière version en ligne et un
+  site utilisable hors-ligne, mais ne garantissait pas qu'une page charge des
+  fichiers d'une *seule* version. Trois failles réelles : un onglet resté ouvert
+  était adopté par le nouveau service worker, qui venait d'effacer son cache —
+  ses chargements tardifs (données de l'explorateur, photos des cartes)
+  ramenaient alors la génération suivante dans une page de la précédente ;
+  l'arbitrage réseau/cache se faisait fichier par fichier, donc un timeout
+  suffisait à panacher ; et le cache hors-ligne n'était pas un instantané mais
+  l'état de chaque fichier à sa dernière récupération réussie.
+
+  Le correctif est dans les URLs, pas dans le service worker : `npm run build:min`
+  estampille désormais chaque asset d'un hachage de contenu
+  (`./js/app.min.js?v=388185c0`). Une URL estampillée désigne un contenu
+  immuable ; le HTML d'une génération ne référence que les URLs de cette
+  génération. La cohérence n'est plus surveillée, elle est structurelle.
+
+  `sw.js` s'appuie dessus : documents en « réseau d'abord » (recharger en ligne
+  donne toujours le dernier HTML), assets estampillés en « cache d'abord » toutes
+  générations confondues (instantané, sans risque de mélange), et suppression de
+  `skipWaiting()` — un onglet ouvert garde son service worker et son cache
+  jusqu'à sa fermeture. Aucun rechargement automatique n'est provoqué, ni avant
+  ni après.
+
+  Les URLs publiques sont inchangées : page d'accueil, `legal.html`, `404.html`
+  et ancres de section (`#dette`…) à l'identique. `?v=` étant une chaîne de
+  requête, le serveur sert le même fichier au même chemin — aucun lien direct ne
+  casse.
+
+- **Fin du bump manuel de `le-cor-citoyen-vNN`** dans `sw.js` : le hachage de
+  génération le remplace. Le garde-fou anti-dérive de la CI couvre désormais les
+  documents et `sw.js` en plus des `*.min.*`.
+
+### Ajouté
+
+- **Tests du service worker** (`tests/offline.spec.js`) : le scénario « avion »
+  — rechargement hors ligne, chargements tardifs compris — n'était couvert par
+  aucun test. Plus des invariants d'estampillage sans navigateur
+  (`tests/unit/stamp.test.mjs`), qui détectent une estampille périmée : elle ne
+  casse pas le site, elle fige silencieusement le cache des visiteurs.
+
 ## [1.1.0] – 2026-07-25
 
 ### Ajouté

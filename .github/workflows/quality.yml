@@ -30,9 +30,14 @@ jobs:
       - name: Tests unitaires (Node natif, sans navigateur)
         run: npm run test:unit
 
-  # Garde-fou anti-dérive des assets minifiés : les `*.min.*` servis par le site
-  # sont committés et régénérés à la main. On les régénère ici et on échoue si le
-  # résultat diffère du dépôt (source modifiée sans régénérer le `.min`).
+  # Garde-fou anti-dérive des assets générés : les `*.min.*`, les URLs
+  # estampillées (`?v=<hachage>`) posées dans les documents et les scripts
+  # minifiés, et la liste de précache de `sw.js` sont committés et régénérés à la
+  # main. On les régénère ici et on échoue si le résultat diffère du dépôt.
+  #
+  # Une estampille périmée ne casse pas le site — `?v=` est ignoré par le serveur
+  # — elle tue SILENCIEUSEMENT l'invalidation du cache : les visiteurs gardent
+  # l'ancien fichier. D'où un garde-fou bloquant plutôt qu'un avertissement.
   assets:
     runs-on: ubuntu-latest
     steps:
@@ -42,12 +47,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Régénérer les assets minifiés
+      - name: Régénérer les assets minifiés et les estampilles de version
         run: npm run build:min
       - name: Vérifier l'absence de dérive
         run: |
-          if ! git diff --exit-code -- 'css/*.min.css' 'js/*.min.js'; then
-            echo "::error::Un asset minifié est obsolète. Lancez « npm run build:min » puis committez les fichiers *.min.*."
+          if ! git diff --exit-code -- 'css/*.min.css' 'js/*.min.js' '*.html' sw.js; then
+            echo "::error::Un asset généré est obsolète (minification ou estampille de version). Lancez « npm run build:min » puis committez le résultat."
             exit 1
           fi
 
