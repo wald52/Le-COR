@@ -187,6 +187,20 @@ test("simulateur : les curseurs annoncent leur valeur en clair (aria-valuetext)"
   await sameAsDisplayed();
 });
 
+test("simulateur : le levier pensions descend jusqu'à l'extinction (−100 %)", async ({ page }) => {
+  // La course du curseur n'est pas bornée par le calibrage COR (−16,3 %) : on
+  // doit pouvoir aller jusqu'au bout, pension nulle comprise. Ce test verrouille
+  // à la fois la borne et le redimensionnement (200 crans ÷ 2 = 100,0 %).
+  await page.goto("/#simulateur");
+  const pen = page.locator(".cd-body #lv-pen");
+  await expect(pen).toHaveAttribute("max", "200");
+  await pen.fill("200");
+  await pen.dispatchEvent("input");
+  await expect(page.locator(".cd-body #lv-pen-out")).toHaveText("−100 %");
+  await expect(pen).toHaveAttribute("aria-valuetext", "−100 %");
+  await expect(page.locator(".cd-body #lv-pen-note")).toHaveText(/45,3 % → 0 %$/);
+});
+
 test("simulateur : le verdict de la jauge est une région vivante", async ({ page }) => {
   // Le résultat du simulateur se réécrit sans déplacer le focus : sans
   // aria-live, bouger un curseur ne produit AUCUNE annonce.

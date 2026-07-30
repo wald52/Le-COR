@@ -805,17 +805,22 @@
         "pension / salaire : " + f1(L.pension.ref_pct) + " % → " + f1(L.pension.ref_pct * (1 - penPct / 100)) + " %";
 
       const closed = (months / ageFullMonths + cotPts / cotFull + penPct / penFull) * 100;
+      // Le verdict se décide sur le nombre AFFICHÉ, pas sur la valeur brute :
+      // sinon 110,4 % (curseur âge seul à fond) s'annonce « plus que nécessaire
+      // (110 %) », en contradiction avec la borne haute de la fenêtre
+      // d'équilibre, qui est justement 110.
+      const shown = Math.round(closed);
       const fill = id("gauge-fill"), msg = id("gauge-msg");
       fill.style.width = Math.min(closed, 100) + "%";
-      if (closed < 95) {
+      if (shown < 95) {
         fill.className = "gauge-fill";
-        msg.innerHTML = `Déficit comblé à <strong>${Math.round(closed)} %</strong> — il en reste ${Math.round(100 - closed)} %.`;
-      } else if (closed <= 110) {
+        msg.innerHTML = `Déficit comblé à <strong>${shown} %</strong> — il en reste ${100 - shown} %.`;
+      } else if (shown <= 110) {
         fill.className = "gauge-fill ok";
-        msg.innerHTML = `✓ <strong>Système équilibré en 2070&nbsp;!</strong> (comblé à ${Math.round(closed)} %)`;
+        msg.innerHTML = `✓ <strong>Système équilibré en 2070&nbsp;!</strong> (comblé à ${shown} %)`;
       } else {
         fill.className = "gauge-fill over";
-        msg.innerHTML = `Vous en faites plus que nécessaire (<strong>${Math.round(closed)} %</strong>) — possible excédent.`;
+        msg.innerHTML = `Vous en faites plus que nécessaire (<strong>${shown} %</strong>) — possible excédent.`;
       }
     }
     [elAge, elCot, elPen].forEach(e => e.addEventListener("input", update));

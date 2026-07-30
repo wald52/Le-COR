@@ -714,6 +714,18 @@
           calcule combien il faudrait de <em>chacun, utilisé seul</em>. À vous de choisir
           <strong>votre dosage</strong>&nbsp;: la jauge vous dit si le système est à l'équilibre.
         </p>
+        <!-- Bornes des curseurs : ce sont des choix d'interface, PAS des valeurs
+             du COR. Le rapport ne fournit que le calibrage — le niveau de chaque
+             levier qui, seul, équilibre 2070 : +3,02 ans (36,2 mois), +5,56 pts,
+             −16,3 % de pension. Ce calibrage vit dans les données
+             (data/cor-series.generated.js) et pilote la jauge ; les `max`
+             ci-dessous ne font que délimiter ce qu'on peut demander à l'écran.
+             Chaque curseur porte des ENTIERS que js/app.js redimensionne :
+               lv-age  max=40         → 0 → +40 mois (pas de 1 mois)
+               lv-cot  max=60,  ÷10   → 0 → +6,0 pts (pas de 0,1 pt)
+               lv-pen  max=200, ÷2    → 0 → −100 %   (pas de 0,5 pt)
+             Âge et cotisations s'arrêtent juste au-dessus du calibrage ; les
+             pensions couvrent toute la plage possible, jusqu'à l'extinction. -->
         <div class="sim">
           <div class="sim-lever">
             <div class="sim-head"><span>⏳ Reculer l'âge de départ</span><strong id="lv-age-out">+0 mois</strong></div>
@@ -727,7 +739,7 @@
           </div>
           <div class="sim-lever">
             <div class="sim-head"><span>📉 Baisser le niveau des pensions</span><strong id="lv-pen-out">−0,0 %</strong></div>
-            <input type="range" id="lv-pen" min="0" max="36" step="1" value="0" aria-label="Baisse du niveau des pensions" />
+            <input type="range" id="lv-pen" min="0" max="200" step="1" value="0" aria-label="Baisse du niveau des pensions" />
             <p class="sim-note" id="lv-pen-note"></p>
           </div>
         </div>
@@ -913,7 +925,7 @@
   <script defer src="./data/data.js?v=a8cd02db"></script>
   <script defer src="./data/cor-series.generated.js?v=4ae8d1db"></script>
   <script defer src="./js/chart.min.js?v=938a5649"></script>
-  <script defer src="./js/app.min.js?v=388185c0"></script>
+  <script defer src="./js/app.min.js?v=24fe0552"></script>
   <script defer src="./js/cards.min.js?v=a7d93c04"></script>
 </body>
 </html>
