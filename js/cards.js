@@ -1619,6 +1619,16 @@
     const prefetchStep = () => {
       while (miniPrefetchIdx < cards.length && cardReady(miniPrefetchIdx)) miniPrefetchIdx++;
       if (miniPrefetchIdx >= cards.length) return;
+      // Cette file est armée par la PREMIÈRE interaction : elle démarre donc
+      // pendant le geste qui la déclenche. Monter une carte et tracer son mini
+      // peut déborder de la fenêtre d'oisiveté et faire sauter la frame
+      // suivante — visible sous le doigt. On attend le relâchement du pointeur ;
+      // ce n'est qu'une avance prise, jamais une dépendance (drawMini est
+      // idempotent et drawVisibleMinis reste le filet à chaque changement).
+      if (window.CORApp && window.CORApp.pointerBusy && window.CORApp.pointerBusy()) {
+        setTimeout(prefetchStep, 150);
+        return;
+      }
       const i = miniPrefetchIdx++;
       hydrateCard(i);
       drawMini(i);

@@ -779,6 +779,17 @@
     const penFull = L.pension.full_pct;
     const elAge = id("lv-age"), elCot = id("lv-cot"), elPen = id("lv-pen");
     if (!elAge) return;
+    // Références résolues une fois : `update` s'exécute jusqu'à 60 fois par
+    // seconde pendant un glissement, elle n'a pas à rechercher huit nœuds à
+    // chaque passage.
+    const outAge = id("lv-age-out"), outCot = id("lv-cot-out"), outPen = id("lv-pen-out");
+    const noteAge = id("lv-age-note"), noteCot = id("lv-cot-note"), notePen = id("lv-pen-note");
+    const fill = id("gauge-fill"), msg = id("gauge-msg");
+    // Dernier état ÉCRIT dans la jauge. Le verdict ne change qu'à quelques
+    // crans sur toute la course : sans cette mémoire, on réécrivait `innerHTML`
+    // à chaque mise à jour, ce qui reconstruit un sous-arbre et invalide
+    // l'arbre d'accessibilité — `#gauge-msg` est une région vivante.
+    let lastCls = "", lastMsg = "";
 
     function update() {
       const months = +elAge.value;
@@ -787,9 +798,9 @@
       const ageTxt = "+" + months + " mois";
       const cotTxt = "+" + f1(cotPts) + " pt";
       const penTxt = "−" + f1(penPct) + " %";
-      id("lv-age-out").textContent = ageTxt;
-      id("lv-cot-out").textContent = cotTxt;
-      id("lv-pen-out").textContent = penTxt;
+      outAge.textContent = ageTxt;
+      outCot.textContent = cotTxt;
+      outPen.textContent = penTxt;
       // Le curseur porte des ENTIERS d'un pas arbitraire (dixièmes de point,
       // demi-points) : sans `aria-valuetext`, le lecteur d'écran annonce « 24 »
       // là où l'écran affiche « +2,4 pt ». On lui donne la même chaîne qu'à
@@ -797,11 +808,11 @@
       elAge.setAttribute("aria-valuetext", ageTxt);
       elCot.setAttribute("aria-valuetext", cotTxt);
       elPen.setAttribute("aria-valuetext", penTxt);
-      id("lv-age-note").textContent =
+      noteAge.textContent =
         "âge effectif de départ : " + f1(L.age.ref) + " → " + f1(L.age.ref + months / 12) + " ans";
-      id("lv-cot-note").textContent =
+      noteCot.textContent =
         "taux de prélèvement : " + f1(L.cotis.ref) + " % → " + f1(L.cotis.ref + cotPts) + " %";
-      id("lv-pen-note").textContent =
+      notePen.textContent =
         "pension / salaire : " + f1(L.pension.ref_pct) + " % → " + f1(L.pension.ref_pct * (1 - penPct / 100)) + " %";
 
       const closed = (months / ageFullMonths + cotPts / cotFull + penPct / penFull) * 100;
@@ -810,20 +821,33 @@
       // (110 %) », en contradiction avec la borne haute de la fenêtre
       // d'équilibre, qui est justement 110.
       const shown = Math.round(closed);
-      const fill = id("gauge-fill"), msg = id("gauge-msg");
       fill.style.width = Math.min(closed, 100) + "%";
+      let cls, html;
       if (shown < 95) {
-        fill.className = "gauge-fill";
-        msg.innerHTML = `Déficit comblé à <strong>${shown} %</strong> — il en reste ${100 - shown} %.`;
+        cls = "gauge-fill";
+        html = `Déficit comblé à <strong>${shown} %</strong> — il en reste ${100 - shown} %.`;
       } else if (shown <= 110) {
-        fill.className = "gauge-fill ok";
-        msg.innerHTML = `✓ <strong>Système équilibré en 2070&nbsp;!</strong> (comblé à ${shown} %)`;
+        cls = "gauge-fill ok";
+        html = `✓ <strong>Système équilibré en 2070&nbsp;!</strong> (comblé à ${shown} %)`;
       } else {
-        fill.className = "gauge-fill over";
-        msg.innerHTML = `Vous en faites plus que nécessaire (<strong>${shown} %</strong>) — possible excédent.`;
+        cls = "gauge-fill over";
+        html = `Vous en faites plus que nécessaire (<strong>${shown} %</strong>) — possible excédent.`;
       }
+      if (cls !== lastCls) { fill.className = cls; lastCls = cls; }
+      if (html !== lastMsg) { msg.innerHTML = html; lastMsg = html; }
     }
-    [elAge, elCot, elPen].forEach(e => e.addEventListener("input", update));
+
+    // Le curseur des pensions porte 200 crans : un glissement du bout à l'autre
+    // émet jusqu'à 200 événements `input`, bien plus que l'écran n'affiche de
+    // frames. On coalesce donc les mises à jour sur la frame — même motif que
+    // `scheduleDraw` dans js/cards.js — pour que le coût d'un geste dépende de
+    // la durée du geste, et non du nombre de crans du curseur.
+    let raf = 0;
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; update(); });
+    };
+    [elAge, elCot, elPen].forEach(e => e.addEventListener("input", schedule));
     id("lv-source").textContent = "Source : " + L.source +
       " — calibrage : seul, chaque levier équilibre avec +" + f1(L.age.full_years) +
       " an d'âge, +" + f1(L.cotis.full_pts) + " pts de cotisation, ou −" + f1(L.pension.full_pct) + " % de pensions.";
@@ -893,6 +917,29 @@
   const sectionRendered = new Set();
 
   /* ----------------------------------------------------------------------
+   * « Un pointeur est-il posé ? » — partagé par les deux files de temps mort
+   * (celle-ci et le pré-chargement des cartes dans js/cards.js).
+   *
+   * Les deux files sont armées par la PREMIÈRE interaction du visiteur : elles
+   * démarrent donc exactement pendant le geste qui les déclenche. En arrivant
+   * par un lien profond (…/#simulateur), la vue détail est déjà ouverte et ce
+   * premier geste est souvent la prise d'un curseur — le travail de fond tombe
+   * alors pile sur lui. On le met en pause tant que le doigt est posé.
+   *
+   * Écoute en `capture` : le carrousel arrête certains gestes en route
+   * (setPointerCapture, stopPropagation), ils n'atteindraient jamais `window`
+   * en phase de bouillonnement. `passive` : on ne fait qu'observer.
+   * -------------------------------------------------------------------- */
+  let pointerDown = false;
+  function pointerBusy() { return pointerDown; }
+  function watchPointer() {
+    const set = v => () => { pointerDown = v; };
+    window.addEventListener("pointerdown", set(true), { capture: true, passive: true });
+    ["pointerup", "pointercancel"].forEach(ev =>
+      window.addEventListener(ev, set(false), { capture: true, passive: true }));
+  }
+
+  /* ----------------------------------------------------------------------
    * File de pré-rendu : un appel de dessin élémentaire par temps mort.
    * Alimentée à la demande par `CORApp.prerenderSections` (voir plus bas) ;
    * une seule boucle tourne à la fois, les ajouts en cours de route sont
@@ -912,6 +959,13 @@
     prerenderRunning = true;
     const ric = window.requestIdleCallback || (fn => setTimeout(fn, 1));
     const step = () => {
+      // Un job = un graphique entier : `requestIdleCallback` le DÉMARRE quand il
+      // reste du temps, mais ne l'interrompt pas s'il déborde — la frame
+      // suivante saute. Pendant un geste (glissement d'un curseur ou d'une
+      // carte) ce saut se voit directement sous le doigt, alors on attend le
+      // relâchement. La file n'est qu'une avance prise : la retarder n'a aucun
+      // effet fonctionnel (renderSectionOnce rattrape à l'ouverture).
+      if (pointerBusy()) { setTimeout(step, 150); return; }
       const job = prerenderQueue.shift();
       if (!job) { prerenderRunning = false; return; }
       job();
@@ -1505,6 +1559,7 @@
     // graphiques (prerenderSections au repos, renderSection à l'ouverture d'une
     // carte). init() ne fait que câbler les outils communs ; le contenu des
     // sections (scheduleStaticContent) et le tracé des graphiques sont différés.
+    watchPointer();
     scheduleStaticContent();
     setupChartTools();
     setupDataExports();
@@ -1692,6 +1747,9 @@
       ensureSectionPngCache(sec);
     },
     ensureExplorer,
+    // « Un pointeur est-il posé ? » — js/cards.js s'en sert pour mettre sa
+    // propre file de temps mort en pause pendant un geste (cf. watchPointer).
+    pointerBusy,
     // Pré-rend les graphiques au repos pour qu'ils soient déjà à leur taille
     // finale dès l'ouverture de leur carte — sinon le conteneur passe de
     // min-height:300px à la hauteur du SVG au rendu différé (« redimensionnement »

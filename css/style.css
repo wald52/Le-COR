@@ -294,7 +294,13 @@ a { color: var(--bleu-clair); }
 
 .sim-gauge { margin: 22px 0 4px; }
 .gauge-track { height: 26px; background: var(--fond-alt); border: 1px solid var(--gris-clair); border-radius: 999px; overflow: hidden; }
-.gauge-fill { height: 100%; width: 0; border-radius: 999px; transition: width 0.18s ease, background 0.2s ease;
+/* `width` est une propriété de MISE EN PAGE : sa transition relance un cycle
+   layout + peinture, et un glissement de curseur la relance à chaque frame —
+   elle ne se termine alors jamais pendant le geste. Une durée courte la garde
+   lisible sur un clic isolé (où elle sert vraiment) sans traîner sous le doigt.
+   Pas de `transform: scaleX()` ici : la barre est un `border-radius: 999px`,
+   la mise à l'échelle écraserait ses extrémités arrondies. */
+.gauge-fill { height: 100%; width: 0; border-radius: 999px; transition: width 0.09s ease, background 0.2s ease;
   background: linear-gradient(90deg, #d6452a, #e8731c); }
 .gauge-fill.ok { background: linear-gradient(90deg, #2ca089, #6aa84f); }
 .gauge-fill.over { background: linear-gradient(90deg, #6aa84f, #2f6fb0); }
