@@ -774,6 +774,13 @@
     if (!L) return;
     const id = x => document.getElementById(x);
     const f1 = v => (Math.round(v * 10) / 10).toString().replace(".", ",");
+    // `f1` laisse tomber la décimale des valeurs rondes (18 → « 18 »). Sur un
+    // curseur au pas de 0,5 l'étiquette change alors de largeur un cran sur
+    // deux — et comme elle est collée au bord droit (.sim-head est un flex en
+    // space-between), c'est le nombre qui glisse de gauche à droite sous l'œil.
+    // Les valeurs des leviers gardent donc TOUJOURS leur décimale : la place
+    // du « ,5 » est réservée même quand il vaut zéro.
+    const f1x = v => v.toFixed(1).replace(".", ",");
     const ageFullMonths = L.age.full_years * 12;
     const cotFull = L.cotis.full_pts;
     const penFull = L.pension.full_pct;
@@ -796,8 +803,8 @@
       const cotPts = +elCot.value / 10;
       const penPct = +elPen.value / 2;
       const ageTxt = "+" + months + " mois";
-      const cotTxt = "+" + f1(cotPts) + " pt";
-      const penTxt = "−" + f1(penPct) + " %";
+      const cotTxt = "+" + f1x(cotPts) + " pt";
+      const penTxt = "−" + f1x(penPct) + " %";
       outAge.textContent = ageTxt;
       outCot.textContent = cotTxt;
       outPen.textContent = penTxt;

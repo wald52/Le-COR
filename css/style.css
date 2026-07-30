@@ -278,7 +278,11 @@ a { color: var(--bleu-clair); }
 }
 .sim-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
 .sim-head span { font-weight: 600; color: var(--encre); }
-.sim-head strong { color: var(--bleu); font-size: 1.15rem; white-space: nowrap; }
+/* `tabular-nums` : chiffres de largeur constante. La décimale toujours affichée
+   (js/app.js) fixe le NOMBRE de caractères, celle-ci fixe leur largeur — sans
+   elle, échanger un « 1 » contre un « 8 » ferait encore bouger l'étiquette. */
+.sim-head strong { color: var(--bleu); font-size: 1.15rem; white-space: nowrap;
+  font-variant-numeric: tabular-nums; }
 /* `touch-action: none` : le curseur vit dans la feuille de détail, qui défile
    verticalement (`.cd-sheet`, css/cards.css). Sans cette déclaration, un doigt
    posé sur le curseur est AMBIGU pour le navigateur — défilement de la feuille

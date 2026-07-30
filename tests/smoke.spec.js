@@ -196,8 +196,8 @@ test("simulateur : le levier pensions descend jusqu'à l'extinction (−100 %)",
   await expect(pen).toHaveAttribute("max", "200");
   await pen.fill("200");
   await pen.dispatchEvent("input");
-  await expect(page.locator(".cd-body #lv-pen-out")).toHaveText("−100 %");
-  await expect(pen).toHaveAttribute("aria-valuetext", "−100 %");
+  await expect(page.locator(".cd-body #lv-pen-out")).toHaveText("−100,0 %");
+  await expect(pen).toHaveAttribute("aria-valuetext", "−100,0 %");
   await expect(page.locator(".cd-body #lv-pen-note")).toHaveText(/45,3 % → 0 %$/);
 });
 
