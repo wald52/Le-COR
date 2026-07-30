@@ -97,12 +97,30 @@ body.mode-carousel .site-footer { display: none; }
   overflow: hidden;
   touch-action: none;             /* swipe horizontal ET glisser-pour-ouvrir vertical gérés en JS */
 }
+/* La piste porte le facteur d'ajustement `--cs-fit` (calculé par js/cards.js) :
+   la carte a une hauteur FIXE (--card-h), et sur un écran court elle dépassait
+   de `.cs-viewport` (overflow:hidden) — elle était donc rognée en haut et en
+   bas, sans aucun repli. Cas mesurés : 1024×600 (profil « Nest Hub » de la
+   console Chrome, mais surtout toute fenêtre de bureau de moins de ~651 px de
+   haut) → 26 px coupés de chaque côté ; téléphone tenu en PAYSAGE → 131 px.
+   On met donc toute la piste à l'échelle plutôt que de réduire la seule
+   hauteur de carte : la composition interne (graphique 64 %, bloc de texte,
+   pastilles) garde ses proportions, et surtout la géométrie en pixels du
+   carrousel (STEP, parallax, seuils de masquage) reste celle des constantes JS
+   — c'est le repère commun de tout js/cards.js, le désynchroniser du CSS
+   coûterait bien plus qu'un `scale`.
+   La transformation est posée en permanence (scale(1) par défaut) : le
+   contexte d'empilement qu'elle crée est ainsi le même à toutes les tailles,
+   au lieu d'apparaître au franchissement d'un seuil. Les flèches (z-index 200)
+   et le logo (210) sont hors de la piste : ils restent au-dessus. */
 .cs-track {
   position: absolute;
   inset: 0;
   margin: 0;
   padding: 0;
   list-style: none;
+  transform: scale(var(--cs-fit, 1));
+  transform-origin: center center;
 }
 
 .card {

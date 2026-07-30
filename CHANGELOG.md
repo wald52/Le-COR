@@ -50,6 +50,31 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Corrigé
 
+- **Les cartes étaient rognées en haut et en bas sur les écrans courts.**
+  Repéré sur le profil « Nest Hub » (1024×600) de la console Chrome, le défaut
+  n'a rien de propre à cet appareil — qui n'a d'ailleurs pas de navigateur web.
+  La carte mesure 520 px de haut (valeur fixe) et sa piste est en
+  `overflow:hidden` : le châssis (en-tête, pastilles, liens légaux, marges)
+  occupant ~131 px, toute fenêtre de moins de ~651 px de haut amputait la carte,
+  sans aucun repli. Mesures avant correctif : 26 px coupés de chaque côté à
+  1024×600, 46 px à 1280×560, et 131 px sur un téléphone tenu en **paysage**.
+  Si le Nest Hub était le seul profil concerné dans la console, c'est qu'il est
+  le seul écran court de la liste : tous les profils téléphone y sont en
+  portrait (l'iPhone SE, 667 px, passe à 16 px près).
+  - **Correctif** : la piste porte un facteur d'échelle (`--cs-fit`), calculé
+    d'après la hauteur réellement disponible et réévalué à chaque
+    redimensionnement. La carte rapetissit au lieu d'être coupée. Mettre à
+    l'échelle la piste entière plutôt que réduire la seule hauteur de carte
+    préserve à la fois la composition interne (graphique, bloc de texte) et la
+    géométrie en pixels du carrousel, qui reste exprimée dans les constantes de
+    `js/cards.js` ; seules les conversions pixels ↔ unités de carte (suivi du
+    doigt, seuils de masquage hors écran) passent par ce facteur. Un plancher à
+    0,7 évite de rendre le texte illisible sur les hauteurs extrêmes
+    (téléphone en paysage), où l'on préfère une carte lisible et un peu rognée.
+  - Couvert par deux tests de non-régression (`tests/smoke.spec.js`) : la carte
+    reste contenue dans sa piste à 1024×600, 1280×560, 1440×650, 1280×800 et
+    393×851, et un glissement de 100 px déplace bien la carte de 100 px.
+
 - **Le logo partenaire mordait sur le titre d'accueil, sur tout téléphone.**
   Signalé sur Galaxy S8+ (360 px), le défaut n'y était pas cantonné : la
   pastille ronde du coq est en `position:absolute` en haut à droite, donc

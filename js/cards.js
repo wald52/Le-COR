@@ -55,6 +55,7 @@
   const ACTIVE_SCALE = 1.0;    // échelle de la carte centrale
   const INACTIVE_SCALE = 0.86; // échelle des cartes latérales
   const PARALLAX_AMOUNT = 0.18;// décalage du graphique interne (fraction de STEP)
+  const MIN_FIT = 0.7;         // plancher du facteur d'ajustement (cf. computeFit)
   const SPRING_CONFIG = { stiffness: 170, damping: 26, mass: 1 }; // snap au centre
   const OPEN_DURATION = 440;   // durée de l'ouverture/fermeture du détail (ms)
 
@@ -219,8 +220,40 @@
   // au-dessus de 1 — donc à retracer au chargement ce que l'on vient d'économiser.
   let paintDist = Infinity;
   function computeHideDist() {
-    hideDist = (window.innerWidth / 2 + CARD_WIDTH) / STEP;
-    paintDist = (window.innerWidth / 2 + (CARD_WIDTH * INACTIVE_SCALE) / 2) / STEP;
+    // Les seuils comparent des DISTANCES EN CARTES à une largeur d'écran en
+    // pixels : ils doivent donc raisonner sur le pas RÉELLEMENT peint, soit
+    // STEP × fitScale (cf. computeFit), et sur des cartes elles aussi réduites.
+    const step = STEP * fitScale, w = CARD_WIDTH * fitScale;
+    hideDist = (window.innerWidth / 2 + w) / step;
+    paintDist = (window.innerWidth / 2 + (w * INACTIVE_SCALE) / 2) / step;
+  }
+
+  // Facteur d'ajustement de la piste aux écrans COURTS. La carte mesure
+  // CARD_HEIGHT (hauteur fixe) et `.cs-viewport` est en overflow:hidden : dès
+  // que la place verticale manque, la carte était amputée en haut et en bas.
+  // On met la piste entière à l'échelle (cf. `--cs-fit` dans css/cards.css) :
+  // la carte rapetissit au lieu d'être coupée, et toute la géométrie JS reste
+  // exprimée dans les constantes d'origine — seules les conversions
+  // pixels ↔ unités de carte (drag, seuils de masquage) passent par fitScale.
+  //
+  // Plancher `MIN_FIT` : sous ~0,7 le texte de la carte (0,86 rem pour le
+  // descriptif) devient illisible. Un téléphone tenu en paysage ne laisse que
+  // ~260 px de piste — aucune valeur d'échelle ne rend cette mise en page
+  // confortable ; on préfère alors une carte lisible, légèrement rognée, à une
+  // carte entière mais minuscule.
+  //
+  // Mesuré sur `.cs-viewport` et non déduit de innerHeight : la hauteur du
+  // châssis n'est pas une constante (le sur-titre revient à la ligne sur
+  // téléphone, l'en-tête passe de 60 à 77 px). Les quatre éléments qui
+  // occupent de la hauteur sont servis en HTML (cf. index.html) : dès le
+  // montage, la mesure est donc la bonne — une seule lecture au démarrage,
+  // puis une par redimensionnement (déjà amorti à 150 ms).
+  let fitScale = 1;
+  function computeFit() {
+    const avail = viewport ? viewport.clientHeight : 0;
+    if (!avail) return;                       // écran masqué : on garde la valeur courante
+    fitScale = clamp(avail / CARD_HEIGHT, MIN_FIT, 1);
+    track.style.setProperty("--cs-fit", fitScale.toFixed(4));
   }
 
   let screen, viewport, track, dotsWrap, prevBtn, nextBtn;
@@ -639,7 +672,10 @@
       if (axis !== "x") return;
       e.preventDefault();
       // Élastique aux extrémités : on freine le débordement.
-      let o = startOffset - dx / STEP;
+      // `dx` est en pixels d'ÉCRAN : sur une piste réduite (cf. computeFit), un
+      // pas de carte n'y mesure plus STEP mais STEP × fitScale — sans quoi les
+      // cartes avanceraient plus vite que le doigt.
+      let o = startOffset - dx / (STEP * fitScale);
       if (o < 0) o = o * 0.35;
       else if (o > cards.length - 1) o = (cards.length - 1) + (o - (cards.length - 1)) * 0.35;
       offset = o;
@@ -1485,6 +1521,7 @@
     const root = document.documentElement.style;
     root.setProperty("--card-w", CARD_WIDTH + "px");
     root.setProperty("--card-h", CARD_HEIGHT + "px");
+    computeFit();          // avant computeHideDist : les seuils dépendent de l'échelle
     computeHideDist();
 
     // Réservoir : on déplace tout le contenu existant de <main> dans un conteneur
@@ -1683,10 +1720,14 @@
 
     // Redimensionnement (rotation) : les transforms sont en px → on réapplique
     // (et le seuil de masquage hors écran dépend de la largeur du viewport).
+    // La hauteur disponible change elle aussi — fenêtre de bureau redimensionnée,
+    // passage en paysage, barre d'URL mobile qui se replie : on refait donc la
+    // mesure d'ajustement avant les seuils, qui en dépendent.
     let rt;
     window.addEventListener("resize", () => {
       clearTimeout(rt);
       rt = setTimeout(() => {
+        computeFit();
         computeHideDist();
         if (!detailOpen) { applyTransforms(offset); drawPaintedMinis(); }
       }, 150);

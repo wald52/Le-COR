@@ -510,3 +510,59 @@ test("sur téléphone, le logo partenaire ne mord jamais sur le texte de l'en-t�
     expect(hit, `chevauchement à ${width} px`).toEqual([]);
   }
 });
+
+test("sur écran court, la carte tient entière dans la piste (jamais rognée)", async ({ page }) => {
+  // Régression (repérée sur le profil « Nest Hub », 1024×600, de la console
+  // Chrome) : la carte a une hauteur fixe de 520 px et `.cs-viewport` est en
+  // overflow:hidden — sous ~651 px de hauteur de fenêtre, elle était donc
+  // amputée en haut et en bas (26 px de chaque côté à 600 px de haut). Le
+  // symptôme n'a rien de propre au Nest Hub : toute fenêtre de bureau basse
+  // le produit. La piste porte désormais un facteur d'échelle (`--cs-fit`).
+  //
+  // On vérifie l'INVARIANT (la carte active est contenue dans la piste), pas
+  // une valeur d'échelle : elle se déduit de la hauteur réellement disponible.
+  for (const [width, height] of [
+    [1024, 600],   // Nest Hub
+    [1280, 560],   // fenêtre de bureau volontairement basse
+    [1440, 650],   // portable 1440×900 avec chrome du navigateur et barre de favoris
+    [1280, 800],   // Nest Hub Max : aucune réduction attendue
+    [393, 851],    // téléphone en portrait : aucune réduction attendue
+  ]) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await expect(page.locator(".card.is-active")).toBeVisible();
+
+    const m = await page.evaluate(() => {
+      const vp = document.querySelector(".cs-viewport").getBoundingClientRect();
+      const c = document.querySelector(".card.is-active").getBoundingClientRect();
+      return { over: Math.max(vp.top - c.top, c.bottom - vp.bottom), h: c.height };
+    });
+    // Tolérance d'un pixel : la piste est mise à l'échelle, les bords tombent
+    // sur des fractions de pixel.
+    expect(m.over, `carte rognée en ${width}×${height}`).toBeLessThanOrEqual(1);
+    expect(m.h, `carte trop petite en ${width}×${height}`).toBeGreaterThan(300);
+  }
+});
+
+test("sur écran court, un swipe suit le doigt malgré la piste réduite", async ({ page }) => {
+  // La conversion pixels → unités de carte du drag doit tenir compte de
+  // l'échelle de la piste : sinon les cartes avancent plus vite que le doigt
+  // (1/0,9 ≈ 11 % de trop à 1024×600). On mesure le déplacement RÉEL de la
+  // carte d'accueil pendant un glissement de 100 px, doigt toujours posé.
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await page.goto("/");
+  await expect(page.locator(".card.is-active")).toBeVisible();
+
+  const left = () =>
+    page.locator('.card[data-index="0"]').evaluate((el) => el.getBoundingClientRect().left);
+  const before = await left();
+  await page.mouse.move(512, 300);
+  await page.mouse.down();
+  await page.mouse.move(412, 300, { steps: 10 });
+  const moved = before - (await left());
+  await page.mouse.up();
+
+  // ±10 px : la carte change aussi d'échelle et d'inclinaison en s'éloignant du
+  // centre, ce que sa boîte englobante intègre.
+  expect(Math.abs(moved - 100)).toBeLessThan(10);
+});

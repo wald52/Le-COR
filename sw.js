@@ -37,14 +37,14 @@
  * Aucun rechargement n'est jamais provoqué : le visiteur recharge quand il veut.
  */
 /* --- généré par tools/stamp-assets.mjs — ne pas éditer à la main --- */
-const VERSION = "a6ac917f";
+const VERSION = "6956b61f";
 const ASSETS = [
   "./",
   "./index.html",
   "./legal.html",
   "./404.html",
   "./css/style.min.css?v=0cca07d5",
-  "./css/cards.min.css?v=a9bf9efd",
+  "./css/cards.min.css?v=285d06a1",
   "./js/chart.min.js?v=938a5649",
   "./data/data.js?v=a8cd02db",
   "./data/cor-series.generated.js?v=4ae8d1db",
@@ -56,7 +56,7 @@ const ASSETS = [
   "./images/sources-logos.webp?v=f9424beb",
   "./images/explorer-cards.svg?v=208f4f25",
   "./js/app.min.js?v=a151161e",
-  "./js/cards.min.js?v=262d0795",
+  "./js/cards.min.js?v=63850773",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
