@@ -1336,9 +1336,18 @@
     let lastY = 0, lastT = 0, vy = 0;        // suivi de vélocité (px/ms) pour le « flick »
     let touchDriving = false;                // un geste tactile pilote le drag
 
+    // Une commande manipulable au doigt (curseur du simulateur, bouton, lien,
+    // liste dépliante…) possède le geste qui commence sur elle. Sans ce filtre,
+    // pousser un curseur armait AUSSI le glisser-pour-fermer : au moindre
+    // tremblement vertical du doigt, l'axe basculait sur « y » et la feuille se
+    // mettait à suivre le doigt pendant qu'on réglait le curseur.
+    const CONTROLS = "input, button, select, textarea, a, summary";
+    const isControl = t => !!(t && t.closest && t.closest(CONTROLS));
+
     // Amorce un drag : uniquement si le contenu est tout en haut de course.
     // Renvoie false si on n'amorce pas (le geste reste un défilement normal).
-    function beginDrag(y, x) {
+    function beginDrag(y, x, target) {
+      if (isControl(target)) return false;
       if (sheet.scrollTop > 0) return false;
       // Fige l'animation d'ouverture si elle « remplit » encore : sinon elle écrase
       // le transform inline du drag et la feuille ne suivrait pas le doigt.
@@ -1394,12 +1403,7 @@
     }
 
     // ----- Chemin tactile : pilote le visuel ET bloque le natif -----
-    sheet.addEventListener("touchstart", e => {
-      if (e.touches.length !== 1) return;    // pinch/zoom : on laisse le natif
-      touchDriving = true;
-      beginDrag(e.touches[0].clientY, e.touches[0].clientX);
-    }, { passive: true });
-    sheet.addEventListener("touchmove", e => {
+    function onTouchMove(e) {
       if (!dragging || e.touches.length !== 1) return;
       const t = e.touches[0];
       // `preventDefault()` dès qu'on glisse vers le bas en haut de course : c'est ce
@@ -1409,15 +1413,32 @@
       const goingDown = t.clientY - startY > 0;
       if (goingDown && e.cancelable) e.preventDefault();
       moveDrag(t.clientY, t.clientX);
-    }, { passive: false });
-    const touchEnd = () => { endDrag(); touchDriving = false; };
+    }
+    // L'écouteur est NON PASSIF : tant qu'il est posé, le navigateur doit
+    // attendre le fil principal à chaque déplacement du doigt avant de bouger
+    // quoi que ce soit. On ne le pose donc que lorsqu'un glisser-pour-fermer est
+    // réellement amorcé, et on le retire à la fin du geste. Un geste qui part
+    // d'une commande (curseur du simulateur) n'en pose aucun : le navigateur le
+    // traite alors sur son chemin rapide, sans détour par JavaScript.
+    sheet.addEventListener("touchstart", e => {
+      if (e.touches.length !== 1) return;    // pinch/zoom : on laisse le natif
+      touchDriving = true;
+      if (beginDrag(e.touches[0].clientY, e.touches[0].clientX, e.target)) {
+        sheet.addEventListener("touchmove", onTouchMove, { passive: false });
+      }
+    }, { passive: true });
+    const touchEnd = () => {
+      sheet.removeEventListener("touchmove", onTouchMove, { passive: false });
+      endDrag();
+      touchDriving = false;
+    };
     sheet.addEventListener("touchend", touchEnd, { passive: true });
     sheet.addEventListener("touchcancel", touchEnd, { passive: true });
 
     // ----- Repli pointer (souris / dispatch programmatique) : ignoré sur tactile -----
     sheet.addEventListener("pointerdown", e => {
       if (touchDriving) return;
-      beginDrag(e.clientY, e.clientX);
+      beginDrag(e.clientY, e.clientX, e.target);
     });
     sheet.addEventListener("pointermove", e => {
       if (touchDriving || !dragging) return;

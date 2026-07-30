@@ -279,9 +279,18 @@ a { color: var(--bleu-clair); }
 .sim-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
 .sim-head span { font-weight: 600; color: var(--encre); }
 .sim-head strong { color: var(--bleu); font-size: 1.15rem; white-space: nowrap; }
+/* `touch-action: none` : le curseur vit dans la feuille de détail, qui défile
+   verticalement (`.cd-sheet`, css/cards.css). Sans cette déclaration, un doigt
+   posé sur le curseur est AMBIGU pour le navigateur — défilement de la feuille
+   ou déplacement du curseur ? — et il retient le geste le temps d'en décider :
+   le pouce part, le curseur suit avec du retard, puis rattrape. Un clic, lui,
+   ne pose aucune ambiguïté : c'est pourquoi il n'a jamais accroché. On déclare
+   donc qu'aucun geste de défilement ne part d'ici, et le déplacement est remis
+   au curseur dès le premier pixel. Agit AVANT que JavaScript n'entre en jeu. */
 .sim-lever input[type="range"] {
   width: 100%; height: 8px; border-radius: 999px; appearance: none; -webkit-appearance: none;
   background: linear-gradient(90deg, var(--bleu-clair), var(--bleu-pale)); cursor: pointer;
+  touch-action: none;
 }
 .sim-lever input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
