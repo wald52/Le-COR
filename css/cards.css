@@ -91,12 +91,30 @@ body.mode-carousel .site-footer { display: none; }
 }
 
 /* ---------- Piste + cartes ---------- */
+/* Rognage HORIZONTAL seulement. L'ancien `overflow: hidden` coupait aussi en
+   bas : l'ombre portée de la carte (box-shadow de .card-inner, ~58 px de portée
+   sous la carte) s'arrêtait NET au bord bas de la piste, juste au-dessus des
+   pastilles — un trait horizontal en plein milieu du dégradé de l'ombre, visible
+   de chaque côté de la carte (signalé sur téléphone, capture à l'appui). En
+   vertical, l'ombre doit simplement s'éteindre d'elle-même sur la bande des
+   pastilles : `overflow-y: visible`. Au repos la carte ne déborde jamais (elle
+   est ajustée à la piste par `--cs-fit`), seule son ombre dépasse.
+   `overflow: hidden` reste en repli pour les navigateurs sans la valeur `clip`
+   (Safari < 16) : ils conservent simplement l'ancien rendu.
+   Exception : sous le plancher MIN_FIT (téléphone en paysage, fenêtre très
+   basse), la carte est VOLONTAIREMENT plus haute que la piste (cf. computeFit,
+   js/cards.js) — sans coupe verticale elle recouvrirait l'en-tête, les
+   pastilles et les liens légaux. Le JS pose alors `.cs-viewport--cropped`, qui
+   rétablit la coupe. */
 .cs-viewport {
   position: relative;
   flex: 1 1 auto;
-  overflow: hidden;
+  overflow: hidden;               /* repli : navigateurs sans `clip` */
+  overflow-x: clip;
+  overflow-y: visible;
   touch-action: none;             /* swipe horizontal ET glisser-pour-ouvrir vertical gérés en JS */
 }
+.cs-viewport--cropped { overflow-y: clip; }
 /* La piste porte le facteur d'ajustement `--cs-fit` (calculé par js/cards.js) :
    la carte a une hauteur FIXE (--card-h), et sur un écran court elle dépassait
    de `.cs-viewport` (overflow:hidden) — elle était donc rognée en haut et en

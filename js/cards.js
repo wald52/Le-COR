@@ -229,7 +229,7 @@
   }
 
   // Facteur d'ajustement de la piste aux écrans COURTS. La carte mesure
-  // CARD_HEIGHT (hauteur fixe) et `.cs-viewport` est en overflow:hidden : dès
+  // CARD_HEIGHT (hauteur fixe) et `.cs-viewport` rogne son débord : dès
   // que la place verticale manque, la carte était amputée en haut et en bas.
   // On met la piste entière à l'échelle (cf. `--cs-fit` dans css/cards.css) :
   // la carte rapetissit au lieu d'être coupée, et toute la géométrie JS reste
@@ -254,6 +254,12 @@
     if (!avail) return;                       // écran masqué : on garde la valeur courante
     fitScale = clamp(avail / CARD_HEIGHT, MIN_FIT, 1);
     track.style.setProperty("--cs-fit", fitScale.toFixed(4));
+    // Sous le plancher, la carte déborde de la piste (rognage assumé, cf.
+    // ci-dessus) : on rétablit la coupe VERTICALE de `.cs-viewport`, retirée
+    // par défaut pour laisser l'ombre portée des cartes s'éteindre sans trait
+    // au-dessus des pastilles (cf. css/cards.css). Sans elle, la carte
+    // recouvrirait l'en-tête, les pastilles et les liens légaux.
+    viewport.classList.toggle("cs-viewport--cropped", avail < CARD_HEIGHT * MIN_FIT);
   }
 
   let screen, viewport, track, dotsWrap, prevBtn, nextBtn;
