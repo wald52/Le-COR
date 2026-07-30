@@ -147,6 +147,21 @@ body.mode-carousel .site-footer { display: none; }
 .card-chart .chart-tooltip,
 .card-chart .chart-legend,
 .card-chart .data-details { display: none !important; }
+/* Les TEXTES du moteur (étiquettes d'axes, notes de fin, libellés de rupture)
+   sont illisibles à la taille d'une vignette, et le bas du graphique tombe à
+   ≈ 67% de la hauteur de carte : leurs chiffres gris atterrissent donc pile
+   dans la zone du titre et du descriptif, en concurrence avec eux. On les
+   retire : c'est la FORME de la courbe qui illustre la carte, pas ses valeurs.
+   Le graphique complet et légendé est rendu dans la vue détail.
+   Même raison pour la ligne d'axe et ses graduations : privées de leurs
+   étiquettes elles ne repèrent plus rien, et le trait horizontal tombe juste
+   sous le sous-titre où il se lit comme un soulignement accidentel. La grille
+   de fond, elle, reste : très pâle, elle donne de la profondeur sans gêner. */
+.card-chart .chart-axis-label,
+.card-chart .chart-endnote,
+.card-chart .chart-break-label,
+.card-chart .chart-axis,
+.card-chart .chart-tick { display: none !important; }
 
 /* Cartes « outil » sans graphique : grande icône centrée. */
 .card-chart--icon {
@@ -168,14 +183,24 @@ body.mode-carousel .site-footer { display: none; }
   display: block;
 }
 
-/* Overlay sombre en bas : lisibilité du texte au-dessus du graphique. */
+/* Overlay sombre en bas : lisibilité du texte au-dessus du graphique.
+   Rampe ADOUCIE (≈ ease-in-out) et non linéaire : entre deux arrêts, le
+   dégradé interpole en ligne droite et laisse voir sa « couture » sur les
+   aplats clairs d'un graphique. Les arrêts intermédiaires suivent donc la
+   courbe. La montée démarre plus haut (30%) et atteint ≈ 0,6 au sommet du
+   titre (≈ 60% de la carte), là où l'ancienne rampe ne valait que ≈ 0,35 —
+   sans assombrir davantage le bas de la carte ni écraser le haut du graphe. */
 .card-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg,
-    rgba(15, 23, 38, 0) 40%,
-    rgba(15, 23, 38, 0.55) 72%,
-    rgba(15, 23, 38, 0.86) 100%);
+    rgba(15, 23, 38, 0) 30%,
+    rgba(15, 23, 38, 0.10) 44%,
+    rgba(15, 23, 38, 0.28) 55%,
+    rgba(15, 23, 38, 0.50) 64%,
+    rgba(15, 23, 38, 0.68) 72%,
+    rgba(15, 23, 38, 0.80) 84%,
+    rgba(15, 23, 38, 0.88) 100%);
   pointer-events: none;
 }
 
