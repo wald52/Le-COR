@@ -52,14 +52,31 @@ body.mode-carousel .site-footer { display: none; }
   user-select: none;
 }
 
+/* L'en-tête partage sa bande avec le logo partenaire (pastille ronde en
+   `position:absolute` en haut à droite, cf. « Logo partenaire » plus bas). Sans
+   gouttière réservée, le texte passe SOUS le coq sur tout téléphone : mesuré
+   jusqu'à 39 px de recouvrement sur le titre à 320 px de large, et le
+   sur-titre était touché jusqu'à ~500 px. On réserve donc la largeur du logo
+   (`--ms-logo-gutter`) des DEUX côtés : le titre reste centré sur l'écran — le
+   décaler à gauche se verrait plus que le chevauchement qu'on corrige.
+
+   La taille du titre suit la largeur restante : à 1,7 rem il mesure ~10 fois sa
+   taille de police, donc `largeur utile / 10,8` le garde sur UNE ligne (la marge
+   de 8 % absorbe les métriques d'une autre police système). Sans cela il passe à
+   deux lignes sur téléphone, l'en-tête grandit et `.cs-viewport` — donc la
+   carte — rapetissit d'autant. Les bornes hautes sont les valeurs d'origine :
+   au-delà de ~520 px de large, rien ne change. Le sur-titre, lui, se contente de
+   revenir à la ligne : le réduire assez pour tenir sur une seule le rendrait
+   illisible. */
 .cs-head {
   text-align: center;
-  padding: 4px 22px 2px;
+  padding: 4px max(22px, var(--ms-logo-gutter)) 2px;
   flex: none;
 }
 .cs-kicker {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: clamp(0.66rem, 2.9vw, 0.72rem);
+  text-wrap: balance;              /* deux lignes de longueur voisine, pas « COR » seul */
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
@@ -68,7 +85,7 @@ body.mode-carousel .site-footer { display: none; }
 }
 .cs-title {
   margin: 4px 0 2px;
-  font-size: 1.7rem;
+  font-size: clamp(1.15rem, calc((100vw - 2 * var(--ms-logo-gutter)) / 10.8), 1.7rem);
   line-height: 1.1;
   color: var(--bleu);
 }
@@ -361,10 +378,18 @@ body:not(.cards-detail-seen) .card.is-active .card-cta {
    Enfant absolu de .card-screen ; z-index au-dessus des cartes (z-index inline
    ~100) et des flèches (200). Les vues détail (.card-detail, z-index:80) restent
    au-dessus car .card-screen (z-index:40) forme son propre contexte d'empilement. */
+/* Taille et marge du logo, en variables : `.cs-head` s'en sert pour réserver la
+   gouttière qui empêche le texte de passer dessous (cf. plus haut). Les 10 px
+   ajoutés sont l'espace minimal entre le texte et la pastille. */
+:root {
+  --ms-logo-size: 48px;
+  --ms-logo-inset: 14px;
+  --ms-logo-gutter: calc(var(--ms-logo-inset) + var(--ms-logo-size) + 10px);
+}
 .ms-logo {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0px) + 26px);
-  right: 14px;
+  right: var(--ms-logo-inset);
   z-index: 210;
   flex: none;
   display: inline-flex; align-items: center; justify-content: center;
@@ -373,7 +398,8 @@ body:not(.cards-detail-seen) .card.is-active .card-cta {
 }
 .ms-logo:hover { transform: scale(1.08); }
 .ms-logo-img {
-  width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+  width: var(--ms-logo-size); height: var(--ms-logo-size);
+  border-radius: 50%; object-fit: cover;
   background: #fff; border: 2px solid var(--or);
   box-shadow: 0 4px 14px rgba(240, 169, 42, 0.35), 0 0 0 2px rgba(240, 169, 42, 0.12);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
@@ -403,8 +429,14 @@ body:not(.cards-detail-seen) .card.is-active .card-cta {
 .ms-logo:hover .ms-logo-tip { opacity: 1; visibility: visible; transform: translateY(0); }
 .ms-logo:focus-visible { outline: 3px solid var(--bleu); outline-offset: 3px; border-radius: 50%; }
 @media (max-width: 760px) {
-  .ms-logo-img { width: 44px; height: 44px; }
+  :root { --ms-logo-size: 44px; }
   .ms-logo-tip { display: none; }            /* pas de survol sur mobile */
+}
+/* Téléphones étroits : la pastille rétrécit encore et se rapproche du bord, ce
+   qui rend à l'en-tête une dizaine de pixels de largeur utile. */
+@media (max-width: 400px) {
+  :root { --ms-logo-size: 38px; --ms-logo-inset: 10px; }
+  .ms-logo::before { top: -5px; right: -5px; width: 17px; height: 17px; font-size: 9px; }
 }
 
 /* ---------- Flèches de navigation gauche/droite ---------- */

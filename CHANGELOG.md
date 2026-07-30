@@ -48,6 +48,27 @@ Toutes les évolutions notables du site. Format inspiré de
   (`tests/unit/stamp.test.mjs`), qui détectent une estampille périmée : elle ne
   casse pas le site, elle fige silencieusement le cache des visiteurs.
 
+### Corrigé
+
+- **Le logo partenaire mordait sur le titre d'accueil, sur tout téléphone.**
+  Signalé sur Galaxy S8+ (360 px), le défaut n'y était pas cantonné : la
+  pastille ronde du coq est en `position:absolute` en haut à droite, donc
+  invisible au flux, tandis que le sur-titre et le titre sont centrés sur toute
+  la largeur. Mesures avant correctif : 39 px de recouvrement sur le titre à
+  320 px, 19 px à 360 px, 4 px encore à 390 px ; le sur-titre était touché
+  jusqu'à ~500 px de large. Au-delà (tablette, ordinateur), rien ne se
+  chevauchait.
+  - **Correctif** : `.cs-head` réserve la largeur du logo (`--ms-logo-gutter`,
+    déduite de sa taille et de sa marge) des **deux** côtés — le titre reste
+    centré sur l'écran, alors que le décaler à gauche se verrait plus que le
+    défaut corrigé. La taille du titre suit la largeur restante (`clamp`) pour
+    tenir sur une ligne malgré la gouttière, et la pastille rétrécit un peu
+    sous 400 px. Le sur-titre, lui, revient simplement à la ligne (`text-wrap:
+    balance`) : le réduire assez pour tenir sur une seule le rendrait
+    illisible.
+  - Couvert par un test de non-régression (`tests/smoke.spec.js`) qui vérifie
+    l'absence d'intersection à 320, 360, 390, 412, 430 et 540 px.
+
 ## [1.1.0] – 2026-07-25
 
 ### Ajouté

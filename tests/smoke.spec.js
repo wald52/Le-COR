@@ -475,3 +475,38 @@ test("double-clic sur une carte : la description détaillée reste visible", asy
     .poll(async () => Number(await body.evaluate((el) => getComputedStyle(el).opacity)))
     .toBeGreaterThan(0.9);
 });
+
+test("sur téléphone, le logo partenaire ne mord jamais sur le texte de l'en-tête", async ({ page }) => {
+  // Régression (signalée sur Galaxy S8+, 360 px) : la pastille du coq est en
+  // `position:absolute` en haut à droite, donc invisible au flux — le sur-titre
+  // et le titre, centrés sur toute la largeur, passaient DESSOUS. Mesuré à
+  // l'époque : 39 px de recouvrement sur le titre à 320 px, et le sur-titre
+  // touché jusqu'à ~500 px de large. `.cs-head` réserve désormais la gouttière
+  // `--ms-logo-gutter` des deux côtés.
+  //
+  // On vérifie l'INVARIANT (aucune intersection) sur les largeurs de téléphone
+  // courantes, pas une valeur de police : les tailles suivent `clamp()`.
+  for (const width of [320, 360, 390, 412, 430, 540]) {
+    await page.setViewportSize({ width, height: 740 });
+    await page.goto("/");
+    await expect(page.locator(".ms-logo")).toBeVisible();
+
+    const hit = await page.evaluate(() => {
+      const logo = document.querySelector(".ms-logo").getBoundingClientRect();
+      // La pastille « 🔗 » déborde de 6 px en haut et à droite du lien.
+      const zone = { left: logo.left - 6, right: logo.right + 6, top: logo.top - 6, bottom: logo.bottom + 6 };
+      return [".cs-kicker", ".cs-title"]
+        .map((sel) => {
+          const range = document.createRange();
+          range.selectNodeContents(document.querySelector(sel));
+          const t = range.getBoundingClientRect();      // boîte du TEXTE peint
+          const overlap =
+            Math.max(0, Math.min(t.right, zone.right) - Math.max(t.left, zone.left)) *
+            Math.max(0, Math.min(t.bottom, zone.bottom) - Math.max(t.top, zone.top));
+          return overlap > 0 ? sel : null;
+        })
+        .filter(Boolean);
+    });
+    expect(hit, `chevauchement à ${width} px`).toEqual([]);
+  }
+});
