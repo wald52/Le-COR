@@ -163,6 +163,20 @@ body.mode-carousel .site-footer { display: none; }
    autres cartes. */
 .card--no-detail.is-active { cursor: default; }
 
+/* Le fond de la carte est en DEUX déclarations, la seconde écrasant la première
+   là où `color-mix()` existe. La couleur pleine du thème ne doit JAMAIS être
+   peinte sous `.card-bg` sur un navigateur moderne : sur le pixel de bord
+   anticrénelé du rognage arrondi, chaque calque n'est peint qu'en couverture
+   partielle et le fond de `.card-inner` transparaît sous le dégradé clair — un
+   liseré de la couleur du thème (~1 px) traçant les côtés de la carte, dès que
+   la carte est rendue à une échelle fractionnaire (piste réduite par `--cs-fit`
+   sur fenêtre courte, cartes latérales à INACTIVE_SCALE, positions en demi-
+   pixel). Signalé sur capture : traits en haut et à gauche de la carte. On
+   aligne donc le fond sur la teinte de DÉPART du dégradé de `.card-bg` (18 % de
+   thème) : ce qui transparaît est alors la même couleur que ce qui recouvre.
+   La déclaration sombre reste seule comprise des navigateurs sans `color-mix()`
+   — où le dégradé de `.card-bg` est invalide, donc absent : le texte blanc y a
+   toujours besoin d'un aplat foncé lisible. */
 .card-inner {
   position: relative;
   width: 100%;
@@ -170,6 +184,7 @@ body.mode-carousel .site-footer { display: none; }
   border-radius: 26px;
   overflow: hidden;
   background: var(--theme, #1f4e79);
+  background: color-mix(in srgb, var(--theme, #1f4e79) 18%, #ffffff);
   box-shadow: 0 18px 40px rgba(31, 78, 121, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 

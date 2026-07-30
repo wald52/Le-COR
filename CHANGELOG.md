@@ -50,6 +50,32 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Corrigé
 
+- **Un trait de la couleur du thème bordait les cartes, dans certaines
+  configurations.** Signalé sur capture (téléphone, fenêtre courte) : un liseré
+  fin — sarcelle sur la carte « niveau de vie » — traçait le haut et le côté
+  gauche de la carte.
+  - **Cause** : `.card-inner` portait la couleur PLEINE du thème en fond, sous
+    le dégradé clair de `.card-bg`. Sur le pixel de bord anticrénelé du rognage
+    arrondi (`overflow:hidden` + `border-radius`), chaque calque n'est peint
+    qu'en couverture partielle : le fond sombre transparaissait sous le dégradé,
+    d'où un liseré d'~1 px traçant les côtés. Invisible tant que les bords
+    tombaient sur des pixels entiers, il apparaissait dès qu'une carte était
+    rendue à une échelle fractionnaire — piste réduite par `--cs-fit` (fenêtre
+    courte, le correctif d'écrans courts ci-dessous a donc élargi les
+    configurations touchées), cartes latérales à l'échelle 0,86, positions en
+    demi-pixel. Mesuré à 375×644 (`--cs-fit` ≈ 0,96) : pixel de bord
+    (162, 194, 197) — un pic sarcelle net entre le fond de page et l'intérieur
+    de la carte.
+  - **Correctif** : le fond de `.card-inner` prend la teinte de DÉPART du
+    dégradé de `.card-bg` (18 % de thème sur blanc, via `color-mix()`) : ce qui
+    transparaît sur le pixel de bord est alors la même couleur que ce qui le
+    recouvre. La déclaration sombre d'origine reste en repli pour les
+    navigateurs sans `color-mix()`, où le dégradé de `.card-bg` est invalide
+    donc absent : le texte blanc y a toujours besoin d'un aplat foncé lisible.
+  - Vérifié après correctif aux mêmes points : transition douce, sans pic
+    (211, 222, 227) ; contrôlé aussi sur cartes latérales visibles (466×800) et
+    carte d'accueil photo.
+
 - **Les cartes étaient rognées en haut et en bas sur les écrans courts.**
   Repéré sur le profil « Nest Hub » (1024×600) de la console Chrome, le défaut
   n'a rien de propre à cet appareil — qui n'a d'ailleurs pas de navigateur web.
