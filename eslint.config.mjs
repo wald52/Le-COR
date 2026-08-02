@@ -24,6 +24,9 @@ export default [
         COR_SERIES: "writable",
         COR_EXPLORER: "readonly",
         CORChart: "readonly",
+        // Widget anti-robot Cloudflare, chargé à la demande par js/report.js
+        // (absent tant que la modale de signalement n'a pas été ouverte).
+        turnstile: "readonly",
         // Export de test gardé (`typeof module !== "undefined"`) en pied de
         // fichier : indéfini dans le navigateur, lu par les tests unitaires Node.
         module: "readonly"
@@ -33,6 +36,18 @@ export default [
       // Tolérant : on veut révéler les bugs, pas réécrire le style existant.
       "no-unused-vars": ["warn", { args: "none", caughtErrors: "none", varsIgnorePattern: "^_" }],
       "no-empty": ["warn", { allowEmptyCatch: true }]
+    }
+  },
+
+  // Relais de signalement (Cloudflare Worker) : module ES exécuté sur le
+  // runtime Workers, proche d'un service worker (fetch, Response, crypto…).
+  // Jamais servi par le site — le dossier est exclu du déploiement Pages.
+  {
+    files: ["worker/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: { ...globals.serviceworker }
     }
   },
 

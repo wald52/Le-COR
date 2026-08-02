@@ -1,0 +1,29 @@
+# Configuration du Worker de signalement anonyme (Cloudflare).
+# Déploiement pas à pas : voir worker/README.md.
+#
+# ⚠️ Aucun secret ici. GITHUB_TOKEN, TURNSTILE_SECRET et IP_SALT sont posés avec
+#    « wrangler secret put … » et restent chiffrés côté Cloudflare. Ce fichier
+#    est versionné dans un dépôt public.
+
+name = "le-cor-signalement"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# Journalisation Cloudflare laissée DÉSACTIVÉE (valeur par défaut) : les
+# journaux d'accès contiendraient l'adresse IP des visiteurs, ce que les
+# mentions légales du site s'engagent à ne pas conserver.
+
+[vars]
+# Origines autorisées à appeler le Worker (séparées par une virgule).
+# En production, une seule : celle du site.
+ALLOWED_ORIGIN = "https://wald52.github.io"
+# Dépôt recevant les issues. Le jeton doit être limité à CE dépôt.
+GITHUB_REPO = "wald52/Le-COR"
+
+# Compteurs de limitation de débit (clés à durée de vie courte, jamais l'IP en
+# clair). Créer l'espace avec :
+#   wrangler kv namespace create REPORT_RL
+# puis recopier l'identifiant retourné ci-dessous.
+[[kv_namespaces]]
+binding = "REPORT_RL"
+id = "REMPLACER_PAR_ID_KV"

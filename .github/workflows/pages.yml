@@ -46,6 +46,9 @@ jobs:
           rm -rf "data/Données du COR"
           # Outillage de développement : jamais chargé par une page.
           rm -rf tests tools
+          # Relais de signalement : code déployé chez Cloudflare (wrangler), pas
+          # sur Pages. Sa configuration n'a rien à faire sur le site.
+          rm -rf worker
           rm -f package.json package-lock.json eslint.config.mjs \
                 playwright.config.js .prettierrc.json .prettierignore CLAUDE.md
           # Originaux d'avant la conversion WebP (~1,3 Mo) : aucun HTML, CSS, JS,
