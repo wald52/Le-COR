@@ -37,7 +37,7 @@
  * Aucun rechargement n'est jamais provoqué : le visiteur recharge quand il veut.
  */
 /* --- généré par tools/stamp-assets.mjs — ne pas éditer à la main --- */
-const VERSION = "7aaf956c";
+const VERSION = "8733c6b4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -46,7 +46,7 @@ const ASSETS = [
   "./css/style.min.css?v=0cca07d5",
   "./css/cards.min.css?v=5f263294",
   "./js/chart.min.js?v=938a5649",
-  "./js/report.min.js?v=82b948c4",
+  "./js/report.min.js?v=24ebfe11",
   "./data/data.js?v=a8cd02db",
   "./data/cor-series.generated.js?v=4ae8d1db",
   "./data/cor-explorer.generated.js?v=fb26adca",

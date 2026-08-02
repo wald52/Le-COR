@@ -278,10 +278,19 @@
   });
 
   // Lien profond « #signaler » : c'est ce qui permet aux pages légale et 404 de
-  // renvoyer ici sans dupliquer le formulaire. Le hash est retiré aussitôt pour
-  // qu'un rechargement ne rouvre pas la modale.
-  if (CONFIGURED && location.hash === "#signaler") {
-    history.replaceState(null, "", location.pathname + location.search);
-    openReport(null);
+  // renvoyer ici sans dupliquer le formulaire.
+  if (location.hash === "#signaler") {
+    if (CONFIGURED) {
+      // Le hash est retiré aussitôt : un rechargement ne rouvre pas la modale.
+      history.replaceState(null, "", location.pathname + location.search);
+      openReport(null);
+    } else {
+      // Relais pas encore déployé : on ne laisse pas le visiteur sur un accueil
+      // où il ne s'est rien passé. Il est conduit là où il allait avant, c'est-
+      // à-dire au formulaire d'issue de GitHub — le canal de contact exigé par
+      // la LCEN reste donc joignable en un clic depuis toutes les pages.
+      const repli = document.querySelector('.report-fallback a[href*="issues/new"]');
+      if (repli) location.replace(repli.href);
+    }
   }
 })();

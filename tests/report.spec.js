@@ -87,6 +87,17 @@ test("sans relais configuré, le lien mène toujours à GitHub", async ({ page }
   await expect(page.locator("#report-modal")).toBeHidden();
 });
 
+test("sans relais configuré, « #signaler » ne laisse pas le visiteur en plan", async ({ page }) => {
+  // Les pages légale et 404 renvoient vers ce lien : il doit conduire quelque
+  // part, même avant le déploiement du relais — sinon le canal de contact
+  // exigé par la LCEN devient un cul-de-sac pour ces deux pages.
+  await page.route("https://github.com/**", route =>
+    route.fulfill({ status: 200, contentType: "text/html", body: "<p>GitHub</p>" }),
+  );
+  await page.goto("/#signaler");
+  await expect(page).toHaveURL(/github\.com.*issues\/new/);
+});
+
 test("le formulaire s'ouvre sur place, sans quitter le site", async ({ page }) => {
   await serveConfigured(page);
   await stubTurnstile(page);
