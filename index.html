@@ -6,8 +6,17 @@
   <!-- Sécurité : CSP en défense en profondeur (site statique, sans backend).
        `img-src … data:` est requis par l'export PNG des graphiques (SVG rendu
        via une image data:). `frame-ancestors`/`report-uri` ne sont pas posables
-       en <meta> (nécessitent des en-têtes HTTP, indisponibles sur GitHub Pages). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
+       en <meta> (nécessitent des en-têtes HTTP, indisponibles sur GitHub Pages).
+
+       Les trois ouvertures ci-dessous servent au seul formulaire de signalement
+       anonyme : `script-src`/`frame-src` pour le captcha Turnstile (qui se rend
+       dans une iframe — sans `frame-src`, `default-src 'self'` la bloquerait en
+       silence), `connect-src` pour l'envoi au relais.
+       ⚠️ L'hôte du relais est un PLACEHOLDER : remplacer « REMPLACER » par le
+       sous-domaine de compte Cloudflare obtenu à l'étape 5 de worker/README.md.
+       `form-action 'none'` est CONSERVÉ : le formulaire n'est jamais soumis
+       nativement, tout part par fetch(). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://le-cor-signalement.REMPLACER.workers.dev; frame-src https://challenges.cloudflare.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Le COR et l'évolution des hypothèses sur les retraites</title>
   <meta name="description" content="Un outil citoyen pour visualiser comment les hypothèses du Conseil d'orientation des retraites (COR) évoluent dans le temps, et si ses prévisions se sont réalisées." />
@@ -39,7 +48,7 @@
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <link rel="stylesheet" href="./css/style.min.css?v=0cca07d5" />
-  <link rel="stylesheet" href="./css/cards.min.css?v=9eda2010" />
+  <link rel="stylesheet" href="./css/cards.min.css?v=5f263294" />
 
   <!-- On NE précharge PAS non plus la photo de la 1re carte (élément LCP) : un
        `rel="preload" as="image"` a été mesuré, il ne rapporte rien. En audit sur
@@ -161,7 +170,10 @@
            carte d'accueil, centrée verticalement). -->
       <nav class="cs-legal" aria-label="Liens légaux et signalement">
         <a href="./legal.html">Mentions légales</a>
-        <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">Signaler une erreur</a>
+        <!-- Reste un vrai lien vers GitHub : js/report.js l'intercepte pour
+             ouvrir le formulaire anonyme, mais sans JavaScript (ou si le script
+             échoue) le canal de contact exigé par la LCEN demeure. -->
+        <a class="report-trigger" href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">Signaler une erreur</a>
       </nav>
     </section>
 
@@ -862,7 +874,7 @@
             <strong>Un chiffre vous semble faux&nbsp;?</strong> Chaque valeur affichée est
             vérifiable dans les fichiers Excel du COR archivés avec le site — et les erreurs
             restent possibles. Signalez-la&nbsp;:
-            <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">ouvrir un signalement</a>.
+            <a class="report-trigger" href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">ouvrir un signalement</a>.
             Toute correction documentée est la bienvenue.
           </p>
 
@@ -890,13 +902,13 @@
     <nav aria-label="Liens de bas de page">
       <a href="./legal.html">Mentions légales &amp; confidentialité</a>
       <a href="https://github.com/wald52/Le-COR" target="_blank" rel="noopener">Code source et données</a>
-      <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">Signaler une erreur</a>
+      <a class="report-trigger" href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">Signaler une erreur</a>
       <a href="https://www.cor-retraites.fr/" target="_blank" rel="noopener">Site officiel du COR</a>
     </nav>
     <p>
       Projet citoyen indépendant, à but pédagogique — <strong>non affilié</strong> au COR
       ni à aucune institution. Données issues des rapports annuels du COR (2014–2026).
-      Dernière mise à jour&nbsp;: juillet 2026.
+      Dernière mise à jour&nbsp;: août 2026.
     </p>
   </footer>
 
@@ -917,6 +929,91 @@
     <div id="zoom-body" class="zoom-body"></div>
   </dialog>
 
+  <!-- Formulaire de signalement anonyme. Vit sur cette page uniquement : la
+       page légale et la 404 y renvoient par « ./index.html#signaler » plutôt que
+       de dupliquer le formulaire, ses styles et son script anti-robot. -->
+  <!-- ⚠️ Déploiement : renseigner `data-endpoint` (URL du relais, terminée par
+       /report) et `data-sitekey` (clé publique Turnstile) — cf.
+       worker/README.md, étape 7 — puis l'hôte du relais dans `connect-src` de
+       la CSP en tête de page. Tant que ces attributs sont vides, les liens
+       « Signaler une erreur » mènent à GitHub comme auparavant. -->
+  <dialog id="report-modal" class="report-modal" aria-labelledby="report-title"
+          data-endpoint="" data-sitekey="">
+    <form id="report-form" class="report-form" novalidate>
+      <div class="report-head">
+        <strong id="report-title">Signaler une erreur</strong>
+        <button type="button" class="chart-tool" data-report-close aria-label="Fermer">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>Fermer</span>
+        </button>
+      </div>
+
+      <div id="report-fields" class="report-body">
+        <p class="report-intro">
+          Aucun compte n'est nécessaire et rien ne permet de vous identifier.
+          Votre message sera <strong>publié tel quel</strong> dans le suivi public
+          du site&nbsp;: n'y écrivez aucune donnée personnelle.
+        </p>
+
+        <label class="report-field" for="report-type">
+          <span>Type d'erreur</span>
+          <select id="report-type" name="type">
+            <option value="donnee">Un chiffre faux ou douteux</option>
+            <option value="graphique">Un graphique illisible ou trompeur</option>
+            <option value="texte">Une erreur dans le texte</option>
+            <option value="technique">Un problème technique</option>
+            <option value="autre">Autre</option>
+          </select>
+        </label>
+
+        <label class="report-field" for="report-section">
+          <span>Section concernée <small>(facultatif)</small></span>
+          <input id="report-section" name="section" type="text" maxlength="100" autocomplete="off" />
+        </label>
+
+        <label class="report-field" for="report-desc">
+          <span>Description de l'erreur</span>
+          <textarea id="report-desc" name="description" rows="5" minlength="10" maxlength="2000"
+                    placeholder="Quel élément est faux, et pourquoi ? Si vous le pouvez, indiquez la valeur attendue et sa source."></textarea>
+          <small id="report-count" class="report-count">0 / 2000</small>
+        </label>
+
+        <!-- Champ-piège : invisible et hors du parcours clavier, il n'est rempli
+             que par des robots qui remplissent tous les champs d'un formulaire.
+             Le relais rejette silencieusement les envois où il n'est pas vide. -->
+        <div class="report-hp" aria-hidden="true">
+          <label for="report-website">Site web</label>
+          <input id="report-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div id="report-turnstile" class="report-turnstile"></div>
+
+        <p id="report-status" class="report-status" role="status" aria-live="polite" hidden></p>
+
+        <div class="report-actions">
+          <button type="button" class="report-btn is-ghost" data-report-close>Annuler</button>
+          <button type="submit" id="report-submit" class="report-btn">Envoyer le signalement</button>
+        </div>
+
+        <p class="report-fallback">
+          Vous préférez le faire vous-même&nbsp;?
+          <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">Ouvrir un signalement sur GitHub</a>
+          (un compte est alors nécessaire).
+        </p>
+      </div>
+
+      <div id="report-done" class="report-done" tabindex="-1" hidden>
+        <p><strong>Merci&nbsp;!</strong> Votre signalement a été transmis et sera examiné.</p>
+        <p class="report-fallback">
+          <a id="report-done-link" href="#" target="_blank" rel="noopener" hidden>Voir le signalement publié</a>
+        </p>
+        <div class="report-actions">
+          <button type="button" class="report-btn" data-report-close>Fermer</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" hidden role="status" aria-live="polite">
     <span id="toast-msg"></span>
     <button id="toast-action" type="button"></button>
@@ -925,7 +1022,8 @@
   <script defer src="./data/data.js?v=a8cd02db"></script>
   <script defer src="./data/cor-series.generated.js?v=4ae8d1db"></script>
   <script defer src="./js/chart.min.js?v=938a5649"></script>
-  <script defer src="./js/app.min.js?v=a151161e"></script>
+  <script defer src="./js/app.min.js?v=585e767a"></script>
   <script defer src="./js/cards.min.js?v=0037ed01"></script>
+  <script defer src="./js/report.min.js?v=82b948c4"></script>
 </body>
 </html>

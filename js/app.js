@@ -1754,6 +1754,9 @@
       ensureSectionPngCache(sec);
     },
     ensureExplorer,
+    // Notification brève, réutilisée par js/report.js (confirmation d'envoi
+    // d'un signalement) : une seule implémentation du toast pour tout le site.
+    toast,
     // « Un pointeur est-il posé ? » — js/cards.js s'en sert pour mettre sa
     // propre file de temps mort en pause pendant un geste (cf. watchPointer).
     pointerBusy,

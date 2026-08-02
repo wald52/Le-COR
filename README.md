@@ -54,8 +54,13 @@ défilement. L'ensemble forme un parcours en **trois chapitres**
   grâce au service worker (`sw.js`) et au manifeste (`manifest.webmanifest`).
 - **Responsive** et accessible (navigation clavier, libellés ARIA).
 - **Aucun traceur** : pas d'analytique, pas de cookie, aucune requête vers un
-  tiers. Le seul stockage local sert à ne pas reproposer l'installation de la
-  PWA (voir [`legal.html`](legal.html)).
+  tiers pendant la consultation. Le seul stockage local sert à ne pas reproposer
+  l'installation de la PWA (voir [`legal.html`](legal.html)).
+- **Signalement anonyme** : « Signaler une erreur » ouvre un formulaire sur la
+  page, sans compte GitHub et sans quitter le site. Le site étant statique, un
+  relais minimal ([`worker/`](worker/README.md), un Cloudflare Worker) ouvre
+  l'issue publique à la place du visiteur. Il n'est sollicité qu'au moment d'un
+  envoi&nbsp;: aucune requête tierce n'a lieu autrement.
 
 ## Lancer en local
 

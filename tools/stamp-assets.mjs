@@ -56,6 +56,7 @@ const LEAF = [
   "css/style.min.css",
   "css/cards.min.css",
   "js/chart.min.js",
+  "js/report.min.js",
   "data/data.js",
   "data/cor-series.generated.js",
   "data/cor-explorer.generated.js",

@@ -107,9 +107,16 @@ test("un signalement d'erreur est accessible depuis l'accueil, carousel compris"
   // Le site n'a pas d'autre canal de retour : l'éditeur est anonyme (LCEN
   // art. 6-III-2). Le lien doit rester atteignable dans l'écran carousel, qui
   // recouvre le pied de page du document.
+  //
+  // Les déclencheurs restent de VRAIS liens vers GitHub : js/report.js les
+  // intercepte pour ouvrir le formulaire anonyme, mais sans JavaScript (ou si
+  // le script échoue à se charger) le canal de contact demeure. C'est ce repli
+  // que le `href` assert ici — il ne doit pas devenir un <button>.
   await page.goto("/");
-  await expect(page.locator('.cs-legal a[href*="issues/new"]')).toBeVisible();
-  await expect(page.locator('body > footer.site-footer a[href*="issues/new"]')).toHaveCount(1);
+  const trigger = page.locator(".cs-legal a.report-trigger");
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute("href", /issues\/new/);
+  await expect(page.locator("body > footer.site-footer a.report-trigger")).toHaveCount(1);
 });
 
 test("explorateur : échec de chargement → message + réessai qui aboutit", async ({ page }) => {
@@ -149,14 +156,16 @@ test("la page 404 renvoie vers l'accueil et les mentions légales", async ({ pag
   await expect(page.locator("h1")).toHaveText(/n'existe pas/i);
   await expect(page.locator('.nf-actions a[href="./"]')).toBeVisible();
   await expect(page.locator('footer.site-footer a[href*="legal.html"]')).toBeVisible();
+  // Le formulaire anonyme vit sur l'accueil : les pages secondaires y renvoient.
+  await expect(page.locator('footer.site-footer a[href*="index.html#signaler"]')).toBeVisible();
 });
 
 test("la page légale mène au dépôt et au COR (pas de cul-de-sac)", async ({ page }) => {
   await page.goto("/legal.html");
   const footer = page.locator("body > footer.site-footer");
-  // Deux liens github.com désormais (dépôt + signalement) : on cible le dépôt.
   await expect(footer.locator('a[href$="/Le-COR"]')).toBeVisible();
-  await expect(footer.locator('a[href*="issues/new"]')).toBeVisible();
+  // Le signalement ne mène plus à GitHub mais au formulaire anonyme de l'accueil.
+  await expect(footer.locator('a[href*="index.html#signaler"]')).toBeVisible();
   await expect(footer.locator('a[href*="cor-retraites.fr"]')).toBeVisible();
   // Pas de lien vers la page courante.
   await expect(footer.locator('a[href*="legal.html"]')).toHaveCount(0);

@@ -39,6 +39,7 @@ const TARGETS = [
   ["js/chart.js", "js/chart.min.js"],
   ["js/app.js", "js/app.min.js"],
   ["js/cards.js", "js/cards.min.js"],
+  ["js/report.js", "js/report.min.js"],
 ];
 
 for (const [src, out] of TARGETS) {

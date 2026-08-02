@@ -77,9 +77,14 @@
           Les informations d'identification personnelle ont été communiquées à l'hébergeur.</p>
         <p><strong>Nous contacter :</strong><br>
           Signalement d'erreur, demande de rectification ou droit de réponse passent par le
-          suivi public du dépôt&nbsp;:
-          <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">ouvrir un signalement</a>.
-          Chaque demande y est visible et traçable.</p>
+          <a href="./index.html#signaler">formulaire de signalement</a> du site&nbsp;: il ne
+          demande <strong>aucun compte et aucune information personnelle</strong>. Chaque
+          demande est publiée dans le
+          <a href="https://github.com/wald52/Le-COR/issues" target="_blank" rel="noopener">suivi public du dépôt</a>,
+          consultable par tous sans inscription&nbsp;: elle y reste visible et traçable.
+          Ceux qui le préfèrent peuvent aussi
+          <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">ouvrir un signalement directement sur GitHub</a>,
+          avec un compte.</p>
         <p><strong>Hébergeur :</strong><br>
           GitHub Inc.<br>
           88 Colin P. Kelly Jr. St, San Francisco, CA 94107, États-Unis<br>
@@ -91,12 +96,27 @@
         <h2>2. Politique de confidentialité</h2>
         <p>Ce site est conçu dans le respect de votre vie privée :</p>
         <ul>
-          <li><strong>Aucune collecte de données personnelles :</strong> le site ne collecte, ne stocke
-            et ne traite aucune donnée personnelle vous concernant.</li>
+          <li><strong>Aucune collecte de données personnelles :</strong> la consultation du site ne
+            donne lieu à aucune collecte, aucun stockage et aucun traitement de données
+            personnelles vous concernant. Aucun compte n'est nécessaire, aucune inscription
+            n'est proposée, et rien ne vous est demandé pour naviguer.</li>
           <li><strong>Pas de cookies de traçage :</strong> aucun cookie publicitaire ou analytique
             n'est utilisé.</li>
           <li><strong>Traitement local :</strong> tous les graphiques, calculs et simulations s'exécutent
-            directement dans votre navigateur. Aucune donnée ne quitte votre appareil.</li>
+            directement dans votre navigateur. Hormis le formulaire de signalement décrit
+            ci-dessous, que vous seul déclenchez, aucune donnée ne quitte votre appareil.</li>
+          <li><strong>Formulaire de signalement :</strong> si — et seulement si — vous envoyez un
+            signalement d'erreur, son contenu est transmis à un relais technique hébergé par
+            <strong>Cloudflare</strong> (Workers et Turnstile), qui agit comme sous-traitant et
+            ouvre pour vous une demande dans le suivi public du dépôt. Le message que vous
+            écrivez <strong>devient donc public</strong>&nbsp;: n'y faites figurer aucune donnée
+            personnelle, ni la vôtre ni celle d'un tiers. Aucun compte, aucun nom et aucune
+            adresse électronique ne sont demandés. Votre adresse IP est traitée de façon
+            transitoire par Cloudflare pour la seule protection contre les envois automatisés
+            (vérification anti-robot et limitation du nombre d'envois)&nbsp;; elle n'est ni
+            publiée, ni journalisée, ni conservée par le site, et n'est jamais associée au
+            contenu de votre signalement. La vérification anti-robot Turnstile ne dépose aucun
+            cookie de traçage et ne sert pas à la publicité.</li>
           <li><strong>Mise en cache hors-ligne (Service Worker) :</strong> dès la première visite,
             que le site soit installé en application ou non, les fichiers du site (pages, styles,
             scripts, données du COR) sont mis en cache localement pour permettre la consultation
@@ -139,7 +159,7 @@
         </p>
       </section>
 
-      <p class="legal-updated">Dernière mise à jour : juillet 2026</p>
+      <p class="legal-updated">Dernière mise à jour : août 2026</p>
 
     </div>
   </main>
@@ -150,7 +170,9 @@
   <footer class="site-footer">
     <nav aria-label="Liens de bas de page">
       <a href="https://github.com/wald52/Le-COR" target="_blank" rel="noopener">Code source et données</a>
-      <a href="https://github.com/wald52/Le-COR/issues/new" target="_blank" rel="noopener">Signaler une erreur</a>
+      <!-- Le formulaire anonyme vit sur l'accueil : on y renvoie plutôt que de
+           dupliquer ici le formulaire, ses styles et son script anti-robot. -->
+      <a href="./index.html#signaler">Signaler une erreur</a>
       <a href="https://www.cor-retraites.fr/" target="_blank" rel="noopener">Site officiel du COR</a>
     </nav>
     <p>

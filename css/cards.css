@@ -714,3 +714,85 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
   /* Déploiement des bulles sans transition : changement d'état instantané. */
   .cd-back, .cd-back-label, .cs-nav-label { transition: none; }
 }
+
+/* ======================================================================
+   Modale de signalement anonyme (index.html + js/report.js).
+
+   Reprend la géométrie de `.zoom-modal` (css/style.css) : même largeur
+   contenue, même fond assombri, même plein écran en dessous de 760 px — le
+   site n'a qu'une seule façon d'ouvrir une fenêtre par-dessus le contenu.
+   ==================================================================== */
+.report-modal {
+  border: 0; padding: 0; background: #fff; color: var(--encre);
+  width: min(560px, 94vw); max-width: 94vw; max-height: 92vh;
+  border-radius: var(--rayon); box-shadow: 0 12px 50px rgba(0, 0, 0, 0.4);
+}
+.report-modal[open] { display: flex; flex-direction: column; }
+.report-modal::backdrop { background: rgba(20, 30, 45, 0.72); }
+
+.report-form { display: flex; flex-direction: column; min-height: 0; }
+.report-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 14px 18px; border-bottom: 1px solid var(--gris-clair);
+}
+.report-head strong { color: var(--bleu); font-size: 1.05rem; }
+.report-body, .report-done { padding: 18px 22px; overflow: auto; }
+
+.report-intro {
+  margin: 0 0 18px; font-size: 0.88rem; color: var(--gris);
+  background: var(--bleu-pale); border-radius: 10px; padding: 11px 14px;
+}
+
+.report-field { display: block; margin-bottom: 16px; }
+.report-field > span {
+  display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 600; color: var(--encre);
+}
+.report-field small { font-weight: 400; color: var(--gris); }
+.report-field select,
+.report-field input[type="text"],
+.report-field textarea {
+  font: inherit; font-size: 0.95rem; width: 100%; padding: 9px 12px;
+  color: var(--encre); background: #fff;
+  border: 1px solid var(--gris-clair); border-radius: 9px;
+}
+.report-field textarea { resize: vertical; min-height: 110px; }
+.report-field select:focus-visible,
+.report-field input:focus-visible,
+.report-field textarea:focus-visible { outline: 2px solid var(--bleu-clair); outline-offset: 1px; }
+.report-count { display: block; margin-top: 5px; text-align: right; font-size: 0.78rem; color: var(--gris); }
+.report-count.is-over { color: var(--rouge); font-weight: 700; }
+
+/* Champ-piège : hors de l'écran plutôt que `display:none`, que certains robots
+   savent détecter. `tabindex="-1"` (HTML) le sort du parcours clavier. */
+.report-hp {
+  position: absolute; left: -9999px; width: 1px; height: 1px;
+  overflow: hidden; opacity: 0; pointer-events: none;
+}
+
+.report-turnstile:not(:empty) { margin-bottom: 16px; }
+
+.report-status { margin: 0 0 14px; font-size: 0.9rem; }
+.report-status.is-error { color: var(--rouge); font-weight: 600; }
+
+.report-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.report-btn {
+  font: inherit; font-weight: 700; cursor: pointer;
+  background: var(--bleu); color: #fff; border: 1px solid var(--bleu);
+  border-radius: 9px; padding: 10px 18px;
+}
+.report-btn:hover { background: var(--bleu-clair); border-color: var(--bleu-clair); }
+.report-btn[disabled] { opacity: 0.6; cursor: default; }
+.report-btn.is-ghost { background: #fff; color: var(--gris); border-color: var(--gris-clair); }
+.report-btn.is-ghost:hover { background: var(--fond-alt); color: var(--encre); }
+
+.report-fallback { margin: 16px 0 0; font-size: 0.82rem; color: var(--gris); }
+.report-done p { margin: 0 0 14px; }
+.report-done:focus-visible { outline: none; }
+
+@media (max-width: 760px) {
+  .report-modal {
+    width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh;
+    margin: 0; border-radius: 0;
+  }
+  .report-body, .report-done { flex: 1; }
+}

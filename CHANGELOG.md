@@ -5,6 +5,40 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ## [Non publié]
 
+### Ajouté
+
+- **Signaler une erreur sans compte GitHub, sans quitter le site.** Le lien
+  « Signaler une erreur » menait au formulaire d'issue de GitHub : il fallait
+  créer un compte pour dire qu'un chiffre était faux, et l'on quittait le site
+  au passage. Or c'est le seul canal de contact de l'éditeur, qui est anonyme
+  (LCEN art. 6-III-2) — beaucoup de visiteurs ne veulent pas de compte, ou
+  souhaitent simplement rester anonymes.
+
+  Le signalement se remplit désormais dans une fenêtre sur la page. Il part vers
+  un relais minimal (`worker/`, un Cloudflare Worker gratuit) qui ouvre l'issue
+  publique à la place du visiteur : les demandes restent visibles et traçables
+  comme l'annoncent les mentions légales, mais sans compte ni identification.
+  Ce relais était inévitable — le site est statique, il ne peut rien recevoir,
+  et un jeton GitHub ne peut pas vivre dans un dépôt public.
+
+  Le formulaire étant ouvert à tous, la défense est en profondeur : origine en
+  liste blanche, taille bornée, champ-piège et délai minimal de saisie (qui
+  répondent un faux succès, pour ne rien apprendre aux robots), validation
+  stricte des champs, limitation du nombre d'envois, puis captcha Turnstile —
+  chargé seulement à l'ouverture du formulaire, pour que les visiteurs qui ne
+  signalent rien ne téléchargent rien. Le texte reçu est inséré en citation
+  avec le Markdown neutralisé : impossible de notifier des comptes ni
+  d'injecter du HTML dans une issue publique.
+
+  L'adresse IP n'est ni publiée, ni journalisée, ni conservée ; elle ne sert,
+  hachée et salée, que de clé de comptage à durée de vie courte. La politique de
+  confidentialité (`legal.html`) décrit ce traitement et le sous-traitant.
+
+  Repli conservé : les déclencheurs restent de vrais liens vers GitHub. Sans
+  JavaScript, ou tant que le relais n'est pas déployé, le canal de contact
+  exigé par la LCEN reste ouvert — on n'a rien retiré, seulement intercepté.
+  Marche à suivre du déploiement : `worker/README.md`.
+
 ### Modifié
 
 - **Stratégie de cache : cohérence de génération garantie.** La stratégie

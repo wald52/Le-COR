@@ -27,6 +27,7 @@ Commandes disponibles :
 | Commande            | Rôle                                                        |
 | ------------------- | ----------------------------------------------------------- |
 | `npm run lint`      | Analyse statique du JavaScript (ESLint). **Doit passer.**   |
+| `npm run test:unit` | Tests unitaires Node (dossier `tests/unit/`). **Doit passer.** |
 | `npm test`          | Tests de bout en bout (Playwright, dossier `tests/`).       |
 | `npm run serve`     | Sert le site en local (`python3 -m http.server`).           |
 | `npm run format`    | Vérifie le format (Prettier) — **optionnel**, voir ci-dessous. |
@@ -75,8 +76,31 @@ La première exécution des tests télécharge le navigateur :
   l'ancienne version ; la CI le refuse (« garde-fou anti-dérive »), et
   `npm run test:unit` le signale.
 
+## Le relais de signalement (`worker/`)
+
+Le formulaire « Signaler une erreur » envoie vers un petit Cloudflare Worker,
+qui ouvre l'issue GitHub à la place du visiteur — c'est ce qui permet de
+signaler une erreur **sans compte et sans quitter le site**.
+
+Ce dossier n'est **pas** déployé sur GitHub Pages (il est retiré par
+`.github/workflows/pages.yml`) : il se déploie séparément avec `wrangler`. La
+marche à suivre complète — création du captcha, jeton GitHub restreint, secrets,
+mise en service — est dans [`worker/README.md`](worker/README.md).
+
+Deux points de vigilance :
+
+- **Le jeton GitHub expire.** Le jour venu, le formulaire cesse d'enregistrer
+  les signalements (le visiteur voit un message d'échec et le lien GitHub de
+  repli). Il suffit de régénérer un jeton et de rejouer `wrangler secret put
+  GITHUB_TOKEN`.
+- **Les défenses anti-abus se testent sans compte Cloudflare** :
+  `npm run test:unit` couvre l'origine, les pièges à robots, la validation, la
+  limitation de débit et l'absence d'adresse IP dans les issues publiées.
+
 ## Avant d'ouvrir une contribution
 
 1. `npm run lint` passe sans erreur.
-2. `npm test` passe (ou expliquez les tests ajustés).
-3. Mettez à jour le `CHANGELOG.md`.
+2. `npm run test:unit` et `npm test` passent (ou expliquez les tests ajustés).
+3. Si vous avez touché un `.css`/`.js` servi, `npm run build:min` puis
+   **committez les fichiers régénérés** (la CI échoue sinon).
+4. Mettez à jour le `CHANGELOG.md`.
