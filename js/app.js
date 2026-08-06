@@ -938,7 +938,14 @@
    * en phase de bouillonnement. `passive` : on ne fait qu'observer.
    * -------------------------------------------------------------------- */
   let pointerDown = false;
-  function pointerBusy() { return pointerDown; }
+  // Le doigt n'est que la MOITIÉ du geste : le ressort du carrousel continue
+  // pendant ~400 ms après le relâchement, et l'ouverture d'une vue détail dure
+  // 440 ms. Sur cette seconde moitié, `pointerDown` est déjà retombé et les
+  // files se croyaient au repos : un graphique démarré là faisait sauter une
+  // frame en pleine animation. `js/cards.js` lève ce drapeau pour toute la
+  // durée du mouvement (cf. setAnimating).
+  let uiBusy = false;
+  function pointerBusy() { return pointerDown || uiBusy; }
   function watchPointer() {
     const set = v => () => { pointerDown = v; };
     window.addEventListener("pointerdown", set(true), { capture: true, passive: true });
@@ -979,6 +986,13 @@
       ric(step);
     };
     ric(step);
+  }
+  // Empile un travail de fond dans la file gardée. Tout ce qui coûte plus qu'une
+  // poignée de millisecondes doit passer par ici : c'est le seul chemin qui
+  // attend que l'écran soit immobile (cf. pointerBusy).
+  function queueBackground(fn) {
+    prerenderQueue.push(fn);
+    pumpPrerender();
   }
   function renderSectionOnce(id) {
     if (sectionRendered.has(id)) return;
@@ -1311,10 +1325,21 @@
   // synchrone ET fidèle à ce qui est affiché.
   function refreshChartPngCache(card) {
     card.__png = null;
-    const ric = window.requestIdleCallback
-      ? cb => window.requestIdleCallback(cb, { timeout: 2000 })
-      : cb => setTimeout(cb, 300);
-    ric(() => ensureChartPngCache(card));
+    // Rasteriser un graphique dans un canvas ×2 coûte ~100 ms (Pixel 5, CPU ×4),
+    // soit six frames — le travail le plus lourd du parcours de balayage. Or ce
+    // cache est régénéré par le dessin même des graphiques (renderDepensesPib,
+    // Sankey, explorateur), donc par le PRÉ-RENDU que le carrousel déclenche à
+    // chaque changement de carte : on rasterisait, en plein balayage, l'export
+    // de cartes que personne ne regarde encore.
+    //
+    // Une carte encore rangée dans le réservoir (#story-sections, hidden) n'a
+    // aucun bouton « Enregistrer » atteignable : l'invalidation ci-dessus suffit,
+    // et `ensureSectionPngCache` regénérera à l'ouverture du détail — c'est déjà
+    // le rôle que lui donne renderSection. On ne rasterise donc tout de suite que
+    // ce qui est À L'ÉCRAN (détail ouvert : la section a été SORTIE du réservoir),
+    // là où le visiteur peut cliquer, et par la file gardée.
+    if (card.closest("#story-sections")) return;
+    queueBackground(() => ensureChartPngCache(card));
   }
 
   // Prépare le cache PNG des cartes d'une section, une carte par temps mort.
@@ -1325,17 +1350,16 @@
   // cache (downloadChartPng générait alors à la volée, en perdant le geste
   // synchrone attendu par Web Share sur mobile).
   function ensureSectionPngCache(root) {
-    const ric = window.requestIdleCallback || (fn => setTimeout(fn, 200));
-    const cards = Array.from(root.querySelectorAll(".chart-card"));
-    const step = () => {
-      const card = cards.shift();
-      if (!card) return;
-      // `__png` présent = cache déjà généré (ou en cours) et non invalidé par
-      // un redimensionnement : on ne rasterise pas deux fois la même carte.
-      if (card.querySelector(".chart-svg") && !card.__png) ensureChartPngCache(card);
-      ric(step);
-    };
-    ric(step);
+    // Une carte par job de la file gardée (même raison que refreshChartPngCache) :
+    // la vue détail s'ouvre en 440 ms d'animation, pendant lesquelles rien de
+    // lourd ne doit démarrer.
+    Array.from(root.querySelectorAll(".chart-card")).forEach(card => {
+      queueBackground(() => {
+        // `__png` présent = cache déjà généré (ou en cours) et non invalidé par
+        // un redimensionnement : on ne rasterise pas deux fois la même carte.
+        if (card.querySelector(".chart-svg") && !card.__png) ensureChartPngCache(card);
+      });
+    });
   }
 
   // Après un redimensionnement, les SVG re-rendus ne correspondent plus aux PNG
@@ -1760,6 +1784,9 @@
     // « Un pointeur est-il posé ? » — js/cards.js s'en sert pour mettre sa
     // propre file de temps mort en pause pendant un geste (cf. watchPointer).
     pointerBusy,
+    // Déclare une animation en cours (ressort du carrousel, ouverture d'un
+    // détail) : même effet qu'un doigt posé sur les deux files de temps mort.
+    setUiBusy(on) { uiBusy = !!on; },
     // Pré-rend les graphiques au repos pour qu'ils soient déjà à leur taille
     // finale dès l'ouverture de leur carte — sinon le conteneur passe de
     // min-height:300px à la hauteur du SVG au rendu différé (« redimensionnement »

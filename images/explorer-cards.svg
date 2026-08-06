@@ -7,7 +7,13 @@
     <radialGradient id="vg" cx="0.5" cy="0.42" r="0.8">
       <stop offset="0" stop-color="#1e293b" stop-opacity="0"/><stop offset="0.82" stop-color="#1e293b" stop-opacity="0"/><stop offset="1" stop-color="#1e293b" stop-opacity="0.12"/>
     </radialGradient>
-    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+    <!-- Région du filtre ajustée à la portée RÉELLE de l'ombre (dy 7 + 3σ ≈ 31 px
+         vers le bas, 17 en haut, 24 sur les côtés d'une vignette de 256×188), au
+         lieu des 30 % de marge par défaut. Ce filtre est appliqué 24 fois, et
+         cette image est celle de la carte « Explorer » : le navigateur la
+         rastérise pendant le balayage. La surface floutée baisse de ~38 % pour un
+         rendu identique au pixel près (vérifié par capture avant/après). -->
+    <filter id="sh" x="-11%" y="-11%" width="122%" height="130%">
       <feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.30"/>
     </filter>
   </defs>

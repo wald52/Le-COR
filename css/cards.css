@@ -347,9 +347,18 @@ body.cards-animating .card-chapter {
    le pointerdown, avant le 1er déplacement → la promotion des calques a le temps de
    se faire, pas d'à-coup au démarrage du geste), retiré au repos. Sinon les 14 cartes
    + 14 calques graphiques restent des calques GPU alloués en PERMANENCE : pression
-   mémoire/compositing inutile au repos, surtout sur mobile. */
-body.cards-animating .card { will-change: transform, opacity; }
-body.cards-animating .card-chart { will-change: transform; }
+   mémoire/compositing inutile au repos, surtout sur mobile.
+
+   Classe DISTINCTE de `cards-animating` (qui, elle, suit le mouvement au millième
+   près pour rendre le flou dès l'arrêt) : on la garde ~1,2 s après le dernier
+   mouvement. Personne ne balaie une seule carte — on en enchaîne trois ou quatre.
+   Détruire les calques à la fin de chaque ressort obligeait à les recréer, et donc
+   à RE-RASTÉRISER le contenu des cartes visibles, au balayage suivant : coût payé
+   autant de fois qu'il y a de gestes, et d'autant plus lourd que la carte est
+   chargée (la vignette « Explorer » est un SVG à 24 ombres portées). Au repos réel,
+   la temporisation expire et les calques sont bien rendus. */
+body.cards-warm .card { will-change: transform, opacity; }
+body.cards-warm .card-chart { will-change: transform; }
 
 /* Cartes inactives : on atténue le texte (la profondeur vient surtout du JS). */
 .card:not(.is-active) .card-desc,
@@ -704,8 +713,8 @@ body.detail-open { overflow: hidden; overscroll-behavior: none; }
    Réduction des animations : transitions simples, pas de zoom/parallax.
    ==================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  .card { will-change: auto; }
-  .card-chart { will-change: auto; }
+  body.cards-warm .card { will-change: auto; }
+  body.cards-warm .card-chart { will-change: auto; }
   .card-detail.is-open .cd-sheet { animation: none; }
   /* Pas de balancement : les indices (carrousel, flèche de retour, pastille) sont neutralisés. */
   .cs-nav.is-hint { animation: none; }

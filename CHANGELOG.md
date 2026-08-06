@@ -84,6 +84,35 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Corrigé
 
+- **Le balayage des cartes accrochait, notamment de l'accueil vers la 01.**
+  Signalé sur téléphone, page entièrement chargée. Trois travaux de fond
+  tombaient en plein geste. Le plus lourd : la rasterisation du PNG
+  « Enregistrer » d'un graphique (~100 ms, six frames) était relancée par le
+  dessin même de ce graphique — donc par le pré-rendu que le carrousel déclenche
+  à chaque changement de carte — et passait par un `requestIdleCallback` direct,
+  qui ignorait le doigt posé. Elle n'a plus lieu que pour les graphiques à
+  l'écran, où le bouton est atteignable, et par la file d'attente gardée ; les
+  autres se contentent d'invalider leur cache, régénéré à l'ouverture du détail.
+
+  Ensuite, la fin d'un balayage traçait d'un bloc les mini-graphiques des cartes
+  voisines (±2) avant même la première frame de l'animation de recentrage :
+  435 ms mesurées sur accueil → 01. Ne reste synchrone que ce dont l'absence se
+  verrait — la carte visée et celles réellement peintes ; le reste est préparé au
+  repos, un graphique par temps mort. Enfin, les files de temps mort savaient
+  attendre le relâchement du doigt, mais pas la fin du ressort qui le suit
+  (~400 ms) : elles le savent maintenant.
+
+  Complément : les photos des cartes voisines sont décodées un cran à l'avance
+  (elles l'étaient pendant le balayage qui les révèle), les calques GPU ne sont
+  plus détruits puis recréés entre deux balayages rapprochés, les cartes hors
+  écran ne reçoivent plus d'écriture de style à chaque frame, et l'ombre portée
+  de la vignette « Explorer » ne floute plus que la surface qu'elle occupe
+  vraiment (rendu identique au pixel près, ~38 % de surface en moins).
+
+  Mesuré sur douze balayages consécutifs (Pixel 5, CPU ×4, médiane sur deux
+  passes) : 325 ms de tâches longues → **0 ms**, pire frame 118 ms → **38 ms**,
+  22 frames perdues → **2**.
+
 - **Un trait de la couleur du thème bordait les cartes, dans certaines
   configurations.** Signalé sur capture (téléphone, fenêtre courte) : un liseré
   fin — sarcelle sur la carte « niveau de vie » — traçait le haut et le côté

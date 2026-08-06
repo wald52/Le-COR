@@ -66,6 +66,13 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+  // Travail préparatoire : jamais dans la frame courante, toujours en temps
+  // mort. Repli en `setTimeout` pour Safari, où `requestIdleCallback` n'existe
+  // pas avant la 17.4 — le délai y remplace la fenêtre d'oisiveté.
+  const idle = window.requestIdleCallback
+    ? cb => window.requestIdleCallback(cb, { timeout: 2000 })
+    : cb => setTimeout(cb, 200);
+
   /* ======================================================================
    * MINI-GRAPHIQUES de fond — de vrais graphiques rendus par CORChart, en
    * version « vignette » (sans légende, sans tableau, non interactifs : les
@@ -467,18 +474,87 @@
     window.CORApp.prerenderSections(ids);
   }
 
-  function drawVisibleMinis() {
-    // ±2 (pas seulement les voisines immédiates) : un swipe rapide peut « dépasser »
-    // le pré-tracé en temps mort et atteindre une carte dont le SVG n'est pas encore
-    // construit → il serait bâti en pleine frame (micro-saccade). Tracer un cran plus
-    // loin donne une marge. `drawMini` est idempotent (garde `miniDrawn`).
-    for (let i = index - 2; i <= index + 2; i++) drawMini(i);
+  /* ----------------------------------------------------------------------
+   * Prépare l'entourage de la carte active — minis des voisines, décodage de
+   * leurs photos, pré-rendu de leurs sections — TOUJOURS en temps mort, jamais
+   * dans la frame qui suit le geste. Appelé à la fin du ressort (cf. springTo) :
+   * à cet instant l'écran est immobile, le navigateur est libre, et la file de
+   * `prerenderSections` (app.js) est de toute façon gardée par `setUiBusy`.
+   *
+   * Portée ±2, et pas seulement les voisines immédiates : un balayage rapide
+   * peut « dépasser » le pré-tracé et atteindre une carte dont le SVG n'est pas
+   * encore construit. Tracer un cran plus loin donne une marge.
+   *
+   * Toutes les opérations sont idempotentes (gardes `miniDrawn`, `decoded`,
+   * `sectionRendered`) : un appel de trop ne coûte rien.
+   * -------------------------------------------------------------------- */
+  function prepareAround() {
+    // Un mini par temps mort, jamais les quatre d'affilée : `requestIdleCallback`
+    // DÉMARRE un rappel quand il reste du temps mais ne l'interrompt pas, et
+    // quatre graphiques dans le même rappel reforment une tâche longue (97 ms
+    // mesurées) — au repos cette fois, mais le visiteur qui enchaîne un second
+    // balayage la retrouverait sous le doigt.
+    for (let i = index - 2; i <= index + 2; i++) {
+      if (i !== index) queueIdle(() => drawMini(i));
+    }
+    queueIdle(decodeAround);
+    queueIdle(prerenderAround);
+  }
+
+  /* ----------------------------------------------------------------------
+   * File de travaux préparatoires : un job par temps mort, mise en pause tant
+   * que quelque chose bouge (doigt posé, ressort en cours — cf. setAnimating).
+   * Même motif que la file de pré-rendu des sections dans app.js, dont elle
+   * partage l'indicateur d'occupation. Les jobs sont tous idempotents : un
+   * doublon empilé par deux balayages voisins ne coûte qu'un test.
+   * -------------------------------------------------------------------- */
+  const idleJobs = [];
+  let idleRunning = false;
+  function queueIdle(fn) {
+    idleJobs.push(fn);
+    if (idleRunning) return;
+    idleRunning = true;
+    const step = () => {
+      if (window.CORApp && window.CORApp.pointerBusy && window.CORApp.pointerBusy()) {
+        setTimeout(step, 150);
+        return;
+      }
+      const job = idleJobs.shift();
+      if (!job) { idleRunning = false; return; }
+      job();
+      idle(step);
+    };
+    idle(step);
+  }
+
+  /* ----------------------------------------------------------------------
+   * Décode À L'AVANCE les photos des cartes voisines. Une carte montée hors de
+   * `paintDist` reçoit `loading="lazy"` (cf. hydrateCard) : son image n'est ni
+   * téléchargée ni décodée tant qu'elle n'approche pas de l'écran — c'est-à-dire
+   * pendant le balayage même qui la révèle. Le décodage tombait donc au pire
+   * moment, sur les quatre cartes-photos de la fin (dette, hypothèses,
+   * simulateur, explorer, méthode). On le déclenche un cran à l'avance, au
+   * repos : `decode()` fait le travail hors du fil principal quand le navigateur
+   * sait le faire, et la carte arrive à l'écran déjà prête à peindre.
+   * -------------------------------------------------------------------- */
+  const decoded = new Set();
+  function decodeAround() {
+    for (let i = index - 2; i <= index + 2; i++) {
+      if (i < 0 || i >= cards.length || decoded.has(i) || !cards[i].image.photo) continue;
+      const el = cardEls[i];
+      const img = el && el.querySelector(".card-photo");
+      if (!img) continue;              // carte pas encore montée : au prochain passage
+      decoded.add(i);
+      img.loading = "eager";
+      if (img.decode) img.decode().catch(() => {});
+    }
   }
 
   /* ----------------------------------------------------------------------
    * Trace les minis des seules cartes RÉELLEMENT visibles (cf. paintDist).
-   * Complément de `drawVisibleMinis` : celui-ci vise la fluidité du swipe
-   * (±2 cartes, une avance), celui-là la justesse de l'image (0 carte blanche).
+   * Complément de `prepareAround` : celui-là vise la fluidité du balayage
+   * (±2 cartes, une avance, en temps mort), celui-ci la justesse de l'image
+   * (0 carte blanche) — et lui seul a le droit d'être synchrone.
    *
    * Appelé au montage, avant que le navigateur ne peigne, et après un
    * redimensionnement : élargir la fenêtre fait entrer une carte qui, sinon,
@@ -511,6 +587,13 @@
         if (!hidden) hydrateCard(i);
         el.style.visibility = hidden ? "hidden" : "";
         lastHidden[i] = hidden;
+      } else if (hidden) {
+        // Carte masquée qui le reste : rien à écrire. Sa transform ne sert qu'à
+        // la peinture, et elle n'est pas peinte. On la réécrira de toute façon
+        // dans la MÊME frame que son retour à l'écran (la branche ci-dessus est
+        // traversée avant), donc aucune carte ne peut réapparaître décalée.
+        // Économise 8 à 10 écritures de style par frame sur les 13 cartes.
+        continue;
       }
       const ad = clamp(dist, 0, 1);
       const scale = lerp(ACTIVE_SCALE, INACTIVE_SCALE, ad);
@@ -575,7 +658,27 @@
    * pour 14 cartes, sont l'effet le plus coûteux en mouvement. Au repos, l'effet
    * « verre dépoli » revient à l'identique. Idempotent (toggle sur classe).
    * -------------------------------------------------------------------- */
-  function setAnimating(on) { document.body.classList.toggle("cards-animating", on); }
+  // Temporisation du retrait de `cards-warm` (calques GPU maintenus entre deux
+  // gestes rapprochés — cf. css/cards.css).
+  let warmTimer = 0;
+  const WARM_LINGER = 1200;
+
+  function setAnimating(on) {
+    document.body.classList.toggle("cards-animating", on);
+    if (warmTimer) { clearTimeout(warmTimer); warmTimer = 0; }
+    if (on) document.body.classList.add("cards-warm");
+    else warmTimer = setTimeout(() => {
+      warmTimer = 0;
+      document.body.classList.remove("cards-warm");
+    }, WARM_LINGER);
+    // Les files en temps mort (pré-tracé des minis ici, pré-rendu des sections
+    // dans app.js) ne s'interrompent pas en cours de job : un graphique entier
+    // démarré entre deux frames du ressort fait sauter la frame suivante, et le
+    // saut se voit sous le doigt. Elles savaient déjà attendre le relâchement du
+    // pointeur ; le ressort qui SUIT ce relâchement dure encore ~400 ms, pendant
+    // lesquelles elles se croyaient au repos. On leur signale donc le mouvement.
+    if (window.CORApp && window.CORApp.setUiBusy) window.CORApp.setUiBusy(on);
+  }
 
   /* ----------------------------------------------------------------------
    * Snap « spring » vers une carte cible.
@@ -588,12 +691,21 @@
     // le changement d'index pour ignorer les recalages sur la même carte.
     if (target !== index) document.dispatchEvent(new CustomEvent("cor:interaction"));
     index = target;
-    drawVisibleMinis();
-    prerenderAround();
+    // Ne restent synchrones que les minis dont l'absence SE VERRAIT : la carte
+    // visée (elle arrive au centre) et celles réellement à l'écran à cet instant
+    // (`drawPaintedMinis`, sans effet sur téléphone où seule la carte centrale
+    // est peinte). Les voisines hors écran (±2) et le pré-rendu des sections
+    // sont repoussés APRÈS le ressort : tracés ici, ils formaient une tâche de
+    // plusieurs centaines de millisecondes AVANT la première frame de
+    // l'animation — 435 ms mesurées sur le balayage accueil → 01 (Pixel 5,
+    // CPU ×4), le ralentissement signalé. Les deux appels sont idempotents.
+    drawMini(target);
+    drawPaintedMinis();
     if (reduceMotion()) {
       offset = target; vel = 0;
       applyTransforms(offset);
       setAnimating(false);
+      prepareAround();
       return;
     }
     setAnimating(true);
@@ -611,6 +723,7 @@
         offset = target; vel = 0; raf = null;
         applyTransforms(offset);
         setAnimating(false);
+        prepareAround();
         return;
       }
       raf = requestAnimationFrame(step);
@@ -1647,7 +1760,7 @@
     setupGestures();
 
     // Premier rendu. Les minis des cartes HORS ÉCRAN ne sont pas tracés ici :
-    // `drawVisibleMinis()` trace les cartes ±2, ce qui coûtait 112 ms des ~127 ms
+    // tracer les cartes ±2 coûtait 112 ms des ~127 ms
     // du montage (profilé à CPU ×4) — l'essentiel de la tâche longue attribuée à
     // ce fichier au chargement, et donc du Total Blocking Time restant. Le
     // pré-traçage en temps mort juste en dessous couvre les mêmes cartes, à
@@ -1669,8 +1782,7 @@
     // mini n'est construit sur la 1re frame d'un changement de carte (fin des
     // micro-saccades au premier passage sur une carte). `drawMini` est idempotent
     // (garde `miniDrawn`) → sans effet s'il est déjà tracé.
-    const idlePrefetch = window.requestIdleCallback
-      || (cb => setTimeout(() => cb({ timeRemaining: () => 0 }), 200));
+    const idlePrefetch = idle;
     // Une carte par rappel idle : tout faire dans un seul rappel formait une
     // longue tâche au chargement (Total Blocking Time). Chaque pas monte la carte
     // (hydrateCard) PUIS trace son mini s'il y en a un — les cartes sans mini
@@ -1688,7 +1800,7 @@
       // peut déborder de la fenêtre d'oisiveté et faire sauter la frame
       // suivante — visible sous le doigt. On attend le relâchement du pointeur ;
       // ce n'est qu'une avance prise, jamais une dépendance (drawMini est
-      // idempotent et drawVisibleMinis reste le filet à chaque changement).
+      // idempotent et prepareAround reste le filet à chaque changement).
       if (window.CORApp && window.CORApp.pointerBusy && window.CORApp.pointerBusy()) {
         setTimeout(prefetchStep, 150);
         return;
@@ -1705,10 +1817,10 @@
     // (CPU ×4, médiane sur 5 chargements) PLUS la mise en page et la peinture
     // qu'ils déclenchent, sur des cartes que personne ne regarde encore : c'était
     // le dernier gros poste de « Style & Layout » de la fenêtre de chargement.
-    // Dès le premier contact, la file démarre et prend son avance pendant le
-    // geste ; `drawVisibleMinis()` (appelé par `springTo`) reste le filet qui
-    // garantit ±2 cartes tracées à chaque changement, et `drawMini` est
-    // idempotent : rien n'est tracé deux fois.
+    // Dès le premier contact, la file démarre et prend son avance dès la fin du
+    // geste ; `prepareAround()` (appelé à la fin de chaque ressort) reste le
+    // filet qui garantit ±2 cartes tracées à chaque changement, et `drawMini`
+    // est idempotent : rien n'est tracé deux fois.
     startOnFirstInteraction(() => idlePrefetch(prefetchStep));
 
     // Déploie le libellé d'aide de la flèche « suivante » après un court délai,
@@ -1760,7 +1872,11 @@
     // pour ne pas entrer en concurrence avec le premier applyTransforms.
     offset = i; index = i;
     applyTransforms(offset);
-    drawVisibleMinis();
+    // Seulement ce qui est peint : la feuille de détail va recouvrir le
+    // carrousel dans la foulée. Les voisines suivent en temps mort, bien avant
+    // que la fermeture ne les redécouvre (cf. prepareAround).
+    drawPaintedMinis();
+    prepareAround();
     // Signale à buildDetail que cette feuille est une ARRIVÉE par lien : la bulle
     // de retour nommera le site (le visiteur n'a jamais vu l'accueil).
     deepLinkArrival = true;
