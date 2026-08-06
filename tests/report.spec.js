@@ -32,6 +32,15 @@ const SITEKEY = "cle-de-test";
  * tester le formulaire sans dépendre d'un compte Cloudflare.
  */
 async function serveConfigured(page) {
+  // Le service worker doit rester HORS du chemin. Sous WebKit il ré-émet les
+  // requêtes lui-même, et Playwright ne sait pas router ce qui part d'un service
+  // worker : les leurres ci-dessous étaient purement et simplement contournés,
+  // le navigateur allait chercher le vrai script Turnstile chez Cloudflare, et
+  // les deux tests qui ont besoin d'un jeton échouaient — en dépendant du réseau,
+  // alors que l'en-tête de ce fichier promet l'inverse. On sert donc un worker
+  // vide. Le service worker lui-même est éprouvé par tests/offline.spec.js.
+  await page.route(/\/sw\.js/, route =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
   const html = readFileSync(join(root, "index.html"), "utf8")
     .replace('data-endpoint="" data-sitekey=""', `data-endpoint="${ENDPOINT}" data-sitekey="${SITEKEY}"`)
     // La CSP doit autoriser le relais, exactement comme en production : sans
@@ -48,9 +57,19 @@ async function serveConfigured(page) {
  * Remplace le script Turnstile par un faux qui valide immédiatement.
  * Le vrai widget est une iframe tierce : injoignable en test, et ce n'est pas
  * Cloudflare que l'on veut éprouver ici mais notre propre enchaînement.
+ *
+ * On coupe TOUT le domaine de Cloudflare, et par expression régulière plutôt que
+ * par glob. L'ancien motif `…/turnstile/v0/api.js*` laissait passer deux
+ * requêtes : le glob ne couvrait pas la chaîne de requête sous WebKit, et le
+ * script se recharge de toute façon depuis une URL versionnée
+ * (`/turnstile/v0/b/<hachage>/api.js`) que ce chemin ne décrit pas. Le vrai
+ * widget était donc chargé pour de bon, et refusait la clé de test (erreur
+ * 400020) : les deux tests qui ont besoin d'un jeton échouaient sur le seul
+ * projet `mobile-webkit`, en dépendant du réseau par-dessus le marché. Couper le
+ * domaine entier rend le scénario hermétique, comme annoncé en tête de fichier.
  */
 async function stubTurnstile(page) {
-  await page.route("https://challenges.cloudflare.com/turnstile/v0/api.js*", route =>
+  await page.route(/challenges\.cloudflare\.com/, route =>
     route.fulfill({
       status: 200,
       contentType: "application/javascript",

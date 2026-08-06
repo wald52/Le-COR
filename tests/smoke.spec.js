@@ -568,6 +568,13 @@ test("sur écran court, un swipe suit le doigt malgré la piste réduite", async
   await page.mouse.move(512, 300);
   await page.mouse.down();
   await page.mouse.move(412, 300, { steps: 10 });
+  // Le carrousel n'écrit dans le DOM qu'au rythme de l'écran : il calcule sa
+  // position à chaque `pointermove`, mais ne pose la transform qu'une fois par
+  // frame (cf. `scheduleDraw` dans js/cards.js). On laisse donc passer une frame
+  // avant de mesurer, sinon on lit la position d'AVANT le geste — ce que faisait
+  // WebKit, qui exécute son `requestAnimationFrame` plus tard que Chromium.
+  await page.evaluate(
+    () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   const moved = before - (await left());
   await page.mouse.up();
 
