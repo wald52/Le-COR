@@ -244,36 +244,287 @@ window.COR_DATA = {
   },
 
   /* =========================================================================
-   * 6. SOURCES
+   * 6. REGISTRE DES DOCUMENTS CITÉS
+   *
+   *    Chaque phrase « Source : … » du site nommait un document sans jamais y
+   *    conduire : au lecteur d'aller le chercher sur cor-retraites.fr. Ce
+   *    registre donne à chaque document cité une adresse officielle, et
+   *    js/app.js transforme au rendu les mentions du texte en liens (voir
+   *    SOURCE_REFS là-bas). Les ~125 phrases de source du site — celles de
+   *    index.html comme celles des fichiers générés — n'ont donc pas à être
+   *    réécrites une par une.
+   *
+   *    Schéma : identifiant → { titre, url, org, annee, biblio }
+   *      - identifiant : STABLE. La table d'alias de js/app.js le vise, et la
+   *        règle des millésimes du COR construit « cor-<année> » : renommer un
+   *        `cor-2026` casse silencieusement tous les liens de cette année.
+   *      - annee  : millésime du document (null pour un site institutionnel) ;
+   *        sert au tri de la bibliographie, du plus récent au plus ancien.
+   *      - biblio : false = document lié dans le texte mais absent de la liste
+   *        « Méthode & sources ». Réservé aux rapports antérieurs à 2016, que
+   *        le site n'exploite pas encore : ils restent joignables par la page
+   *        « tous les rapports » plutôt que d'allonger la liste de 15 entrées.
+   *
+   *    Les 31 rapports du COR correspondent un pour un aux 31 sous-dossiers de
+   *    « data/Données du COR/ », qui en archive les PDF et les Excel.
    * ====================================================================== */
-  sources: [
-    {
-      titre: "Rapport annuel du COR — juin 2026 (rapport, synthèse et données Excel)",
-      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-juin-2026-evolutions-perspectives-retraites-france"
+  documents: {
+    /* --- Portails ------------------------------------------------------- */
+    "cor-rapports": {
+      titre: "COR — tous les rapports (page officielle)",
+      url: "https://www.cor-retraites.fr/documents/rapports-du-cor",
+      org: "COR", annee: null
     },
-    {
-      titre: "Rapport annuel du COR — juin 2025",
-      url: "https://www.cor-retraites.fr/sites/default/files/2025-06/RA_2025_def_publi.pdf"
-    },
-    {
-      titre: "Synthèse du rapport annuel du COR — juin 2025",
-      url: "https://www.cor-retraites.fr/sites/default/files/2025-06/Synth%C3%A8se_Def_.pdf"
-    },
-    {
-      titre: "Synthèse du rapport annuel du COR — septembre 2022 (nouveaux scénarios de productivité)",
-      url: "https://www.cor-retraites.fr/sites/default/files/2023-01/Synth%C3%A8se.pdf"
-    },
-    {
-      titre: "COR — Les évolutions de la productivité du travail (document de travail)",
-      url: "https://www.cor-retraites.fr/sites/default/files/2023-12/Doc_02_%C3%A9volutions%20pass%C3%A9es%20et%20r%C3%A9centes%20de%20la%20productivit%C3%A9.pdf"
-    },
-    {
+    "cor-site": {
       titre: "Site officiel du Conseil d'orientation des retraites",
-      url: "https://www.cor-retraites.fr/"
+      url: "https://www.cor-retraites.fr/",
+      org: "COR", annee: null
     },
-    {
+
+    /* --- Rapports annuels et thématiques du COR ------------------------- */
+    "cor-2026": {
+      titre: "Rapport annuel du COR — juin 2026 (rapport, synthèse et données Excel)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-juin-2026-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2026
+    },
+    "cor-droits-familiaux-2025": {
+      titre: "COR — « Droits familiaux et conjugaux » (novembre 2025)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/droits-familiaux-conjugaux",
+      org: "COR", annee: 2025
+    },
+    "cor-2025": {
+      titre: "Rapport annuel du COR — juin 2025",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-juin-2025-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2025
+    },
+    "cor-2025-pdf": {
+      titre: "Rapport annuel du COR — juin 2025 (PDF intégral)",
+      url: "https://www.cor-retraites.fr/sites/default/files/2025-06/RA_2025_def_publi.pdf",
+      org: "COR", annee: 2025
+    },
+    "cor-2025-synthese": {
+      titre: "Synthèse du rapport annuel du COR — juin 2025",
+      url: "https://www.cor-retraites.fr/sites/default/files/2025-06/Synth%C3%A8se_Def_.pdf",
+      org: "COR", annee: 2025
+    },
+    "cor-2024": {
+      titre: "Rapport annuel du COR — juin 2024",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-juin-2024-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2024
+    },
+    "cor-2023": {
+      titre: "Rapport annuel du COR — juin 2023",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-juin-2023-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2023
+    },
+    "cor-2022": {
+      titre: "Rapport annuel du COR — septembre 2022 (nouveaux scénarios de productivité)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-septembre-2022-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2022
+    },
+    "cor-2022-synthese": {
+      titre: "Synthèse du rapport annuel du COR — septembre 2022",
+      url: "https://www.cor-retraites.fr/sites/default/files/2023-01/Synth%C3%A8se.pdf",
+      org: "COR", annee: 2022
+    },
+    "cor-productivite-2023": {
+      titre: "COR — Les évolutions de la productivité du travail (document de travail)",
+      url: "https://www.cor-retraites.fr/sites/default/files/2023-12/Doc_02_%C3%A9volutions%20pass%C3%A9es%20et%20r%C3%A9centes%20de%20la%20productivit%C3%A9.pdf",
+      org: "COR", annee: 2023
+    },
+    "cor-2021": {
+      titre: "Rapport annuel du COR — juin 2021",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-juin-2021-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2021
+    },
+    "cor-panorama-2020": {
+      titre: "COR — « Panorama des systèmes de retraite en France et à l'étranger » (décembre 2020)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/panorama-systemes-retraite-france-a-letranger",
+      org: "COR", annee: 2020
+    },
+    "cor-2020": {
+      titre: "Rapport annuel du COR — novembre 2020",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-annuel-cor-novembre-2020-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2020
+    },
+    "cor-horizon-2030": {
+      titre: "COR — « Perspectives des retraites en France à l'horizon 2030 » (novembre 2019)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-novembre-2019-perspectives-retraites-france-a-lhorizon-2030",
+      org: "COR", annee: 2019
+    },
+    "cor-2019": {
+      titre: "Rapport annuel du COR — juin 2019",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2019-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2019
+    },
+    "cor-2018": {
+      titre: "Rapport annuel du COR — juin 2018",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2018-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2018
+    },
+    "cor-thematique-2017": {
+      titre: "COR — « Perspectives financières jusqu'en 2070 : sensibilité aux hypothèses, résultats par régime » (novembre 2017)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-thematique-novembre-2017-retraites-perspectives-financieres-jusquen-2070",
+      org: "COR", annee: 2017
+    },
+    "cor-2017": {
+      titre: "Rapport annuel du COR — juin 2017",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2017-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2017
+    },
+    "cor-2016": {
+      titre: "Rapport annuel du COR — juin 2016",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2016-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2016
+    },
+    "cor-thematique-2015": {
+      titre: "COR — « Les retraités : un état des lieux de leur situation en France » (novembre 2015)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-thematique-novembre-2015-retraites-etat-lieux-leur-situation-france",
+      org: "COR", annee: 2015, biblio: false
+    },
+    "cor-2015": {
+      titre: "Rapport annuel du COR — juin 2015",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2015-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2015, biblio: false
+    },
+    "cor-2014": {
+      titre: "Rapport annuel du COR — juin 2014",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2014-evolutions-perspectives-retraites-france",
+      org: "COR", annee: 2014, biblio: false
+    },
+    "cor-2013": {
+      titre: "12e rapport du COR — janvier 2013 (état des lieux du système français)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/12e-rapport-cor-janvier-2013-retraites-etat-lieux-systeme-francais",
+      org: "COR", annee: 2013, biblio: false
+    },
+    "cor-2012": {
+      titre: "Rapport du COR — décembre 2012 (perspectives 2020, 2040 et 2060)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-decembre-2012-retraites-perspectives-2020-2040-2060",
+      org: "COR", annee: 2012, biblio: false
+    },
+    "cor-compensation-2011": {
+      titre: "Rapport du COR — octobre 2011 (rénovation des mécanismes de compensation)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2011-retraites-renovation-mecanismes-compensation",
+      org: "COR", annee: 2011, biblio: false
+    },
+    "cor-polypensionnes-2011": {
+      titre: "Rapport du COR — septembre 2011 (situation des polypensionnés)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2011-retraites-situation-polypensionnes",
+      org: "COR", annee: 2011, biblio: false
+    },
+    "cor-2010": {
+      titre: "Rapport du COR — avril 2010 (perspectives actualisées à moyen et long terme)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-2010-retraites-perspectives-actualisees-a-moyen-long-terme-vue-rendez",
+      org: "COR", annee: 2010, biblio: false
+    },
+    "cor-notionnels-2010": {
+      titre: "Rapport du COR — janvier 2010 (annuités, points ou comptes notionnels)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-janvier-2010-retraites-annuites-points-comptes-notionnels-options",
+      org: "COR", annee: 2010, biblio: false
+    },
+    "cor-2008": {
+      titre: "Rapport du COR — décembre 2008 (droits familiaux et conjugaux)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-retraites-droits-familiaux-conjugaux",
+      org: "COR", annee: 2008, biblio: false
+    },
+    "cor-fiches-2007": {
+      titre: "Rapport du COR — novembre 2007 (20 fiches d'actualisation pour le rendez-vous de 2008)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-retraites-20-fiches-dactualisation-pour-rendez-vous-2008",
+      org: "COR", annee: 2007, biblio: false
+    },
+    "cor-2007": {
+      titre: "Rapport du COR — janvier 2007 (questions et orientations pour 2008)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-janvier-2007-retraites-questions-orientations-pour-2008",
+      org: "COR", annee: 2007, biblio: false
+    },
+    "cor-2006": {
+      titre: "Rapport du COR — mars 2006 (perspectives 2020 et 2050)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-mars-2006-retraites-perspectives-2020-2050",
+      org: "COR", annee: 2006, biblio: false
+    },
+    "cor-2004": {
+      titre: "Rapport du COR — juin 2004 (les réformes en France et à l'étranger ; le droit à l'information)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-juin-2004-retraites-reformes-france-a-letranger-droit-a-linformation",
+      org: "COR", annee: 2004, biblio: false
+    },
+    "cor-2003": {
+      titre: "Rapport du COR — mars 2003 (cumul emploi-retraite)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/6-mars-2003-rapport-cumul-emploi-retraite",
+      org: "COR", annee: 2003, biblio: false
+    },
+    "cor-2001": {
+      titre: "Premier rapport du COR — décembre 2001 (renouveler le contrat social entre les générations)",
+      url: "https://www.cor-retraites.fr/rapports-du-cor/rapport-cor-decembre-2001-retraites-renouveler-contrat-social-entre-generations",
+      org: "COR", annee: 2001, biblio: false
+    },
+
+    /* --- Institutions productrices de données -------------------------- */
+    insee: {
+      titre: "INSEE — Institut national de la statistique et des études économiques",
+      url: "https://www.insee.fr/", org: "INSEE", annee: null
+    },
+    ocde: {
+      titre: "OCDE — Organisation de coopération et de développement économiques",
+      url: "https://www.oecd.org/fr/", org: "OCDE", annee: null
+    },
+    socx: {
+      titre: "OCDE — base SOCX (dépenses sociales)",
+      url: "https://www.oecd.org/en/data/datasets/social-expenditure-database-socx.html",
+      org: "OCDE", annee: null
+    },
+    drees: {
+      titre: "DREES — Direction de la recherche, des études, de l'évaluation et des statistiques",
+      url: "https://drees.solidarites-sante.gouv.fr/", org: "DREES", annee: null
+    },
+    eurostat: {
+      titre: "Eurostat — office statistique de l'Union européenne",
+      url: "https://ec.europa.eu/eurostat", org: "Eurostat", annee: null
+    },
+    fipeco: {
       titre: "FIPECO — La situation et les perspectives des régimes de retraite",
-      url: "https://www.fipeco.fr/fiche/La-situation-et-les-perspectives-des-r%C3%A9gimes-de-retraite"
+      url: "https://www.fipeco.fr/fiche/La-situation-et-les-perspectives-des-r%C3%A9gimes-de-retraite",
+      org: "FIPECO", annee: null
+    },
+
+    /* --- Sources de la section « les 50 Md€ » --------------------------- */
+    "bayrou-2025": {
+      titre: "F. Bayrou — déclaration de politique générale du 14 janvier 2025",
+      url: "https://www.vie-publique.fr/discours/296842-francois-bayrou-14012025-declaration-politique-generale-l",
+      org: "Vie-publique.fr", annee: 2025
+    },
+    "beaufret-2023": {
+      titre: "J.-P. Beaufret — « Retraites obligatoires et déficits publics » (document présenté au COR, 2023)",
+      url: "https://www.cor-retraites.fr/sites/default/files/2023-09/Doc_06_Retraites%20obligatoires_d%C3%A9ficits%20publics.pdf",
+      org: "COR", annee: 2023
+    },
+    molinari: {
+      titre: "Institut économique Molinari",
+      url: "https://www.institutmolinari.org/", org: "Molinari", annee: null
+    },
+    "molinari-2023": {
+      titre: "Institut économique Molinari — « Les retraites expliquent la moitié des déficits publics » (2023)",
+      url: "https://www.institutmolinari.org/2023/10/06/deficit-des-regimes-de-retraite-un-lourd-impact-sur-les-finances-publiques-2/",
+      org: "Molinari", annee: 2023
+    },
+    "molinari-2024": {
+      titre: "Institut économique Molinari — « Le déficit des retraites est de 53 milliards d'euros en 2023 » (2024)",
+      url: "https://www.institutmolinari.org/2024/06/12/le-deficit-des-retraites-est-de-53-milliards-deuros-en-2023-depuis-2002-le-cor-a-occulte-943-milliards-de-deficits-representant-en-moyenne-2-du-pib-par-an/",
+      org: "Molinari", annee: 2024
+    },
+    "fondapol-2025": {
+      titre: "Fondapol — Contribution à la mission flash de clarification du financement des retraites (2025)",
+      url: "https://www.fondapol.org/etude/contribution-a-la-mission-flash-de-clarification-du-financement-des-retraites/",
+      org: "Fondapol", annee: 2025
+    },
+    "grande-conversation": {
+      titre: "La Grande Conversation — « Les retraites et l'équité entre générations : histoire d'un déni »",
+      url: "https://www.lagrandeconversation.com/societe/les-retraites-et-lequite-entre-generations-histoire-dun-deni/",
+      org: "La Grande Conversation", annee: 2024
+    },
+    "senat-2024-10-08": {
+      titre: "Sénat — compte rendu de la séance du 8 octobre 2024",
+      url: "https://www.senat.fr/seances/s202410/s20241008/s20241008005.html",
+      org: "Sénat", annee: 2024
     }
-  ]
+  }
 };

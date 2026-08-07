@@ -7,6 +7,37 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Ajouté
 
+- **Les sources sont cliquables : un clic mène au document officiel.** Chaque
+  graphique annonçait sa source — « COR, rapport annuel 2016 », « OCDE, base
+  SOCX », « Insee » — sans jamais y conduire. Vérifier un chiffre supposait
+  d'aller fouiller soi-même le site du COR pour retrouver le bon rapport parmi
+  trente et un. C'était demander beaucoup à un lecteur, sur un site dont
+  l'argument est justement que tout est vérifiable.
+
+  Les mentions de documents sont désormais des liens, à l'intérieur même de la
+  phrase « Source : … ». Le texte affiché ne change pas d'un caractère : seul
+  le document nommé devient cliquable, et il ouvre sa page officielle sur
+  `cor-retraites.fr` (ou le site de l'institution citée). Les trente et un
+  rapports du COR, de 2001 à 2026, l'Insee, l'OCDE, la DREES, Eurostat, FIPECO
+  et les tribunes citées dans la section sur les 50 Md€ (Bayrou, Beaufret,
+  Molinari, Fondapol, La Grande Conversation, Sénat) sont couverts.
+
+  Les quelque cent vingt-cinq phrases de source n'ont pas été réécrites : elles
+  vivent dans `index.html`, dans `data/data.js` et surtout dans deux fichiers
+  générés depuis les Excel du COR, qu'on ne doit pas éditer à la main. Un
+  registre de documents (`COR_DATA.documents`) donne à chacun son adresse, et
+  `js/app.js` reconnaît au rendu les tournures employées pour les y relier.
+  Deux principes évitent les liens parasites : aucune règle ne reconnaît une
+  année isolée — toutes s'ancrent sur le mot « rapport », ce qui met « figure
+  2.11 », « Tab 2.2 » ou « horizon 2070 » à l'abri —, et un même document n'est
+  lié qu'une fois par phrase. La convention comptable « COR », entre
+  guillemets comme les titres de rapports, reste du texte.
+
+  La liste « Méthode & sources » est maintenant dérivée du même registre : elle
+  ne peut plus diverger des documents réellement cités dans le texte. Un test
+  vérifie que chaque phrase de source produit au moins un lien — si une future
+  extraction des Excel reformule ces phrases, la panne ne sera pas silencieuse.
+
 - **Signaler une erreur sans compte GitHub, sans quitter le site.** Le lien
   « Signaler une erreur » menait au formulaire d'issue de GitHub : il fallait
   créer un compte pour dire qu'un chiffre était faux, et l'on quittait le site

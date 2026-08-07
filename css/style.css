@@ -150,6 +150,14 @@ a { color: var(--bleu-clair); }
 .chart-host { width: 100%; position: relative; min-height: 300px; }
 .chart-svg { width: 100%; height: auto; display: block; overflow: hidden; }
 .chart-source { font-size: 0.78rem; color: var(--gris); margin: 10px 0 0; font-style: italic; }
+/* Documents cités : la phrase de source reste grise et italique, le document
+   joignable se distingue par la couleur ET le soulignement — la couleur seule
+   ne suffit pas (WCAG 1.4.1) dans un texte déjà coloré. Le bleu foncé passe à
+   ~8,6:1 sur blanc, là où le bleu clair des liens courants tomberait à 5,2:1
+   pour du 12,5 px italique. Pas de règle :focus ici : le :focus-visible global
+   (plus haut) s'applique déjà et ne doit pas être écrasé. */
+.chart-source a { color: var(--bleu); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chart-source a:hover { text-decoration-thickness: 2px; }
 
 .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 

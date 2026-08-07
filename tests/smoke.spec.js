@@ -582,3 +582,65 @@ test("sur écran court, un swipe suit le doigt malgré la piste réduite", async
   // centre, ce que sa boîte englobante intègre.
   expect(Math.abs(moved - 100)).toBeLessThan(10);
 });
+
+/* ---------------------------------------------------------------------------
+ * Sources cliquables.
+ * Les phrases « Source : … » nommaient leur document sans y conduire ; elles
+ * sont désormais reliées au registre COR_DATA.documents au moment du rendu.
+ * ------------------------------------------------------------------------ */
+
+test("chaque source de graphique conduit au document officiel", async ({ page }) => {
+  await page.goto("/#depenses");
+  const lien = page.locator('.cd-body .chart-source a[href^="https://www.cor-retraites.fr/"]').first();
+  await expect(lien).toBeVisible();
+  await expect(lien).toHaveAttribute("target", "_blank");
+  await expect(lien).toHaveAttribute("rel", /noopener/);
+  // Le libellé du lien est le texte cité, pas une URL brute.
+  await expect(lien).toHaveText(/rapports? /i);
+});
+
+test("les liens de source n'ajoutent aucun texte visible (export PNG intact)", async ({ page }) => {
+  // renderChartPngBlob recopie `.chart-source` via textContent : un repère
+  // « nouvel onglet » écrit en dur se retrouverait dans l'image partagée. Le
+  // texte doit donc rester au caractère près celui de index.html.
+  await page.goto("/#deficit");
+  const src = page.locator(".cd-body figure.chart-card:has(#chart-ciseaux) .chart-source");
+  await expect(src).toHaveText(
+    "Source : COR, rapport annuel 2026 — données officielles (scénario de référence)."
+  );
+});
+
+test("la bibliographie « Méthode & sources » liste des documents joignables", async ({ page }) => {
+  await page.goto("/#methode");
+  const liens = page.locator(".cd-body #sources-list li a");
+  // La bibliographie est rendue en temps mort (staticSteps) : attendre le
+  // premier lien avant de compter, sinon on compte une liste encore vide.
+  await expect(liens.first()).toBeVisible();
+  expect(await liens.count()).toBeGreaterThanOrEqual(20);
+  for (const href of await liens.evaluateAll(as => as.map(a => a.href))) {
+    expect(href).toMatch(/^https:\/\//);
+  }
+  await expect(liens.first()).toHaveAttribute("target", "_blank");
+});
+
+test("explorateur : la source est cliquable et ne s'accumule pas d'un indicateur à l'autre", async ({ page }) => {
+  await page.goto("/#explorer");
+  const src = page.locator(".cd-body #exp-source");
+  await expect(src.locator("a").first()).toBeVisible();
+  const avant = await src.locator("a").count();
+  const puces = page.locator(".cd-body #explorer-indicators .exp-chip");
+  await puces.nth(1).click();
+  await expect(src).toContainText("Source");
+  // Changer d'indicateur reconstruit la phrase : pas d'empilement de liens.
+  expect(await src.locator("a").count()).toBeLessThanOrEqual(avant + 3);
+});
+
+test("Sankey : la source reste liée une seule fois après changement d'année", async ({ page }) => {
+  await page.goto("/#financement");
+  const src = page.locator(".cd-body #sankey-source");
+  await expect(src.locator('a[href*="cor-retraites.fr"]')).toHaveCount(1);
+  await page.locator(".cd-body #sankey-year .cor-select__btn").click();
+  await page.locator('.cd-body #sankey-year [role="option"][data-value="2010"]').click();
+  await expect(page.locator("#sankey-year-label")).toHaveText("2010");
+  await expect(src.locator("a")).toHaveCount(1);
+});

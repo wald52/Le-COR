@@ -468,7 +468,7 @@
     const lbl = document.getElementById("sankey-year-label");
     if (lbl) lbl.textContent = String(sankeyYear);
     const src = document.getElementById("sankey-source");
-    if (src) src.textContent = sankeySourceNote(sankeyYear, sankeyUnit);
+    if (src) setSourceText(src, sankeySourceNote(sankeyYear, sankeyUnit));
     // Année ou unité changée : le diagramme a été reconstruit, le PNG en cache
     // ne correspond plus à ce qui est affiché.
     const card = host.closest(".chart-card");
@@ -625,7 +625,7 @@
       currentId = iid;
       document.getElementById("exp-label").textContent = ind.label;
       document.getElementById("exp-desc").textContent = ind.desc || "";
-      document.getElementById("exp-source").textContent = "Source : " + (ind.source || "COR.");
+      setSourceText(document.getElementById("exp-source"), "Source : " + (ind.source || "COR."));
       chipsEl.querySelectorAll(".exp-chip").forEach(c => {
         const on = c.dataset.id === iid;
         c.classList.toggle("active", on);
@@ -855,9 +855,9 @@
       raf = requestAnimationFrame(() => { raf = 0; update(); });
     };
     [elAge, elCot, elPen].forEach(e => e.addEventListener("input", schedule));
-    id("lv-source").textContent = "Source : " + L.source +
+    setSourceText(id("lv-source"), "Source : " + L.source +
       " — calibrage : seul, chaque levier équilibre avec +" + f1(L.age.full_years) +
-      " an d'âge, +" + f1(L.cotis.full_pts) + " pts de cotisation, ou −" + f1(L.pension.full_pct) + " % de pensions.";
+      " an d'âge, +" + f1(L.cotis.full_pts) + " pts de cotisation, ou −" + f1(L.pension.full_pct) + " % de pensions.");
     update();
   }
 
@@ -880,15 +880,220 @@
   }
 
   /* ----------------------------------------------------------------------
-   * 6. Sources.
+   * 6. Sources cliquables.
+   *
+   *    Les ~125 phrases « Source : … » du site nommaient leur document sans y
+   *    conduire. Plutôt que de réécrire ces phrases une par une — elles vivent
+   *    dans index.html, dans data.js ET dans deux fichiers générés qu'on ne
+   *    doit pas éditer à la main —, on les laisse telles quelles et on les
+   *    transforme AU RENDU : la table d'alias ci-dessous reconnaît les
+   *    tournures effectivement employées et les relie au registre
+   *    COR_DATA.documents (voir data/data.js).
+   *
+   *    Deux invariants portent tout le reste :
+   *      1. Aucune règle ne reconnaît une année NUE : toutes les mentions de
+   *         millésime du COR sont ancrées sur le mot « rapport(s) ». C'est ce
+   *         qui met « figure 2.11 », « Tab 2.2 », « horizon 2070 » ou
+   *         « ressources 2004-2025 » à l'abri d'un lien parasite.
+   *      2. Un document n'est lié qu'UNE FOIS par phrase (dédoublonnage par
+   *         identifiant) : une phrase qui dit trois fois « Insee » ne devient
+   *         pas un chapelet de liens identiques.
    * -------------------------------------------------------------------- */
+
+  /* Table d'alias : motif → document(s) du registre.
+   *
+   * `links` associe un indice de groupe de capture (0 = le motif entier) à un
+   * identifiant, où « $1 »… est remplacé par le groupe correspondant — c'est ce
+   * qui permet à une seule règle de couvrir les onze millésimes du COR.
+   *
+   * L'ordre compte peu (le départage se fait au plus long, cf. matchRefs), sauf
+   * à longueur égale où la première règle l'emporte.
+   *
+   * `\s` de JavaScript couvre déjà l'espace insécable U+00A0 des `&nbsp;` de
+   * index.html et l'espace fine insécable U+202F ; `[-–—]` couvre les trois
+   * tirets, et « à » est le séparateur de plage employé dans data.js. */
+  const SOURCE_REFS = [
+    // Plages de millésimes. La citation porte sur la COLLECTION de rapports :
+    // la lier aux seules bornes laisserait croire que la série sort de deux
+    // rapports. On renvoie donc vers la page qui les liste tous.
+    { re: /\brapports?(?:\s+annuels?)?\s+\d{4}\s*(?:[-–—]|à)\s*\d{4}/gi, links: { 0: "cor-rapports" } },
+
+    // Énumérations : là, chaque millésime EST un document précis.
+    { re: /\brapports?\s+(\d{4}),\s*(\d{4})\s+et\s+(\d{4})/gi, links: { 1: "cor-$1", 2: "cor-$2", 3: "cor-$3" } },
+    { re: /\brapports?\s+(\d{4})\s+et\s+(\d{4})/gi, links: { 1: "cor-$1", 2: "cor-$2" } },
+
+    // Millésime unique, avec ou sans mois : « rapport 2026 », « rapport annuel
+    // 2016 », « rapport annuel juin 2026 », « rapport du COR novembre 2020 ».
+    { re: /\brapports?(?:\s+annuels?)?(?:\s+du\s+COR)?\s+(?:de\s+)?(?:(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+)?(\d{4})\b/gi,
+      links: { 0: "cor-$1" } },
+
+    // Rapports thématiques, cités par leur titre entre guillemets. Liste
+    // BLANCHE explicite : « COR » (convention comptable) et « Tab 2.2 »
+    // (feuille Excel) sont aussi entre guillemets et doivent rester du texte.
+    { re: /(?:rapport\s+)?«\s*Droits\s+familiaux\s+et\s+conjugaux\s*»\s*2025/gi, links: { 0: "cor-droits-familiaux-2025" } },
+    { re: /(?:rapport\s+)?«\s*Panorama\s+des\s+systèmes\s+de\s+retraite[^»]*»\s*2020/gi, links: { 0: "cor-panorama-2020" } },
+    { re: /(?:rapport\s+)?«\s*Perspectives[^»]*»\s*2017/gi, links: { 0: "cor-thematique-2017" } },
+
+    // Institutions. « COR » n'y figure pas volontairement : le sigle apparaît
+    // dans presque chaque phrase, le lier noierait les liens utiles.
+    { re: /\bINSEE\b/g, links: { 0: "insee" } },
+    { re: /\bInsee\b/g, links: { 0: "insee" } },
+    { re: /\bOCDE\b/g, links: { 0: "ocde" } },
+    { re: /base\s+SOCX/gi, links: { 0: "socx" } },
+    { re: /\bDREES\b/gi, links: { 0: "drees" } },
+    { re: /\bEurostat\b/g, links: { 0: "eurostat" } },
+    { re: /\bFIPECO\b/gi, links: { 0: "fipeco" } },
+
+    // Section « les 50 Md€ » : citations nommées.
+    { re: /déclaration\s+de\s+politique\s+générale/gi, links: { 0: "bayrou-2025" } },
+    { re: /«\s*Retraites\s+obligatoires\s+et\s+déficits\s+publics\s*»/gi, links: { 0: "beaufret-2023" } },
+    { re: /J\.[-‑]?\s*P\.\s*Beaufret/g, links: { 0: "beaufret-2023" } },
+    { re: /«\s*les\s+retraites\s+expliquent\s+la\s+moitié\s+des\s+déficits\s+publics\s*»/gi, links: { 0: "molinari-2023" } },
+    { re: /déficit\s+53\s*Md€\s+en\s+2023/gi, links: { 0: "molinari-2024" } },
+    { re: /Institut\s+économique\s+Molinari/gi, links: { 0: "molinari" } },
+    { re: /\bFondapol\b/gi, links: { 0: "fondapol-2025" } },
+    { re: /La\s+Grande\s+Conversation/gi, links: { 0: "grande-conversation" } },
+    { re: /séance\s+du\s+8\s*oct\.?(?:obre)?\s*2024/gi, links: { 0: "senat-2024-10-08" } }
+  ];
+
+  // Drapeau « d » (indices de groupes) ajouté ici plutôt que répété sur chaque
+  // motif : matchRefs lit `m.indices[g]` pour situer un groupe de capture, ce
+  // que `m.index` seul ne permet pas quand le lien porte sur un sous-groupe.
+  SOURCE_REFS.forEach(rule => {
+    if (!rule.re.flags.includes("d")) rule.re = new RegExp(rule.re.source, rule.re.flags + "d");
+  });
+
+  /* Repère les documents cités dans `text`. Renvoie [{ start, end, id }] trié,
+   * sans chevauchement ni doublon d'identifiant. Fonction PURE : `docs` est
+   * injectable pour les tests unitaires (le bac à sable stubbe COR_DATA). */
+  function matchRefs(text, docs) {
+    const known = docs || (D && D.documents) || {};
+    const found = [];
+    SOURCE_REFS.forEach((rule, rank) => {
+      rule.re.lastIndex = 0;
+      let m;
+      while ((m = rule.re.exec(text)) !== null) {
+        // Garde-fou : un motif qui peut apparier le vide boucle à l'infini.
+        if (m[0] === "") { rule.re.lastIndex++; continue; }
+        Object.keys(rule.links).forEach(g => {
+          const span = m.indices && m.indices[g];
+          if (!span) return;
+          const id = rule.links[g].replace(/\$(\d)/g, (_, n) => m[n]);
+          // Un identifiant absent du registre (« rapport 2005 », coquille…) ne
+          // produit PAS de lien mort : on l'ignore simplement.
+          if (!known[id]) return;
+          found.push({ start: span[0], end: span[1], id: id, rank: rank });
+        });
+      }
+    });
+
+    // Départage : au plus tôt, puis au plus long (« rapports annuels 2016–2026 »
+    // bat « rapport … 2016 »), puis dans l'ordre de la table.
+    found.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start) || a.rank - b.rank);
+
+    const kept = [];
+    const seen = {};
+    let cursor = 0;
+    found.forEach(c => {
+      if (c.start < cursor) return;      // chevauchement : déjà couvert
+      if (seen[c.id]) return;            // ce document est déjà lié dans la phrase
+      seen[c.id] = true;
+      cursor = c.end;
+      kept.push({ start: c.start, end: c.end, id: c.id });
+    });
+    return kept;
+  }
+
+  /* Fabrique le fragment « texte + <a> » correspondant à une phrase de source.
+   * Tout est construit par createElement/createTextNode : aucune chaîne HTML
+   * n'est concaténée, donc aucune surface d'injection — et le `textContent` de
+   * l'élément reste identique au texte d'origine, ce dont dépend l'export PNG
+   * (renderChartPngBlob lit `.chart-source` via textContent). */
+  function docLinkFragment(text) {
+    const frag = document.createDocumentFragment();
+    const refs = matchRefs(text);
+    let at = 0;
+    refs.forEach(r => {
+      if (r.start > at) frag.appendChild(document.createTextNode(text.slice(at, r.start)));
+      const doc = D.documents[r.id];
+      const a = document.createElement("a");
+      a.href = doc.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = text.slice(r.start, r.end);
+      // Le repère « nouvel onglet » passe par aria-label et non par un texte
+      // masqué : un <span> visuellement caché polluerait le textContent, donc
+      // l'image PNG exportée et le CSV.
+      a.setAttribute("aria-label", doc.titre + " — document officiel (nouvel onglet)");
+      frag.appendChild(a);
+      at = r.end;
+    });
+    if (at < text.length) frag.appendChild(document.createTextNode(text.slice(at)));
+    return frag;
+  }
+
+  /* Remplace le contenu d'un élément par la phrase de source, liens compris.
+   * Utilisé par les sources injectées en JS (explorateur, simulateur, Sankey). */
+  function setSourceText(el, text) {
+    if (!el) return;
+    el.textContent = "";
+    el.appendChild(docLinkFragment(text));
+    // Marque l'élément comme déjà traité : linkifyElement n'y repassera pas,
+    // qu'il s'agisse du <p> lui-même (#exp-source, #lv-source) ou d'un <span>
+    // imbriqué dans un <p class="chart-source"> (#sankey-source).
+    el.dataset.srcLinked = "1";
+  }
+
+  /* Ajoute les liens dans un élément DÉJÀ rendu, sans toucher à son balisage :
+   * on ne visite que les nœuds texte, donc les <strong>/<em> de index.html
+   * survivent, et tout nœud déjà sous un <a> est laissé tranquille (ni double
+   * lien, ni lien imbriqué). Idempotent. */
+  function linkifyElement(el) {
+    if (!el || el.dataset.srcLinked) return;
+    el.dataset.srcLinked = "1";
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    // On matérialise la liste AVANT de muter l'arbre : remplacer un nœud en
+    // cours de parcours invaliderait le TreeWalker.
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(n => {
+      const parent = n.parentElement;
+      if (!n.parentNode || !parent) return;
+      if (parent.closest("a")) return;                       // ni double lien, ni lien imbriqué
+      const owner = parent.closest("[data-src-linked]");
+      if (owner && owner !== el) return;                     // sous-partie déjà traitée par setSourceText
+      const frag = docLinkFragment(n.nodeValue);
+      if (frag.childNodes.length > 1) n.parentNode.replaceChild(frag, n);
+    });
+  }
+
+  // Étape statique : une passe sur les phrases de source écrites dans le HTML.
+  function linkifySources() {
+    document.querySelectorAll("p.chart-source").forEach(linkifyElement);
+  }
+
+  /* Bibliographie de la section « Méthode & sources ». Elle est DÉRIVÉE du
+   * registre : impossible qu'elle diverge des documents réellement cités dans
+   * le texte. `biblio: false` réserve la liste aux documents que le site
+   * exploite (les rapports d'avant 2016 restent joignables par la page « tous
+   * les rapports », en tête de liste). */
   function renderSources() {
     const ul = document.getElementById("sources-list");
-    D.sources.forEach(s => {
-      const li = document.createElement("li");
-      li.innerHTML = `<a href="${s.url}" target="_blank" rel="noopener">${s.titre}</a>`;
-      ul.appendChild(li);
-    });
+    if (!ul) return;
+    Object.keys(D.documents)
+      .map(id => D.documents[id])
+      .filter(d => d.biblio !== false)
+      .sort((a, b) => (b.annee || 0) - (a.annee || 0) || a.titre.localeCompare(b.titre, "fr"))
+      .forEach(d => {
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.href = d.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = d.titre;
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
   }
 
   /* ----------------------------------------------------------------------
@@ -1568,7 +1773,9 @@
    * `staticStepIdx` garantit que chaque morceau ne s'exécute qu'une fois,
    * quel que soit le chemin (temps mort ou ouverture immédiate).
    * -------------------------------------------------------------------- */
-  const staticSteps = [renderLeviers, renderTable, renderSources, setupSectionLinks, setupZoom];
+  // `linkifySources` vient en dernier : renderLeviers a déjà écrit (et marqué)
+  // sa propre phrase de source, qui n'a donc pas à être reparcourue.
+  const staticSteps = [renderLeviers, renderTable, renderSources, setupSectionLinks, setupZoom, linkifySources];
   let staticStepIdx = 0;
   // Rattrapage synchrone : appelé par renderSection avant la 1re ouverture d'un détail.
   function ensureStaticContent() {
@@ -1838,7 +2045,7 @@
    * les tests unitaires Node (tests/unit/) le lisent pour vérifier ces fonctions
    * pures en isolation. N'altère en rien l'exécution du site. */
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { chartCsv, slug };
+    module.exports = { chartCsv, slug, matchRefs };
   }
 
   if (document.readyState === "loading") {
