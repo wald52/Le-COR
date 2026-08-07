@@ -183,7 +183,16 @@
     { id: "explorer", chapter: "Aller plus loin", title: "Explorer tous les indicateurs",
       subtitle: "Un thème, un indicateur, un graphique",
       description: "Choisissez un thème puis un indicateur : toutes les projections des rapports se superposent.",
-      image: { section: "explorer", theme: "#334155", photo: "./images/explorer-cards.svg" } },
+      // WebP et non le SVG d'origine (conservé dans `images/`, il reste la
+      // source du dessin) : ses 24 vignettes portent chacune une ombre portée
+      // FLOUTÉE, et le navigateur rejoue ces 24 passes de flou à chaque
+      // rasterisation de la carte. Cette vignette entre à l'écran pile au
+      // balayage 09 → 10, qui coûtait 88 ms de rasterisation contre ~20 ms pour
+      // tous les autres balayages (Pixel 5, CPU ×4). Mesuré : masquer cette
+      // seule carte ramenait le balayage à 15 ms ; réduire le rayon du flou ne
+      // change rien (c'est le NOMBRE de passes qui coûte) ; la même image en
+      // WebP tombe à 28 ms, comme toutes les autres cartes-photos.
+      image: { section: "explorer", theme: "#334155", photo: "./images/explorer-cards.webp" } },
     { id: "methode", chapter: "Aller plus loin", title: "Méthode & sources",
       subtitle: "D'où viennent les données",
       description: "Comment lire ces graphiques, et les fichiers officiels du COR derrière chaque courbe.",

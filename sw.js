@@ -37,7 +37,7 @@
  * Aucun rechargement n'est jamais provoqué : le visiteur recharge quand il veut.
  */
 /* --- généré par tools/stamp-assets.mjs — ne pas éditer à la main --- */
-const VERSION = "f43b3eaa";
+const VERSION = "e467522e";
 const ASSETS = [
   "./",
   "./index.html",
@@ -55,9 +55,9 @@ const ASSETS = [
   "./images/hypotheses-cockpit.webp?v=d70cd6d1",
   "./images/simulateur-faders.webp?v=5604f607",
   "./images/sources-logos.webp?v=f9424beb",
-  "./images/explorer-cards.svg?v=16f0061c",
+  "./images/explorer-cards.webp?v=f429342e",
   "./js/app.min.js?v=5d733938",
-  "./js/cards.min.js?v=8ee05b86",
+  "./js/cards.min.js?v=a7940c8c",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",

@@ -55,8 +55,13 @@ jobs:
           # manifeste ni service worker ne les référence — seuls les .webp le sont.
           # Ils restent versionnés, tools/optimize-images.py s'en sert.
           rm -f images/*.jpg
-          # Autres fichiers non référencés (vérifiés un à un).
-          rm -f images/intro-cor.webp icons/le-modele-social-francais.png \
+          # Autres fichiers non référencés (vérifiés un à un). `explorer-cards.svg`
+          # est la SOURCE du dessin de la carte « Explorer » : la carte sert sa
+          # version WebP (ses 24 ombres floutées coûtaient 88 ms de rasterisation
+          # par balayage, cf. js/cards.js), le vectoriel reste versionné pour
+          # pouvoir la régénérer.
+          rm -f images/intro-cor.webp images/explorer-cards.svg \
+                icons/le-modele-social-francais.png \
                 icons/icon-no-bg.svg icons/make_icons.py
           echo "Poids du site déployé : $(du -sh --exclude=.git . | cut -f1)"
 

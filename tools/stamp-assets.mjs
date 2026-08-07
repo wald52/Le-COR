@@ -65,7 +65,7 @@ const LEAF = [
   "images/hypotheses-cockpit.webp",
   "images/simulateur-faders.webp",
   "images/sources-logos.webp",
-  "images/explorer-cards.svg",
+  "images/explorer-cards.webp",
 ];
 
 // Assets estampillés qui référencent EUX-MÊMES d'autres assets estampillés :
