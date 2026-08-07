@@ -86,9 +86,15 @@
   function miniOverlay(target, block, key, suffix) {
     if (!block) return;
     const extra = block[key] || [];
+    // `markers: false` sur les projections AUSSI, et pas seulement sur la série
+    // réalisée : à la taille d'une vignette (le graphique occupe 60 % d'une carte
+    // de 340 px, sous le dégradé et le texte), les pastilles de points ne se
+    // distinguent plus du trait. Elles n'étaient donc que du DOM : 11 cercles par
+    // carte, 18 % des nœuds du SVG. Le tracé complet reste ce qu'il est dans la
+    // vue détail, où les points se lisent et servent au survol.
     const series = [
       { ...block.realise, kind: "solid", markers: false },
-      ...extra.map(p => ({ label: p.label, color: p.color, kind: "dash", points: p.points }))
+      ...extra.map(p => ({ label: p.label, color: p.color, kind: "dash", points: p.points, markers: false }))
     ];
     miniLine(target, series, { min: block.xMin, max: block.xMax },
       { min: block.yMin, max: block.yMax, suffix });
