@@ -119,25 +119,36 @@ test("un signalement d'erreur est accessible depuis l'accueil, carousel compris"
   await expect(page.locator("body > footer.site-footer a.report-trigger")).toHaveCount(1);
 });
 
-test("explorateur : échec de chargement → message + réessai qui aboutit", async ({ page }) => {
-  // Les données de l'explorateur (468 Ko) sont chargées paresseusement : sur
-  // réseau coupé, la section doit le DIRE et offrir un réessai, au lieu de
-  // rester une carte vide.
-  let blocked = true;
-  // `*` final : l'URL porte un estampillage de version (`?v=…`, cf.
-  // tools/stamp-assets.mjs), que le motif doit accepter.
-  await page.route("**/cor-explorer.generated.js*", r => (blocked ? r.abort() : r.continue()));
-  await page.goto("/#explorer");
+// Le service worker précache les données de l'explorateur et les sert depuis
+// son cache — hors de portée de `page.route`, qui n'intercepte que le réseau de
+// la PAGE. La coupure réseau simulée ci-dessous passait donc à côté environ une
+// fois sur six, selon que le SW avait eu le temps de s'activer (WebKit a son
+// propre calendrier, d'où un échec cantonné à mobile-webkit). On le neutralise :
+// ce test porte sur le rattrapage d'erreur de l'application, pas sur le cache
+// hors ligne — celui-ci a son propre fichier, tests/offline.spec.js.
+test.describe(() => {
+  test.use({ serviceWorkers: "block" });
 
-  await expect(page.locator("#exp-label")).toHaveText(/indisponibles/i);
-  const action = page.locator("#toast:not([hidden]) #toast-action");
-  await expect(action).toHaveText(/Réessayer/i);
+  test("explorateur : échec de chargement → message + réessai qui aboutit", async ({ page }) => {
+    // Les données de l'explorateur (468 Ko) sont chargées paresseusement : sur
+    // réseau coupé, la section doit le DIRE et offrir un réessai, au lieu de
+    // rester une carte vide.
+    let blocked = true;
+    // `*` final : l'URL porte un estampillage de version (`?v=…`, cf.
+    // tools/stamp-assets.mjs), que le motif doit accepter.
+    await page.route("**/cor-explorer.generated.js*", r => (blocked ? r.abort() : r.continue()));
+    await page.goto("/#explorer");
 
-  // Le toast doit rester CLIQUABLE au-dessus de la feuille détail (z-index).
-  blocked = false;
-  await action.click();
-  await expect(page.locator("#explorer-themes .exp-tab").first()).toBeVisible();
-  await expect(page.locator("#exp-label")).not.toHaveText(/indisponibles/i);
+    await expect(page.locator("#exp-label")).toHaveText(/indisponibles/i);
+    const action = page.locator("#toast:not([hidden]) #toast-action");
+    await expect(action).toHaveText(/Réessayer/i);
+
+    // Le toast doit rester CLIQUABLE au-dessus de la feuille détail (z-index).
+    blocked = false;
+    await action.click();
+    await expect(page.locator("#explorer-themes .exp-tab").first()).toBeVisible();
+    await expect(page.locator("#exp-label")).not.toHaveText(/indisponibles/i);
+  });
 });
 
 test("le pied de page survit au montage du carousel (repli sans JS / LCEN)", async ({ page }) => {
