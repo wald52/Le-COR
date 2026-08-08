@@ -47,7 +47,7 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-  <link rel="stylesheet" href="./css/style.min.css?v=964cd7eb" />
+  <link rel="stylesheet" href="./css/style.min.css?v=905b254b" />
   <link rel="stylesheet" href="./css/cards.min.css?v=ba8f2154" />
 
   <!-- On NE précharge PAS non plus la photo de la 1re carte (élément LCP) : un
@@ -226,7 +226,7 @@
           </div>
           <div id="chart-pib" class="chart-host"></div>
           <p id="pib-unit-note" class="chart-note" hidden>Euros <em>courants</em> estimés au-delà de 2025 (à partir des hypothèses macro du COR&nbsp;: croissance + inflation) — à titre indicatif, pas un chiffre officiel.</p>
-          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2016–2026 — <strong>données officielles</strong> extraites des fichiers Excel du COR (séries année par année, scénario de référence de chaque rapport). Conversion en euros et en part de la dépense publique&nbsp;: PIB et dépenses publiques de l'INSEE (Institut national de la statistique et des études économiques).</p>
+          <p class="chart-source" data-prov="cor-2026/donnees-synthese/Dépenses en %">Source&nbsp;: COR, rapports annuels 2016–2026 — <strong>données officielles</strong> extraites des fichiers Excel du COR (séries année par année, scénario de référence de chaque rapport). Conversion en euros et en part de la dépense publique&nbsp;: PIB et dépenses publiques de l'INSEE (Institut national de la statistique et des études économiques).</p>
         </figure>
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>
@@ -267,7 +267,7 @@
             <span>Solde en % du PIB — scénario de référence de chaque rapport, 2016 à 2026</span>
           </figcaption>
           <div id="chart-solde" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2016–2026 — <strong>données officielles</strong>, scénario de référence de chaque rapport (1,3&nbsp;% avant 2023). Précaution de lecture&nbsp;: la convention comptable change selon les millésimes (« COR » jusqu'en 2019, EPR — équilibre permanent des régimes — ensuite).</p>
+          <p class="chart-source" data-prov="cor-2026/donnees-synthese/Solde dépenses ressources">Source&nbsp;: COR, rapports annuels 2016–2026 — <strong>données officielles</strong>, scénario de référence de chaque rapport (1,3&nbsp;% avant 2023). Précaution de lecture&nbsp;: la convention comptable change selon les millésimes (« COR » jusqu'en 2019, EPR — équilibre permanent des régimes — ensuite).</p>
         </figure>
 
         <p class="section-intro" style="margin-top:32px">
@@ -280,7 +280,7 @@
             <span>Système de retraite en % du PIB — scénario de référence du rapport 2026</span>
           </figcaption>
           <div id="chart-ciseaux" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, rapport annuel 2026 — données officielles (scénario de référence).</p>
+          <p class="chart-source" data-prov="cor-2026/donnees-synthese/Solde dépenses ressources">Source&nbsp;: COR, rapport annuel 2026 — données officielles (scénario de référence).</p>
         </figure>
 
         <div class="takeaway">
@@ -316,7 +316,7 @@
             <span>Croissance annuelle de la productivité du travail à long terme (en&nbsp;%)</span>
           </figcaption>
           <div id="chart-prod" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, hypothèses économiques de long terme, rapports 2019–2026.</p>
+          <p class="chart-source" data-prov="cor-2026/donnees-p1/Fig 1.10">Source&nbsp;: COR, hypothèses économiques de long terme, rapports 2019–2026.</p>
         </figure>
         <div class="takeaway">
           <h3>Pourquoi c'est important</h3>
@@ -346,7 +346,7 @@
               <span>Nombre d'enfants par femme</span>
             </figcaption>
             <div id="chart-fecondite" class="chart-host"></div>
-            <p class="chart-source">Source&nbsp;: COR, rapports 2019, 2025 et 2026 — <strong>données officielles</strong> (hypothèses INSEE reprises par le COR ; observé INSEE, état civil).</p>
+            <p class="chart-source" data-prov="cor-2026/donnees-p1/Fig 1.1">Source&nbsp;: COR, rapports 2019, 2025 et 2026 — <strong>données officielles</strong> (hypothèses INSEE reprises par le COR ; observé INSEE, état civil).</p>
           </figure>
 
           <figure class="chart-card">
@@ -355,7 +355,7 @@
               <span>Croissance de la productivité du travail (%/an)</span>
             </figcaption>
             <div id="chart-prod-reel" class="chart-host"></div>
-            <p class="chart-source">Source&nbsp;: COR, rapport 2026 (fig. 1.10) — <strong>données officielles</strong> ; observé en moyenne mobile 5 ans.</p>
+            <p class="chart-source" data-prov="cor-2026/donnees-p1/Fig 1.10">Source&nbsp;: COR, rapport 2026 (fig. 1.10) — <strong>données officielles</strong> ; observé en moyenne mobile 5 ans.</p>
           </figure>
         </div>
 
@@ -391,7 +391,7 @@
             <span>Niveau de vie des retraités / ensemble de la population (100 % = parité) — projections des rapports 2023 à 2026</span>
           </figcaption>
           <div id="chart-niveau" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2023–2026 — données officielles (Insee et DGI — Direction générale des impôts —, scénario de référence de chaque rapport). Précaution&nbsp;: l'Insee a révisé la série observée entre les rapports 2024 et 2025 (≈2 points de niveau)&nbsp;; comparer les <em>trajectoires</em> des projections plutôt que leurs niveaux.</p>
+          <p class="chart-source" data-prov="cor-2026/donnees-synthese/Niveau de vie relatif">Source&nbsp;: COR, rapports annuels 2023–2026 — données officielles (Insee et DGI — Direction générale des impôts —, scénario de référence de chaque rapport). Précaution&nbsp;: l'Insee a révisé la série observée entre les rapports 2024 et 2025 (≈2 points de niveau)&nbsp;; comparer les <em>trajectoires</em> des projections plutôt que leurs niveaux.</p>
         </figure>
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>
@@ -467,7 +467,7 @@
             <li><span class="sw" style="background:#2f6fb0"></span><span><b>Contributions &amp; subventions d'équilibre</b> (État‑employeur, régimes spéciaux) — 13,5&nbsp;% <small>(57&nbsp;Md€)</small></span></li>
             <li><span class="sw" style="background:#ff7f0e"></span><span><b>Transferts d'autres branches</b> (famille, chômage) + produits financiers — 5,6&nbsp;% <small>(23&nbsp;Md€)</small></span></li>
           </ul>
-          <p class="chart-source">Source&nbsp;: COR, rapport annuel juin 2026 — feuille « Tab 2.2 » (structure des ressources, données 2025). Regroupements opérés pour la lisibilité.</p>
+          <p class="chart-source" data-prov="cor-2026/donnees-p2/Tab 2.2">Source&nbsp;: COR, rapport annuel juin 2026 — structure des ressources, données 2025. Regroupements opérés pour la lisibilité.</p>
         </div>
 
         <p class="section-intro" style="margin-top:32px">
@@ -503,7 +503,7 @@
             <span>Financement fiscal des retraites (impôts, taxes affectés et CSG), en Md€</span>
           </figcaption>
           <div id="chart-fiscalisation" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: COR, rapports annuels 2023–2026 — feuille « Tab 2.2 » (ITAF, pour impôts et taxes affectés, et CSG, données 2022 à 2025).</p>
+          <p class="chart-source" data-prov="cor-2026/donnees-p2/Tab 2.2">Source&nbsp;: COR, rapports annuels 2023–2026 — ITAF (impôts et taxes affectés) et CSG, données 2022 à 2025.</p>
         </figure>
 
         <p class="section-intro" style="margin-top:32px">
@@ -689,7 +689,7 @@
             <span>Dépenses publiques + privées — pays suivis par le COR</span>
           </figcaption>
           <div id="chart-international" class="chart-host"></div>
-          <p class="chart-source">Source&nbsp;: OCDE (Organisation de coopération et de développement économiques), base SOCX (base de données des dépenses sociales), repris par le COR — rapport 2026.</p>
+          <p class="chart-source" data-prov="cor-2026/donnees-synthese/Dépenses_OCDE">Source&nbsp;: OCDE (Organisation de coopération et de développement économiques), base SOCX (base de données des dépenses sociales), repris par le COR — rapport 2026.</p>
         </figure>
         <div class="takeaway">
           <h3>Ce qu'il faut retenir</h3>
@@ -713,7 +713,7 @@
           Les principales hypothèses du <strong>scénario de référence</strong>, rapport après rapport.
         </p>
         <div id="hyp-table" class="table-wrap"></div>
-        <p class="chart-source">Source&nbsp;: COR, rapports annuels 2019–2026. En 2026, le COR adopte les nouvelles projections démographiques&nbsp;: fécondité abaissée à 1,45, solde migratoire relevé à +150 000/an.</p>
+        <p class="chart-source" data-prov="cor-2026/donnees-p1/Fig 1.1">Source&nbsp;: COR, rapports annuels 2019–2026. En 2026, le COR adopte les nouvelles projections démographiques&nbsp;: fécondité abaissée à 1,45, solde migratoire relevé à +150 000/an.</p>
       </div>
     </section>
 
@@ -1019,10 +1019,14 @@
     <button id="toast-action" type="button"></button>
   </div>
 
-  <script defer src="./data/data.js?v=022809e3"></script>
-  <script defer src="./data/cor-series.generated.js?v=4ae8d1db"></script>
+  <script defer src="./data/data.js?v=399dfdd4"></script>
+  <script defer src="./data/cor-series.generated.js?v=2082d37c"></script>
+  <!-- Fichiers et pages des rapports du COR : ce qui permet à une phrase
+       « Source : … » de mener au bon classeur, au bon onglet, à la bonne page.
+       Chargé au démarrage — les sources écrites dans le HTML en dépendent. -->
+  <script defer src="./data/cor-sources.generated.js?v=95486073"></script>
   <script defer src="./js/chart.min.js?v=938a5649"></script>
-  <script defer src="./js/app.min.js?v=540934d1"></script>
+  <script defer src="./js/app.min.js?v=06aa9754"></script>
   <script defer src="./js/cards.min.js?v=a4ba8e14"></script>
   <script defer src="./js/report.min.js?v=24ebfe11"></script>
 </body>

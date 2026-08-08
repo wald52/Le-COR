@@ -452,9 +452,9 @@
   // Source dynamique : dit clairement ce qui est officiel et ce qui est calculé.
   function sankeySourceNote(year, unit) {
     if (unit === "pct")
-      return "Parts officielles — COR, rapport 2026 (figure 2.11, structure des ressources 2004–2025, d’après les rapports à la CCSS).";
+      return "Parts officielles — COR, rapport 2026 (structure des ressources 2004–2025, d’après les rapports à la CCSS).";
     if (Number(year) === D.sankeyFinancement.officialYear)
-      return "Montants officiels — COR, tableau 2.2 (ressources 2025 = 422,23 Md€). Dépenses par groupe de régimes : COR, rapport 2026.";
+      return "Montants officiels — COR, rapport 2026 (ressources 2025 = 422,23 Md€). Dépenses par groupe de régimes : COR, rapport 2026.";
     return "⚠️ Montants CALCULÉS, non publiés tels quels par le COR : parts officielles (COR) × PIB nominal INSEE de l’année. " +
       "Seules les parts en % (et l’année 2025 en Md€) sont des chiffres officiels du COR.";
   }
@@ -468,7 +468,12 @@
     const lbl = document.getElementById("sankey-year-label");
     if (lbl) lbl.textContent = String(sankeyYear);
     const src = document.getElementById("sankey-source");
-    if (src) setSourceText(src, sankeySourceNote(sankeyYear, sankeyUnit));
+    if (src) {
+      // Parts et montants ne sortent pas du même onglet : la queue suit l'unité.
+      const f = D.sankeyFinancement;
+      setSourceText(src, sankeySourceNote(sankeyYear, sankeyUnit),
+        sankeyUnit === "pct" ? f.provParts : f.provMontants);
+    }
     // Année ou unité changée : le diagramme a été reconstruit, le PNG en cache
     // ne correspond plus à ce qui est affiché.
     const card = host.closest(".chart-card");
@@ -625,7 +630,7 @@
       currentId = iid;
       document.getElementById("exp-label").textContent = ind.label;
       document.getElementById("exp-desc").textContent = ind.desc || "";
-      setSourceText(document.getElementById("exp-source"), "Source : " + (ind.source || "COR."));
+      setSourceText(document.getElementById("exp-source"), "Source : " + (ind.source || "COR."), ind.prov);
       chipsEl.querySelectorAll(".exp-chip").forEach(c => {
         const on = c.dataset.id === iid;
         c.classList.toggle("active", on);
@@ -857,7 +862,8 @@
     [elAge, elCot, elPen].forEach(e => e.addEventListener("input", schedule));
     setSourceText(id("lv-source"), "Source : " + L.source +
       " — calibrage : seul, chaque levier équilibre avec +" + f1(L.age.full_years) +
-      " an d'âge, +" + f1(L.cotis.full_pts) + " pts de cotisation, ou −" + f1(L.pension.full_pct) + " % de pensions.");
+      " an d'âge, +" + f1(L.cotis.full_pts) + " pts de cotisation, ou −" + f1(L.pension.full_pct) + " % de pensions.",
+      L.prov);
     update();
   }
 
@@ -1034,14 +1040,104 @@
 
   /* Remplace le contenu d'un élément par la phrase de source, liens compris.
    * Utilisé par les sources injectées en JS (explorateur, simulateur, Sankey). */
-  function setSourceText(el, text) {
+  function setSourceText(el, text, prov) {
     if (!el) return;
     el.textContent = "";
     el.appendChild(docLinkFragment(text));
+    const tail = provenanceTail(prov);
+    if (tail) el.appendChild(tail);
     // Marque l'élément comme déjà traité : linkifyElement n'y repassera pas,
     // qu'il s'agisse du <p> lui-même (#exp-source, #lv-source) ou d'un <span>
     // imbriqué dans un <p class="chart-source"> (#sankey-source).
     el.dataset.srcLinked = "1";
+  }
+
+  /* ----------------------------------------------------------------------
+   * 6 bis. La queue de précision : quel fichier, quel onglet, quelle page.
+   *
+   *    Nommer le rapport ne suffisait pas. Sa page officielle porte une
+   *    vingtaine de fichiers — quatre classeurs Excel, le rapport intégral, la
+   *    synthèse, l'annexe méthodologique, les chapitres — et le lecteur devait
+   *    deviner lequel, puis y retrouver la figure. La queue dit exactement d'où
+   *    vient le chiffre et y conduit.
+   *
+   *    `prov` vient de tools/extract_cor.py, qui le note au moment même où il
+   *    ouvre le classeur : [[rapport, rôle du fichier, onglet], …]. Les noms de
+   *    fichiers et les pages viennent de tools/build_sources.py
+   *    (window.COR_SOURCES). Un onglet sans numéro de figure (« Âge
+   *    conjoncturel ») n'a pas de page : on n'en invente pas.
+   * -------------------------------------------------------------------- */
+
+  // Onglet Excel -> clé de figure. Les classeurs du COR nomment leurs onglets
+  // d'après la figure (« Fig 2.11 », « Tab 2.5 », « Tableau_4 ») ; le PDF écrit
+  // « Figure 2.11 ». Même conversion que tools/cor_files.py.
+  function sheetKey(sheet) {
+    const m = /^\s*(fig|tab|tableau|graphique)\.?[\s_.]*(\d+(?:\.\d+)?(?:\.[A-Za-z])?)\s*$/i.exec(sheet || "");
+    if (!m) return null;
+    return (/^tab/i.test(m[1]) ? "tab:" : "fig:") + m[2].toUpperCase();
+  }
+
+  function srcLink(url, text, title) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = text;
+    if (title) a.setAttribute("aria-label", title + " (nouvel onglet)");
+    return a;
+  }
+
+  /* Construit « Classeur « … », onglet « … », rapport p. N. » (liens compris),
+   * ou null si la provenance est inexploitable. Renvoie un <span> : le
+   * `textContent` du paragraphe reste donc complet, ce qui embarque la précision
+   * dans l'image PNG exportée — l'image devient auto-suffisante. */
+  function provenanceTail(prov) {
+    const parts = provenanceParts(prov, window.COR_SOURCES);
+    if (!parts) return null;
+
+    const frag = document.createElement("span");
+    frag.className = "src-detail";
+    frag.appendChild(document.createTextNode(" Classeur "));
+    frag.appendChild(srcLink(parts.fichier.url, "« " + parts.fichier.nom + " »",
+      "Télécharger le classeur « " + parts.fichier.nom + " »"));
+    if (parts.onglet) frag.appendChild(document.createTextNode(", onglet « " + parts.onglet + " »"));
+    if (parts.page) {
+      frag.appendChild(document.createTextNode(", "));
+      frag.appendChild(srcLink(parts.pageUrl, "rapport p. " + parts.page,
+        "Ouvrir le rapport à la page " + parts.page));
+    }
+    frag.appendChild(document.createTextNode("."));
+    return frag;
+  }
+
+  /* Le cœur de la queue, séparé du dessin : quel fichier, quel onglet, quelle
+   * page — ou null si la provenance ne mène nulle part. Fonction PURE (`src`
+   * injectable), donc vérifiable en test unitaire sans DOM. */
+  function provenanceParts(prov, src) {
+    if (!src || !Array.isArray(prov) || !prov.length) return null;
+
+    // Une superposition de millésimes lit le même onglet dans onze classeurs.
+    // Répéter onze fois « onglet « Fig 2.18 » » ne renseignerait personne : on
+    // nomme l'onglet une fois et on lie le classeur le plus récent, celui que
+    // le lecteur ouvrira pour vérifier.
+    const sheets = prov.map(p => p[2]);
+    const memeOnglet = sheets.every(s => s === sheets[0]);
+    const [report, role, sheet] = prov[prov.length - 1];
+    const files = src.fichiers[report];
+    // Rôle inconnu : pas de lien mort, pas de queue du tout.
+    if (!files || !files[role]) return null;
+
+    const out = { fichier: files[role], onglet: memeOnglet && sheet ? sheet : null,
+                  page: null, pageUrl: null };
+    // Renvoi de page : seulement si la figure a bien été repérée dans le PDF
+    // officiel — jamais un numéro deviné.
+    const key = out.onglet && sheetKey(out.onglet);
+    const page = key && src.pages[report] && src.pages[report][key];
+    if (page && files.rapport) {
+      out.page = page;
+      out.pageUrl = files.rapport.url + "#page=" + page;
+    }
+    return out;
   }
 
   /* Ajoute les liens dans un élément DÉJÀ rendu, sans toucher à son balisage :
@@ -1065,6 +1161,13 @@
       const frag = docLinkFragment(n.nodeValue);
       if (frag.childNodes.length > 1) n.parentNode.replaceChild(frag, n);
     });
+    // Les phrases écrites à la main dans index.html n'ont pas de provenance
+    // machine : elles la déclarent en attribut, « cor-2026/donnees-p2/Fig 2.11 ».
+    const decl = el.dataset.prov;
+    if (decl) {
+      const tail = provenanceTail(decl.split("|").map(p => p.split("/")));
+      if (tail) el.appendChild(tail);
+    }
   }
 
   // Étape statique : une passe sur les phrases de source écrites dans le HTML.
@@ -2045,7 +2148,7 @@
    * les tests unitaires Node (tests/unit/) le lisent pour vérifier ces fonctions
    * pures en isolation. N'altère en rien l'exécution du site. */
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { chartCsv, slug, matchRefs };
+    module.exports = { chartCsv, slug, matchRefs, sheetKey, provenanceParts };
   }
 
   if (document.readyState === "loading") {

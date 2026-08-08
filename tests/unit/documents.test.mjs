@@ -56,6 +56,33 @@ test("aucune URL en double (deux identifiants pour un même document)", () => {
   });
 });
 
+test("la table des fichiers du COR est exploitable de bout en bout", () => {
+  const win2 = {};
+  new Function("window", readFileSync(join(root, "data/cor-sources.generated.js"), "utf8"))(win2);
+  const SRC = win2.COR_SOURCES;
+
+  const rapports = Object.keys(SRC.fichiers);
+  assert.ok(rapports.length >= 14, `seulement ${rapports.length} rapports récoltés`);
+  rapports.forEach(rid => {
+    assert.ok(DOCS[rid], `${rid} : absent du registre de data/data.js`);
+    Object.entries(SRC.fichiers[rid]).forEach(([role, f]) => {
+      assert.match(f.url, /^https:\/\/www\.cor-retraites\.fr\//, `${rid}/${role} : URL suspecte`);
+      assert.ok(f.nom && f.nom.trim(), `${rid}/${role} : nom vide`);
+    });
+  });
+
+  // Les pages servent d'ancre « #page=N » : un zéro ou un non-entier enverrait
+  // le lecteur au début du PDF en prétendant viser la figure.
+  Object.entries(SRC.pages).forEach(([rid, figures]) => {
+    assert.ok(SRC.fichiers[rid] && SRC.fichiers[rid].rapport,
+      `${rid} : des pages sans rapport intégral à ouvrir`);
+    Object.entries(figures).forEach(([key, page]) => {
+      assert.ok(Number.isInteger(page) && page > 0, `${rid}/${key} : page ${page}`);
+      assert.match(key, /^(fig|tab):/, `${rid} : clé de figure « ${key} » hors convention`);
+    });
+  });
+});
+
 test("la bibliographie dérivée n'est ni vide ni bavarde", () => {
   const biblio = entries.filter(([, d]) => d.biblio !== false);
   assert.ok(biblio.length >= 20, "bibliographie trop courte");

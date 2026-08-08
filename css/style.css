@@ -158,6 +158,10 @@ a { color: var(--bleu-clair); }
    (plus haut) s'applique déjà et ne doit pas être écrasé. */
 .chart-source a { color: var(--bleu); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
 .chart-source a:hover { text-decoration-thickness: 2px; }
+/* La queue de précision (classeur, onglet, page) : elle achève la phrase mais
+   ne doit pas la concurrencer — d'où un ton plus clair. On ne la masque pas
+   pour autant : c'est elle qui épargne au lecteur de chercher. */
+.src-detail { color: #7c8792; }
 
 .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 

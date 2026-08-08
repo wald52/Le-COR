@@ -60,6 +60,7 @@ const LEAF = [
   "data/data.js",
   "data/cor-series.generated.js",
   "data/cor-explorer.generated.js",
+  "data/cor-sources.generated.js",
   "images/accueil-lecteur-cor.webp",
   "images/bayrou.webp",
   "images/hypotheses-cockpit.webp",

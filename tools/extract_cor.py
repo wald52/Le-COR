@@ -14,8 +14,10 @@ traçable (réexécuter ce script régénère les données).
 Lancement :  python3 tools/extract_cor.py
 Dépendance :  openpyxl
 """
-import glob, os, json, types, openpyxl
+import glob, os, re, json, types, openpyxl
 from openpyxl.worksheet import print_settings
+
+from cor_files import VINTAGE_TO_REPORT, role_of
 
 # Certains classeurs du COR (ex. partie 3 de juin 2026) contiennent une zone
 # d'impression invalide (« #N/A ») qu'openpyxl refuse : on la tolère.
@@ -87,14 +89,83 @@ COLORS = {"2016": "#9aa7b4", "2017": "#7d8ca0", "2018": "#5b6f93",
           "2025": "#c2185b", "2026": "#7b1fa2"}
 
 
+# --------------------------------------------------------------------------
+# TRAÇAGE DE LA PROVENANCE
+#
+# Le script résolvait un classeur et un onglet pour chaque chiffre, puis ne
+# renvoyait que les cellules : la phrase de source était retapée à la main en
+# dessous. D'où sa dérive (la prose disait « Tableau 2.5 » là où l'onglet
+# s'appelle « Tab 2.5 ») et son imprécision — aucune ne nommait le classeur.
+#
+# On note désormais, au moment où on l'ouvre, DE QUOI vient le chiffre. Le
+# traceur évite d'avoir à changer la signature des ~55 appels de `_rows` : la
+# discipline du fichier veut que chaque lecture soit immédiatement suivie de
+# son `add(...)`, qui vide la pile.
+# --------------------------------------------------------------------------
+SRC_TRACE = []
+
+# Provenance des séries multi-millésimes, calculées dans build() bien avant que
+# l'explorateur ne les mette en forme : la pile ne peut pas faire le pont, on
+# range donc ces entrées par indicateur.
+MULTI_PROV = {}
+
+
+def vintage_of_path(path):
+    """Millésime déduit du dossier d'archive : « 2026-06-11 - … » -> « 2026-06 ».
+
+    Évite de faire passer le millésime en paramètre à travers les helpers de
+    cohortes, qui reçoivent déjà un chemin complet."""
+    for part in reversed(os.path.normpath(path).split(os.sep)):
+        m = re.match(r"(\d{4}-\d{2})-\d{2} - ", part)
+        if m:
+            return m.group(1)
+    return None
+
+
+def note_source(path, sheet, vintage=None):
+    """Empile (rapport, rôle du fichier, onglet) pour le prochain `add`."""
+    report = VINTAGE_TO_REPORT.get(vintage or (vintage_of_path(path) if path else None))
+    if not report or not path:
+        return
+    base = os.path.basename(path)
+    role = role_of(base, base.rsplit(".", 1)[-1].lower())
+    if not role:
+        return
+    # Certains onglets du COR portent une espace finale (« Fig 1.1 ») : elle
+    # ressortirait telle quelle dans « onglet « Fig 1.1  » ».
+    entry = [report, role, (sheet or "").strip()]
+    if entry not in SRC_TRACE:      # même onglet relu deux fois : une seule mention
+        SRC_TRACE.append(entry)
+
+
+def take_trace():
+    """Vide la pile et la renvoie. Toujours appelée, même quand la série est
+    vide : sinon une lecture infructueuse déteindrait sur l'indicateur suivant."""
+    global SRC_TRACE
+    trace, SRC_TRACE = SRC_TRACE, []
+    return trace
+
+
+def keep_prov(iid, ok=True):
+    """Vide la pile au profit d'un indicateur multi-millésimes. `ok=False`
+    jette la trace : la série a été écartée, sa provenance n'a rien à dire."""
+    trace = take_trace()
+    if not ok:
+        return
+    kept = MULTI_PROV.setdefault(iid, [])
+    for entry in trace:
+        if entry not in kept:
+            kept.append(entry)
+
+
 def find_depenses_block(wb):
     """Localise le bloc de données « Dépenses, en % du PIB » / ligne 'Obs'."""
     for ws in wb.worksheets:
         rows = list(ws.iter_rows(values_only=True))
         for i, r in enumerate(rows):
             if len(r) > 2 and r[1] == "Dépenses, en % du PIB" and r[2] == "Obs":
-                return rows, i
-    return None, None
+                return rows, i, ws.title
+    return None, None, None
 
 
 def year_cols(rows):
@@ -111,9 +182,9 @@ def to_series(row, ycols):
             for i in ycols if i < len(row) and isinstance(row[i], (int, float))}
 
 
-def extract_depenses(path, prod_ref):
+def extract_depenses(path, prod_ref, vintage=None):
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    rows, iobs = find_depenses_block(wb)
+    rows, iobs, sheet = find_depenses_block(wb)
     if rows is None:
         wb.close()
         return None
@@ -131,6 +202,8 @@ def extract_depenses(path, prod_ref):
             projection = to_series(r, ycols)
             break
     wb.close()
+    if vintage:
+        note_source(path, sheet, vintage)
     return {"observed": observed, "projection": projection}
 
 
@@ -286,8 +359,11 @@ def extract_conv_block(path, keys, prod_ref, convention="EPR"):
 
 
 def extract_fin_multi(sources, what):
-    """Projections multi-millésimes {vy: {année: % PIB}} pour solde/ressources."""
-    out = {}
+    """Projections multi-millésimes {vy: {année: % PIB}} pour solde/ressources.
+
+    Renvoie aussi, par millésime, la provenance du chiffre (rapport, classeur,
+    onglet) : c'est elle qui permettra au site de mener le lecteur au fichier."""
+    out, prov = {}, {}
     for vy, dpat, fpat, mode, keys, prod, conv in sources:
         path = first_file(dpat, fpat)
         if not path:
@@ -302,9 +378,11 @@ def extract_fin_multi(sources, what):
             serie = extract_title_block(path, keys, prod)
         if serie:
             out[vy] = serie
+            note_source(path, keys[0], dpat)
+            prov[vy] = take_trace()
         else:
             print(f"✗ {what} {vy} : bloc {mode} introuvable {keys}")
-    return out
+    return out, prov
 
 
 # --------------------------------------------------------------------------
@@ -616,6 +694,7 @@ def _rows(filepat, sheet, vintage=R26):
         return None
     rows = list(wb[cand[0]].iter_rows(values_only=True))
     wb.close()
+    note_source(path, cand[0], vintage)
     return rows
 
 
@@ -721,7 +800,9 @@ def pick_cohort_row(path, sheet_keys, row_keys=(), scale=1.0, floor=1900,
         wb.close()
         return {}
     rows = list(ws.iter_rows(values_only=True))
+    sheet_title = ws.title
     wb.close()
+    note_source(path, sheet_title)
     ym = _xmap(rows, floor)
     if not ym:
         return {}
@@ -1441,16 +1522,25 @@ def build_explorer(multi=None):
     {indicateur: ({vy: {année: val}} projections, obs {année: val})}."""
     multi = multi or {}
     ind = {}
+    # build() a lu bien d'autres classeurs avant d'arriver ici ; leur provenance
+    # est déjà rangée dans MULTI_PROV. On repart d'une pile vide pour que le
+    # premier indicateur n'hérite pas de ces lectures.
+    take_trace()
 
     def add(iid, label, unit, suffix, series, desc, source, obs_from=2000,
             xLabel="Année", chartType="line", barMode=None, categories=None,
             waterfall=False, yMin=None, yMax=None, y2=None):
+        # Toujours vider la pile en premier, même si l'indicateur est abandonné :
+        # une lecture sans suite ne doit pas déteindre sur le suivant.
+        prov = take_trace() or MULTI_PROV.get(iid, [])
         series = [s for s in series if s["points"]]
         if not series:
             print("✗ explorateur:", iid, "(vide)")
             return None
         rec = {"label": label, "unit": unit, "suffix": suffix, "xLabel": xLabel,
                "desc": desc, "source": source, "series": series}
+        if prov:
+            rec["prov"] = prov
         if categories is not None:
             rec["categories"] = categories
         # Axe Y secondaire (à droite) : configuration {suffix, …} pour les
@@ -1891,8 +1981,7 @@ def build_explorer(multi=None):
             "(vert) ou à la baisse (rouge), pour aboutir à l'écart total (bleu). La fécondité "
             "plus basse pèse le plus lourd. La barre « Autres / résidu » referme la "
             "décomposition (interactions et effets non détaillés).",
-            "COR, rapport 2026 (Tableau 2.5, décomposition des écarts de dépenses en part de "
-            "PIB, horizon 2070).",
+            "COR, rapport 2026.",
             chartType="bar", waterfall=True, categories=cats)
 
     # --- Droits familiaux & réversion (rapport thématique COR, novembre 2025) ---
@@ -1905,7 +1994,7 @@ def build_explorer(multi=None):
             "Part des dispositifs de solidarité familiale (départs anticipés, majoration de "
             "pension, MDA, AVPF) dans les pensions de droit direct, par groupe de régimes. "
             "Ils pèsent près de 10 % au régime général.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.1).",
+            "COR, rapport « Droits familiaux et conjugaux » 2025.",
             chartType="bar", barMode="stacked", categories=cats)
     r = _rows("partie 1", "Fig 1.3", DF)
     if r:
@@ -1914,7 +2003,7 @@ def build_explorer(multi=None):
             "milliards d'euros", " Md€", series,
             "Montants annuels versés au titre de chaque dispositif familial, selon le sexe du "
             "bénéficiaire. La MDA et l'AVPF bénéficient très majoritairement aux femmes.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.3).",
+            "COR, rapport « Droits familiaux et conjugaux » 2025.",
             chartType="bar", barMode="grouped", categories=cats)
     r = _rows("partie 1", "Fig 1.6", DF)
     if r:
@@ -1926,7 +2015,7 @@ def build_explorer(multi=None):
         add("df_reversion_part", "Part des pensions de réversion", "%", " %", series,
             "Part des pensions de réversion dans l'ensemble des pensions versées. La réversion "
             "reste un filet essentiel, surtout pour les femmes, mais sa part décline lentement.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.6).")
+            "COR, rapport « Droits familiaux et conjugaux » 2025.")
     r = _rows("partie 1", "Fig 1.17", DF)
     if r:
         series = extract_rows_timeseries(r, 1, 2000)
@@ -1946,7 +2035,7 @@ def build_explorer(multi=None):
             "Effectifs de retraités selon le type de droit perçu : droit direct seul, droits "
             "dérivés (réversion) seuls, ou les deux. Beaucoup de femmes cumulent droit direct "
             "et réversion.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.17).", y2=y2)
+            "COR, rapport « Droits familiaux et conjugaux » 2025.", y2=y2)
     r = _rows("partie 1", "Fig 1.8", DF)
     if r:
         add("df_age_enfants", "Âge de départ par sexe et nombre d'enfants", "ans", " ans",
@@ -1954,7 +2043,7 @@ def build_explorer(multi=None):
             "Âge moyen de départ à la retraite par génération, selon le sexe et le nombre "
             "d'enfants. Les mères de trois enfants et plus partent plus tôt (départs anticipés, "
             "MDA), les hommes partent globalement plus tôt que les femmes.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.8).",
+            "COR, rapport « Droits familiaux et conjugaux » 2025.",
             xLabel="Génération")
     r = _rows("partie 1", "Fig 1.9", DF)
     if r:
@@ -1963,7 +2052,7 @@ def build_explorer(multi=None):
             "Durée d'assurance validée moyenne par génération, selon le sexe et le nombre "
             "d'enfants. Les dispositifs familiaux (MDA, AVPF) compensent en partie les "
             "carrières plus courtes des mères.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.9).",
+            "COR, rapport « Droits familiaux et conjugaux » 2025.",
             xLabel="Génération")
     r = _rows("partie 1", "Fig 1.10", DF)
     if r:
@@ -1972,7 +2061,7 @@ def build_explorer(multi=None):
             "Pension moyenne perçue à 68 ans, rapportée au salaire moyen (SMPT), selon le sexe "
             "et le nombre d'enfants. L'écart femmes-hommes et l'effet du nombre d'enfants "
             "restent marqués malgré les droits familiaux.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 1.10).",
+            "COR, rapport « Droits familiaux et conjugaux » 2025.",
             xLabel="Génération")
     r = _rows("partie 2", "Fig 2.1", DF)
     if r:
@@ -1981,14 +2070,14 @@ def build_explorer(multi=None):
             "Part des personnes inactives selon le sexe depuis 1968. L'inactivité féminine, "
             "très élevée autrefois, a fortement reculé — ce qui transforme peu à peu les droits "
             "à retraite des femmes.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 2.1).")
+            "COR, rapport « Droits familiaux et conjugaux » 2025.")
     r = _rows("partie 2", "Fig 2.7", DF)
     if r:
         series = extract_cols_timeseries(r, [(2, "Femmes", "#c2185b"), (3, "Hommes", "#1f4e79")], 1, 1970)
         add("df_emploi_genre", "Taux d'emploi des 15-64 ans, par sexe", "%", " %", series,
             "Taux d'emploi des femmes et des hommes (15-64 ans) depuis 1975 : la convergence "
             "est nette mais incomplète, et nourrit l'écart de pensions à venir.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 2.7).")
+            "COR, rapport « Droits familiaux et conjugaux » 2025.")
     r = _rows("partie 2", "Fig 2.9", DF)
     if r:
         series = extract_cols_timeseries(
@@ -1996,7 +2085,7 @@ def build_explorer(multi=None):
         add("df_temps_partiel", "Part du temps partiel, par sexe", "%", " %", series,
             "Part de l'emploi à temps partiel selon le sexe. Le temps partiel, très féminin, "
             "réduit les salaires et donc les droits à retraite accumulés.",
-            "COR, rapport « Droits familiaux et conjugaux » 2025 (Fig 2.9).")
+            "COR, rapport « Droits familiaux et conjugaux » 2025.")
 
     # --- Comparaisons internationales (Panorama des systèmes de retraite, 2020) ---
     PA = "2020-12"
@@ -2008,7 +2097,7 @@ def build_explorer(multi=None):
         cats, series = extract_category_snapshot(r, scale=scale)
         add(iid, label, unit, suffix, series,
             desc + " Comparaison internationale (instantané, données ~2017).",
-            f"COR, « Panorama des systèmes de retraite en France et à l'étranger » 2020 ({sheet}).",
+            "COR, « Panorama des systèmes de retraite en France et à l'étranger » 2020.",
             chartType="bar", barMode="grouped", categories=cats)
 
     intl_snap("intl_emploi", "Fig 5.7", "Taux d'emploi des 20-64 ans, par pays", "%", " %", 100,
@@ -2030,7 +2119,7 @@ def build_explorer(multi=None):
             "Part des dépenses de retraite dans le PIB selon le pays, distinguant les régimes "
             "publics des dispositifs privés (importants aux Pays-Bas, au Canada…). Comparaison "
             "internationale (données ~2017).",
-            "COR, « Panorama des systèmes de retraite … » 2020 (Fig 5.1).",
+            "COR, « Panorama des systèmes de retraite … » 2020.",
             chartType="bar", barMode="stacked", categories=cats)
     r = _rows("thématique", "Fig 3.1", PA)
     if r:
@@ -2039,7 +2128,7 @@ def build_explorer(multi=None):
         add("intl_cotisation", "Taux de cotisation retraite, par pays", "%", " %", series,
             "Taux de cotisation aux régimes obligatoires selon le pays, part salariale et part "
             "employeur empilées. Comparaison internationale (données ~2017).",
-            "COR, « Panorama des systèmes de retraite … » 2020 (Fig 3.1).",
+            "COR, « Panorama des systèmes de retraite … » 2020.",
             chartType="bar", barMode="stacked", categories=cats)
 
     # --- Projections par régime (rapport thématique COR, novembre 2017) ---
@@ -2051,7 +2140,7 @@ def build_explorer(multi=None):
             return
         add(iid, label, unit, suffix, extract_regime_series(r, sub, scale),
             desc + " Une courbe par régime (projections du rapport thématique 2017).",
-            f"COR, rapport « Perspectives … résultats par régime » 2017 ({sheet}).")
+            "COR, rapport « Perspectives … résultats par régime » 2017.")
 
     reg_ind("reg_cotisants", "Tableau_1", "ensemble", "Cotisants par régime", "milliers", " k", 1,
             "Effectifs de cotisants projetés, par régime.")
@@ -2078,7 +2167,7 @@ def build_explorer(multi=None):
             "Évolution des effectifs cotisants aux régimes de la fonction publique (base 100 "
             "en 2025), par versant. Le nombre de cotisants conditionne les ressources de ces "
             "régimes.",
-            "COR, rapport 2026 (Fig 1.13).")
+            "COR, rapport 2026.")
     r = _rows("partie 1", "Fig 1.14")
     if r:
         add("fp_remunerations", "Rémunérations moyennes dans la fonction publique",
@@ -2086,7 +2175,7 @@ def build_explorer(multi=None):
             "Évolution des rémunérations moyennes des cotisants de la fonction publique (base "
             "100 en 2025) : traitement indiciaire, salaire moyen y compris primes. Elles "
             "déterminent l'assiette de cotisation et les pensions futures.",
-            "COR, rapport 2026 (Fig 1.14).")
+            "COR, rapport 2026.")
     r = _rows("partie 1", "Fig 1.15")
     if r:
         series = [s for s in extract_rows_timeseries(r, 100, 2018) if "vari" not in s["label"].lower()]
@@ -2094,7 +2183,7 @@ def build_explorer(multi=None):
             "Part des primes (hors traitement indiciaire) dans la rémunération des "
             "fonctionnaires, par versant. Les primes ne cotisent que faiblement à la retraite, "
             "ce qui pèse sur les pensions de la fonction publique.",
-            "COR, rapport 2026 (Fig 1.15).")
+            "COR, rapport 2026.")
 
     # --- Sensibilité : faisceaux « et si l'hypothèse était différente ? »
     def dep_fan(rows):
@@ -2166,7 +2255,8 @@ def build_explorer(multi=None):
         b = _bounds(series)
         ind[iid] = {"label": label, "unit": "% du PIB", "suffix": " %",
                     "desc": "Dépenses de retraite en % du PIB selon l'hypothèse retenue." + rng,
-                    "source": f"COR, rapport 2026 ({sheet}).", "series": series, **b}
+                    "source": "COR, rapport 2026.", "prov": take_trace(),
+                    "series": series, **b}
 
     themes = [
         {"name": "Démographie", "indicators": ["cot_ret", "ratio_demo", "fecondite", "esp_vie", "migration"]},
@@ -2241,7 +2331,8 @@ def extract_international(path):
     if not countries:
         return None
     countries.sort(key=lambda c: c["total"], reverse=True)
-    return {"year": year, "countries": countries}
+    return {"year": year, "countries": countries,
+            "prov": [[VINTAGE_TO_REPORT[R26], role_of(os.path.basename(path), "xlsx"), sheet]]}
 
 
 def extract_leviers(path, sheet="Fig 2.24"):
@@ -2270,8 +2361,8 @@ def extract_leviers(path, sheet="Fig 2.24"):
         "cotis": {"ref": round(tx_ref * 100, 1), "full_pts": round((tx_eq - tx_ref) * 100, 2)},
         "pension": {"ref_pct": round(pen_ref * 100, 1),
                     "full_pct": round((pen_ref - pen_eq) / pen_ref * 100, 1)},
-        "source": f"COR, rapport 2026 ({sheet.lower().replace('fig ', 'fig. ')}) — "
-                  "niveau de chaque levier pour équilibrer en 2070.",
+        "source": "COR, rapport 2026 — niveau de chaque levier pour équilibrer en 2070.",
+        "prov": [[VINTAGE_TO_REPORT[R26], role_of(os.path.basename(path), "xlsx"), sheet]],
     }
 
 
@@ -2283,10 +2374,12 @@ def build():
         if not path:
             print("✗ fichier introuvable :", vy)
             continue
-        data = extract_depenses(path, prod)
+        data = extract_depenses(path, prod, vintage=dpat)
         if not data or not data["projection"]:
+            take_trace()
             print("✗ bloc dépenses introuvable :", vy)
             continue
+        data["prov"] = take_trace()
         extracted[vy] = data
         if vy == LATEST:
             realised = data["observed"]
@@ -2311,13 +2404,14 @@ def build():
             "endNote": vy,
             "source": f"COR, rapport annuel {vy} — dépenses du système de retraite "
                       f"en % du PIB, scénario {PROD_LABEL[vy]} %.",
+            "prov": extracted[vy].get("prov", []),
             "points": pts,
         })
 
     # ---- Solde et ressources : projections de TOUS les millésimes disponibles.
     #      Réalisé = série observée du rapport le plus récent.
-    solde_multi = extract_fin_multi(SOLDE_SOURCES, "solde")
-    ressources_multi = extract_fin_multi(RESSOURCES_SOURCES, "ressources")
+    solde_multi, solde_prov = extract_fin_multi(SOLDE_SOURCES, "solde")
+    ressources_multi, _ressources_prov = extract_fin_multi(RESSOURCES_SOURCES, "ressources")
     conv_by_vy = {vy: conv for vy, _, _, _, _, _, conv in SOLDE_SOURCES}
 
     sdr_latest = None
@@ -2340,6 +2434,7 @@ def build():
             "year": year, "color": COLORS[vy], "endNote": vy,
             "source": f"COR, rapport annuel {vy} — solde du système de retraite, "
                       f"scénario {PROD_LABEL[vy]} %, {conv_by_vy[vy]}.",
+            "prov": solde_prov.get(vy, []),
             "points": pts,
         })
         print(f"✓ solde {vy} : 2070={solde.get(2070)}  pts proj={len(pts)}")
@@ -2379,7 +2474,7 @@ def build():
         }
 
     # ---- Niveau de vie relatif des retraités : un millésime par rapport (2023+)
-    nv_obs, nv_projs = {}, {}
+    nv_obs, nv_projs, nv_prov = {}, {}, {}
     for vy, dpat, sheet, selector in NV_SOURCES:
         path = first_file(dpat, "synthèse")
         if not path:
@@ -2388,6 +2483,8 @@ def build():
         o, ref = extract_nv_vintage(path, sheet, selector)
         if ref:
             nv_projs[vy] = ref
+            note_source(path, sheet, dpat)
+            nv_prov[vy] = take_trace()
         else:
             print("✗ niveau de vie : projection introuvable", vy)
         if vy == LATEST and o:
@@ -2407,6 +2504,7 @@ def build():
                 "endNote": vy,
                 "source": f"COR, rapport annuel {vy} — niveau de vie relatif des retraités, "
                           "scénario de référence.",
+                "prov": nv_prov.get(vy, []),
                 "points": pts,
             })
         _nv_all = [{"points": obs_pts}] + [{"points": p["points"]} for p in nv_proj_list]
@@ -2629,6 +2727,7 @@ def build():
         s = _plausible(s, 30, 100)
         if s:
             taux_rempl_projs[vy] = s
+        keep_prov("taux_rempl", bool(s))
 
         keys = ("durée de retraite",)
         s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
@@ -2637,6 +2736,7 @@ def build():
         s = _plausible(s, 15, 35)
         if s:
             duree_ret_projs[vy] = s
+        keep_prov("duree_retraite", bool(s))
 
         keys = ("durée de carrière",)
         s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
@@ -2644,6 +2744,7 @@ def build():
         s = _plausible(s, 25, 55)
         if s:
             duree_car_projs[vy] = s
+        keep_prov("duree_carriere", bool(s))
 
         keys, exc = ("âge moyen de départ", "génération"), ("femmes",)  # ≠ figure F/H
         path = file_with_sheet(dpat, keys, exc)
@@ -2652,6 +2753,7 @@ def build():
         merged = _plausible({**proj, **obs}, 55, 70)
         if merged:
             age_dep_projs[vy] = merged
+        keep_prov("age_moyen_depart", bool(merged))
 
         keys = ("pauvreté", "retraité")
         s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
@@ -2659,6 +2761,7 @@ def build():
         s = _plausible(s, 3, 20)
         if s:
             pauvrete_projs[vy] = s
+        keep_prov("pauvrete", bool(s))
 
         keys = ("taux de rendement interne", "non-cadre")
         s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
@@ -2667,12 +2770,14 @@ def build():
         s = _plausible(s, 0, 10)
         if s:
             tri_projs[vy] = s
+        keep_prov("tri", bool(s))
 
         keys = ("taux de cotisation", "retraite")
         s = pick_cohort_row(file_with_sheet(dpat, keys), keys, ("tous régimes",), 100, 1900)
         s = _plausible(s, 10, 40)
         if s:
             taux_cot_projs[vy] = s
+        keep_prov("taux_cotisation", bool(s))
 
         keys = ("intensité de la pauvreté",)
         s = pick_cohort_row(file_with_sheet(dpat, keys), keys,
@@ -2680,6 +2785,7 @@ def build():
         s = _plausible(s, 5, 25)
         if s:
             intensite_projs[vy] = s
+        keep_prov("intensite_pauvrete", bool(s))
 
     print(f"✓ taux de remplacement : {len(taux_rempl_projs)} millésimes")
     print(f"✓ durée de retraite : {len(duree_ret_projs)} millésimes")

@@ -599,15 +599,42 @@ test("chaque source de graphique conduit au document officiel", async ({ page })
   await expect(lien).toHaveText(/rapports? /i);
 });
 
-test("les liens de source n'ajoutent aucun texte visible (export PNG intact)", async ({ page }) => {
-  // renderChartPngBlob recopie `.chart-source` via textContent : un repère
-  // « nouvel onglet » écrit en dur se retrouverait dans l'image partagée. Le
-  // texte doit donc rester au caractère près celui de index.html.
+test("la source dit le classeur et l'onglet, sans repère technique visible", async ({ page }) => {
+  // renderChartPngBlob recopie `.chart-source` via textContent : la queue de
+  // précision part donc dans l'image partagée — c'est voulu, l'image se suffit
+  // alors à elle-même. Ce qui ne doit JAMAIS s'y glisser, c'est un repère
+  // technique du genre « nouvel onglet » : celui-là passe par aria-label.
   await page.goto("/#deficit");
   const src = page.locator(".cd-body figure.chart-card:has(#chart-ciseaux) .chart-source");
   await expect(src).toHaveText(
-    "Source : COR, rapport annuel 2026 — données officielles (scénario de référence)."
+    "Source : COR, rapport annuel 2026 — données officielles (scénario de référence). " +
+      "Classeur « Données juin 2026 – synthèse », onglet « Solde dépenses ressources »."
   );
+  await expect(src).not.toContainText("nouvel onglet");
+});
+
+test("la queue de précision mène au classeur exact et à la page de la figure", async ({ page }) => {
+  await page.goto("/#financement");
+  const detail = page.locator(".cd-body #sankey-source .src-detail");
+  await expect(detail).toContainText("Données juin 2026 - partie 2");
+  await expect(detail).toContainText("Fig 2.11");
+  // Un vrai classeur officiel, pas la page d'accueil du rapport.
+  await expect(detail.locator('a[href$=".xlsx"]')).toHaveCount(1);
+  // …et le renvoi de page ouvre le PDF officiel à la figure.
+  const lienPage = detail.locator('a[href*="#page="]');
+  await expect(lienPage).toHaveCount(1);
+  await expect(lienPage).toHaveText(/^rapport p\. \d+$/);
+});
+
+test("aucune page n'est inventée quand l'onglet ne porte pas de numéro de figure", async ({ page }) => {
+  // « Dépenses_OCDE » n'est pas une figure numérotée : le PDF n'en donne pas la
+  // page. Mieux vaut pas de page qu'une page devinée — un renvoi faux enverrait
+  // le lecteur sur la mauvaise figure, ce qui est pire que rien.
+  await page.goto("/#monde");
+  const detail = page.locator(".cd-body .chart-source .src-detail");
+  await expect(detail).toContainText("Dépenses_OCDE");
+  await expect(detail).not.toContainText("p. ");
+  await expect(detail.locator('a[href*="#page="]')).toHaveCount(0);
 });
 
 test("la bibliographie « Méthode & sources » liste des documents joignables", async ({ page }) => {
@@ -635,12 +662,21 @@ test("explorateur : la source est cliquable et ne s'accumule pas d'un indicateur
   expect(await src.locator("a").count()).toBeLessThanOrEqual(avant + 3);
 });
 
-test("Sankey : la source reste liée une seule fois après changement d'année", async ({ page }) => {
+test("Sankey : les liens ne s'empilent pas d'une année à l'autre", async ({ page }) => {
   await page.goto("/#financement");
   const src = page.locator(".cd-body #sankey-source");
-  await expect(src.locator('a[href*="cor-retraites.fr"]')).toHaveCount(1);
+  // Trois liens, un par rôle : le rapport cité dans la phrase, le classeur, la
+  // page de la figure. C'est le compte attendu — pas un lien fourre-tout.
+  const compte = async () => ({
+    rapport: await src.locator('a[href*="/rapports-du-cor/"]').count(),
+    classeur: await src.locator('a[href$=".xlsx"]').count(),
+    page: await src.locator('a[href*="#page="]').count(),
+  });
+  expect(await compte()).toEqual({ rapport: 1, classeur: 1, page: 1 });
+  // Changer d'année reconstruit la phrase : le compte doit être identique, pas
+  // doublé (régression classique d'un rendu qui ajoute au lieu de remplacer).
   await page.locator(".cd-body #sankey-year .cor-select__btn").click();
   await page.locator('.cd-body #sankey-year [role="option"][data-value="2010"]').click();
   await expect(page.locator("#sankey-year-label")).toHaveText("2010");
-  await expect(src.locator("a")).toHaveCount(1);
+  expect(await compte()).toEqual({ rapport: 1, classeur: 1, page: 1 });
 });

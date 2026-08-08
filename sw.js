@@ -37,26 +37,27 @@
  * Aucun rechargement n'est jamais provoqué : le visiteur recharge quand il veut.
  */
 /* --- généré par tools/stamp-assets.mjs — ne pas éditer à la main --- */
-const VERSION = "e34be6db";
+const VERSION = "0821f269";
 const ASSETS = [
   "./",
   "./index.html",
   "./legal.html",
   "./404.html",
-  "./css/style.min.css?v=964cd7eb",
+  "./css/style.min.css?v=905b254b",
   "./css/cards.min.css?v=ba8f2154",
   "./js/chart.min.js?v=938a5649",
   "./js/report.min.js?v=24ebfe11",
-  "./data/data.js?v=022809e3",
-  "./data/cor-series.generated.js?v=4ae8d1db",
-  "./data/cor-explorer.generated.js?v=fb26adca",
+  "./data/data.js?v=399dfdd4",
+  "./data/cor-series.generated.js?v=2082d37c",
+  "./data/cor-explorer.generated.js?v=05ef2244",
+  "./data/cor-sources.generated.js?v=95486073",
   "./images/accueil-lecteur-cor.webp?v=aab23ce6",
   "./images/bayrou.webp?v=fec7737e",
   "./images/hypotheses-cockpit.webp?v=d70cd6d1",
   "./images/simulateur-faders.webp?v=5604f607",
   "./images/sources-logos.webp?v=f9424beb",
   "./images/explorer-cards.webp?v=f429342e",
-  "./js/app.min.js?v=540934d1",
+  "./js/app.min.js?v=06aa9754",
   "./js/cards.min.js?v=a4ba8e14",
   "./manifest.webmanifest",
   "./icons/icon.svg",

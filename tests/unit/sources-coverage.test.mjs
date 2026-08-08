@@ -47,7 +47,11 @@ collectSources(evalData("data/cor-series.generated.js").COR_SERIES, sources);
 collectSources(evalData("data/data.js").COR_DATA, sources);
 
 test("les libellés de source des données produisent tous au moins un lien", () => {
-  assert.ok(sources.size >= 90, `seulement ${sources.size} libellés collectés`);
+  // Le compte a baissé de 92 à ~70 en retirant les numéros de figure de la
+  // prose : cinq phrases « Panorama … (Fig 5.x) » n'en font plus qu'une, la
+  // figure étant désormais portée par `prov`, exacte par construction. Le seuil
+  // n'est là que pour détecter une perte massive de libellés.
+  assert.ok(sources.size >= 60, `seulement ${sources.size} libellés collectés`);
   const orphelins = [...sources].filter(s => matchRefs(s, DOCS).length === 0);
   assert.deepEqual(orphelins, [], "libellés qu'aucune règle ne reconnaît");
 });
@@ -58,6 +62,35 @@ test("tout identifiant repéré existe dans le registre", () => {
       assert.ok(DOCS[r.id], `« ${s} » vise ${r.id}, absent du registre`);
     });
   });
+});
+
+test("chaque indicateur de l'explorateur sait de quel fichier il vient", () => {
+  // La provenance est notée par tools/extract_cor.py au moment où il ouvre le
+  // classeur. Un indicateur qui la perd retombe sur « quelque part dans un
+  // rapport de 260 pages » — exactement ce qu'on voulait supprimer.
+  const indicateurs = evalData("data/cor-explorer.generated.js").COR_EXPLORER.explorer.indicators;
+  const sans = Object.keys(indicateurs).filter(k => !(indicateurs[k].prov || []).length);
+  assert.deepEqual(sans, [], "indicateurs sans provenance");
+});
+
+test("toute provenance désigne un fichier réellement publié par le COR", () => {
+  const SRC = evalData("data/cor-sources.generated.js").COR_SOURCES;
+  const orphelins = [];
+  const visite = node => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) return node.forEach(visite);
+    Object.keys(node).forEach(k => {
+      if (k === "prov" && Array.isArray(node[k])) {
+        node[k].forEach(([rapport, role]) => {
+          if (!(SRC.fichiers[rapport] || {})[role]) orphelins.push(rapport + "/" + role);
+        });
+      } else visite(node[k]);
+    });
+  };
+  visite(evalData("data/cor-explorer.generated.js").COR_EXPLORER);
+  visite(evalData("data/cor-series.generated.js").COR_SERIES);
+  visite(evalData("data/data.js").COR_DATA);
+  assert.deepEqual([...new Set(orphelins)], [], "provenances sans fichier correspondant");
 });
 
 test("les phrases de source écrites dans index.html sont couvertes", () => {

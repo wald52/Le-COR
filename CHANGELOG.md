@@ -7,6 +7,46 @@ Toutes les évolutions notables du site. Format inspiré de
 
 ### Ajouté
 
+- **Les sources disent le classeur, l'onglet et la page.** Mener au rapport ne
+  suffisait pas : sa page officielle porte une vingtaine de fichiers — quatre
+  classeurs Excel, le rapport intégral, la synthèse, l'annexe méthodologique,
+  les chapitres — et il fallait encore deviner lequel, puis y retrouver la
+  figure dans deux cents pages.
+
+  Chaque phrase de source se termine désormais par sa provenance exacte :
+  « Classeur « Données juin 2026 - partie 2 », onglet « Fig 2.11 », rapport
+  p. 90 ». Le nom du classeur ouvre le fichier `.xlsx` officiel, le renvoi de
+  page ouvre le PDF à la figure. Les 96 fichiers ainsi référencés couvrent les
+  quatorze rapports que le site exploite.
+
+  Cette précision n'a pas été saisie à la main : elle était déjà connue et
+  jetée. `tools/extract_cor.py` résolvait un classeur et un onglet pour chaque
+  chiffre, puis n'en gardait que les cellules — la phrase de source était
+  retapée en dessous, d'où sa dérive (la prose disait « Tableau 2.5 » là où
+  l'onglet s'appelle « Tab 2.5 ») et son silence sur le fichier. L'extracteur
+  note maintenant d'où vient chaque chiffre au moment où il l'ouvre, et les
+  soixante-sept indicateurs de l'explorateur en portent la trace. Les numéros de
+  figure ont disparu de la prose : ils viennent de là, exacts par construction.
+
+  Un second script, `tools/build_sources.py`, récolte sur `cor-retraites.fr`
+  l'adresse de chaque fichier et repère dans les PDF la page de chaque figure —
+  1 689 repères. Une table récoltée est indispensable : les noms de fichiers du
+  COR dérivent chaque année, jusqu'au codet du tiret (« Données juin 2026 –
+  synthèse.xlsx » prend un cadratin quand ses voisins « partie 1..4 » prennent
+  un trait d'union). Aucun gabarit d'URL ne tiendrait.
+
+  Les pages sont lues sur le PDF **officiel**, jamais sur la copie archivée :
+  le COR republie ses rapports sans prévenir, et le rapport 2026 en ligne compte
+  260 pages là où l'archive en compte 262 — les figures y sont décalées de deux
+  pages. Un renvoi faux enverrait le lecteur sur la mauvaise figure, ce qui est
+  pire que pas de renvoi ; le script signale désormais ces divergences. Quand
+  l'onglet ne porte pas de numéro de figure, aucune page n'est proposée.
+
+  Note : la régénération des données corrige au passage les bornes de l'axe de
+  l'indicateur « bénéficiaires des droits familiaux ». Ce n'est pas un effet de
+  ce changement — le fichier committé était simplement plus ancien que
+  l'extracteur qui l'avait produit.
+
 - **Les sources sont cliquables : un clic mène au document officiel.** Chaque
   graphique annonçait sa source — « COR, rapport annuel 2016 », « OCDE, base
   SOCX », « Insee » — sans jamais y conduire. Vérifier un chiffre supposait

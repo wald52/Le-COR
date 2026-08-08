@@ -68,7 +68,7 @@ window.COR_DATA = {
     xMin: 2022,
     xMax: 2025,
     source:
-      "COR, rapports annuels 2023 à 2026 — feuille « Tab 2.2 » (ITAF et CSG, millésimes de données 2022 à 2025).",
+      "COR, rapports annuels 2023 à 2026 — ITAF et CSG, millésimes de données 2022 à 2025.",
     realise: {
       label: "Impôts et taxes affectés + CSG",
       color: "#7b1fa2",
@@ -98,6 +98,11 @@ window.COR_DATA = {
     subtitle: "Structure des ressources du système de retraite",
     years: [2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
     defaultYear: 2025,
+    // Provenance fine, au format de tools/extract_cor.py : [rapport, rôle du
+    // fichier, onglet]. Elle change avec l'unité affichée — les parts en % et
+    // les montants en Md€ ne sortent pas du même onglet — d'où deux entrées.
+    provParts: [["cor-2026", "donnees-p2", "Fig 2.11"]],
+    provMontants: [["cor-2026", "donnees-p2", "Tab 2.2"]],
     sources: [
       { key: "cotisations", label: "Cotisations sociales", short: "Cotisations", color: "#1f4e79" },
       { key: "equilibreFPE", label: "Contribution d'équilibre (FPE)", short: "Équilibre FPE", color: "#2f6fb0" },
@@ -165,7 +170,7 @@ window.COR_DATA = {
       { label: "Autres produits", mds: 1.41 },
     ],
     source:
-      "Parts (%) : COR, rapport 2026 (figure 2.11, structure des ressources 2004–2025, d’après les rapports à la CCSS). Montants 2025 en Md€ : COR, tableau 2.2 (422,23 Md€, officiels). Montants des AUTRES années en Md€ : CALCULÉS (parts officielles × PIB nominal INSEE), NON publiés tels quels par le COR. Dépenses par régime 2025 : COR, rapport 2026.",
+      "Parts (%) : COR, rapport 2026 (structure des ressources 2004–2025, d’après les rapports à la CCSS). Montants 2025 en Md€ : COR, rapport 2026 (422,23 Md€, officiels). Montants des AUTRES années en Md€ : CALCULÉS (parts officielles × PIB nominal INSEE), NON publiés tels quels par le COR. Dépenses par régime 2025 : COR, rapport 2026.",
   },
 
   /* =========================================================================
