@@ -71,7 +71,11 @@ a { color: var(--bleu-clair); }
   border-bottom: 1px solid var(--gris-clair);
 }
 .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; margin-right: auto; }
-.brand-text { color: var(--encre); font-size: 1.3rem; font-weight: 600; white-space: nowrap; }
+/* Le mot « COR » garde la couleur d'accent, mais reprend exactement la
+   typographie du reste du titre (famille, taille, graisse) : aucun contraste
+   de police à l'intérieur d'un même titre. */
+.brand-text, .brand-mark { font-size: 1.3rem; font-weight: 600; white-space: nowrap; }
+.brand-text { color: var(--encre); }
 
 /* ---------- Bouton d'action (pilule) — réutilisé par le bouton de retour du carrousel ---------- */
 .cta {
