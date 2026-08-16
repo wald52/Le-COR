@@ -37,13 +37,13 @@
  * Aucun rechargement n'est jamais provoqué : le visiteur recharge quand il veut.
  */
 /* --- généré par tools/stamp-assets.mjs — ne pas éditer à la main --- */
-const VERSION = "e6fe3349";
+const VERSION = "563e9373";
 const ASSETS = [
   "./",
   "./index.html",
   "./legal.html",
   "./404.html",
-  "./css/style.min.css?v=c847cdac",
+  "./css/style.min.css?v=40efbb44",
   "./css/cards.min.css?v=ba8f2154",
   "./js/chart.min.js?v=938a5649",
   "./js/report.min.js?v=24ebfe11",
