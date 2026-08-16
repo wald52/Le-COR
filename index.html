@@ -122,7 +122,13 @@
          ci-dessous et la page à défilement prend le relais. -->
     <section id="card-screen" class="card-screen" aria-label="Carousel — Ceci est mon COR">
       <header class="cs-head">
-        <p class="cs-kicker">Outil citoyen · données publiques du COR</p>
+        <!-- Sur-titre RETIRÉ de l'affichage. Le <p> reste en place, texte compris,
+           uniquement comme RÉSERVE DE HAUTEUR : `.cs-head` est `flex:none` dans la
+           colonne flex de l'écran, donc supprimer le nœud remonterait le titre ET
+           agrandirait `.cs-viewport` (recentrage de la carte). `visibility:hidden`
+           garde la boîte au pixel près, y compris son passage à 2 lignes sur les
+           petits écrans, et le sort de l'arbre d'accessibilité. -->
+        <p class="cs-kicker" style="visibility:hidden" aria-hidden="true">Outil citoyen · données publiques du COR</p>
         <h1 class="cs-title">Ceci est mon COR</h1>
       </header>
       <div class="cs-viewport">
