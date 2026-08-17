@@ -37,8 +37,17 @@ Commandes disponibles :
 > n'est **pas** imposé par la CI. Prettier est fourni comme commodité ; ne
 > reformatez pas massivement un fichier pour une petite contribution.
 
-La première exécution des tests télécharge le navigateur :
-`npx playwright install chromium`.
+La première exécution des tests télécharge les navigateurs :
+
+```bash
+npx playwright install --with-deps chromium webkit
+```
+
+**Les deux sont nécessaires**, comme en CI. `playwright.config.js` définit trois
+projets, et le troisième — `mobile-webkit`, le moteur de Safari iOS — rejoue la
+suite entière : 62 des 124 tests, soit la moitié. N'installer que Chromium les
+fait tous échouer sur « `browserType.launch: Executable doesn't exist` », un
+message qui ne dit pas qu'il manque un navigateur.
 
 ## Mettre à jour les données du COR
 
