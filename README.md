@@ -96,6 +96,12 @@ les artefacts régénérés.
 > [`notes/audit-exactitude-donnees.md`](notes/audit-exactitude-donnees.md).
 > Les rares valeurs calculées par le site (conversions en milliards d'euros,
 > parts) sont signalées sous le graphique concerné.
+>
+> Cette vérification n'est plus seulement manuelle : les graphiques lisent les
+> fichiers générés, mais les **phrases** portent leurs chiffres en dur.
+> `tests/unit/figures.test.mjs` les recalcule tous depuis les données et échoue
+> dès qu'un texte et sa source divergent — de sorte qu'un nouveau rapport ne
+> peut pas mettre à jour les courbes en laissant les phrases périmées.
 
 ## Régénérer le logo et les icônes
 

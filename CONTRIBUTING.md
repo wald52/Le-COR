@@ -56,6 +56,14 @@ La première exécution des tests télécharge le navigateur :
   1. le pied de page d'`index.html` (« Dernière mise à jour : … ») ;
   2. `legal.html` (`.legal-updated`, en bas de page) ;
   3. `sitemap.xml` (`<lastmod>`, au format `AAAA-MM-JJ`).
+- **Les chiffres des PHRASES ne se mettent pas à jour tout seuls.** Les
+  graphiques lisent les fichiers générés ; les textes (« ~15,3 % du PIB »,
+  « 422 Md€ au total », « 2ᵉ derrière l'Italie », « Sur onze rapports
+  superposés ») portent leurs chiffres en dur dans `index.html` et
+  `js/cards.js`. `tests/unit/figures.test.mjs` recalcule chacun depuis les
+  données et **échoue** dès qu'une phrase et sa source divergent : après une
+  extraction, lancez `npm run test:unit` et corrigez les phrases que le rapport
+  d'échec nomme. Voir « Vérifier les chiffres du texte » ci-dessous.
 
 ## Ajouter ou modifier un graphique
 
@@ -75,6 +83,43 @@ La première exécution des tests télécharge le navigateur :
   immuable. L'oublier ne casse pas le site, mais fige le cache des visiteurs sur
   l'ancienne version ; la CI le refuse (« garde-fou anti-dérive »), et
   `npm run test:unit` le signale.
+
+## Vérifier les chiffres du texte
+
+`tests/unit/figures.test.mjs` confronte **chaque chiffre écrit dans la prose**
+aux données générées. C'est le garde-fou de la crédibilité du site : sans lui,
+un nouveau rapport met à jour les courbes et laisse les phrases annoncer les
+chiffres de l'an dernier.
+
+Il tient trois promesses :
+
+1. **exactitude** — le chiffre publié est un arrondi valide de la valeur
+   officielle recalculée depuis `data/` ;
+2. **ancrage** — la phrase citée par la vérification est toujours dans la page,
+   mot pour mot (une réécriture oblige à relire le chiffre) ;
+3. **couverture** — tout nombre suivi d'une unité, dans la prose d'`index.html`
+   (texte visible **et** `aria-label`) et dans les cartes de `js/cards.js`, est
+   rattaché à quelque chose.
+
+**Vous ajoutez un chiffre à la page ?** Le test échoue en le nommant avec son
+numéro de ligne, et deux issues seulement :
+
+- il vient des données du COR → ajoutez un **fait** dans `FAITS` : un `extrait`
+  verbatim de la phrase, le chiffre `publié`, et une fonction `exact()` qui le
+  recalcule depuis `window.COR_SERIES` / `window.COR_DATA` ;
+- il n'en vient pas (définition, ordre de grandeur, chiffre du débat public) →
+  inscrivez-le dans `NON_DÉRIVÉS` avec son `contexte` et son `pourquoi`.
+
+La tolérance par défaut est un demi-pas du dernier chiffre affiché — l'arrondi
+au plus proche comme la troncature passent. Un écart plus large exige un
+`écartMax` **et** un `pourquoi` (un seul cas aujourd'hui : la légende des
+ressources arrondit son dernier bloc vers le bas pour que les quatre montants
+affichent exactement le total publié).
+
+Quelques claims ne portent pas un chiffre mais une **forme** — un rang, un
+décompte, un extremum — et deviendraient fausses au prochain millésime sans
+qu'aucune valeur ne bouge : « Sur onze rapports superposés », « 2ᵉ derrière
+l'Italie », « va de +0,9 % à −2,4 % ». Elles ont leurs propres tests.
 
 ## Le relais de signalement (`worker/`)
 
