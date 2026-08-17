@@ -97,19 +97,33 @@ vérifié ».)
 
 ## 7. Brancher le site
 
-Dans `js/report.js`, à la racine du dépôt, renseigner les deux constantes en
-tête de fichier :
+Tout se passe dans **`index.html`**, et nulle part ailleurs : les trois valeurs
+y sont voisines, donc aucune chance d'en oublier une. (`js/report.js` ne
+contient aucune URL ni aucune clé : il les lit sur la modale.)
 
-```js
-const REPORT_ENDPOINT = "https://le-cor-signalement.<compte>.workers.dev/report";
-const TURNSTILE_SITEKEY = "0x4AAA…";  // Site Key de l'étape 1
+**a.** Sur la balise `<dialog id="report-modal">`, renseigner les deux
+attributs, aujourd'hui vides :
+
+```html
+<dialog id="report-modal" class="report-modal" aria-labelledby="report-title"
+        data-endpoint="https://le-cor-signalement.<compte>.workers.dev/report"
+        data-sitekey="0x4AAA…">
 ```
 
-Dans `index.html`, remplacer `REMPLACER_PAR_URL_WORKER` par la même URL de
-Worker (sans `/report`) dans la directive `connect-src` de la balise
-`Content-Security-Policy`.
+- `data-endpoint` : l'URL du Worker notée à l'étape 5, **terminée par `/report`** ;
+- `data-sitekey` : la **Site Key** de l'étape 1 (la publique).
 
-Puis régénérer les fichiers minifiés et les estampilles de version :
+**b.** Dans la balise `Content-Security-Policy`, en tête de page, remplacer
+`le-cor-signalement.REMPLACER.workers.dev` par l'hôte réel du Worker, dans la
+directive `connect-src` — la même URL que ci-dessus, **sans `/report`**. Sans
+cela le navigateur bloquera l'envoi.
+
+Tant que `data-endpoint` ou `data-sitekey` reste vide, le formulaire n'est pas
+branché : les liens « Signaler une erreur » mènent à GitHub comme auparavant.
+C'est volontaire — aucun visiteur ne se retrouve devant un formulaire qui
+n'aboutirait pas.
+
+**c.** Régénérer les fichiers minifiés et les estampilles de version :
 
 ```bash
 npm run build:min
@@ -158,9 +172,11 @@ wrangler dev --var ALLOWED_ORIGIN:http://127.0.0.1:8000
 ```
 
 Puis, dans une autre console, `npm run serve` à la racine, et pointer
-temporairement `REPORT_ENDPOINT` sur `http://127.0.0.1:8787/report`.
-**Penser à remettre l'URL de production avant de committer** (le contrôle
-anti-dérive de `npm run build:min` le rappellera).
+temporairement, dans `index.html`, `data-endpoint` sur
+`http://127.0.0.1:8787/report` et `data-sitekey` sur la Site Key de test
+ci-dessus — en ajoutant `http://127.0.0.1:8787` à `connect-src`, faute de quoi
+le navigateur bloquera l'envoi. **Penser à remettre les valeurs de production
+avant de committer** : rien ne le vérifie à votre place.
 
 Sans espace KV en local, la limitation de débit est simplement inactive : le
 reste de la chaîne (origine, pièges à robots, validation, captcha) fonctionne.
