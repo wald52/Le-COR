@@ -287,6 +287,13 @@ body.mode-carousel .site-footer { display: none; }
   padding: 3px 9px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
+  /* Flou d'arrière-plan PERMANENT (jamais neutralisé pendant le mouvement) :
+     une pastille dont le « verre dépoli » apparaît à l'arrêt du carrousel et
+     disparaît au moindre déplacement donne un rendu instable, bien plus gênant
+     que le coût GPU qu'on économisait. Le rayon reste court (4px) et la pastille
+     est minuscule : la zone ré-échantillonnée à chaque frame reste donc très
+     petite, même pour 14 cartes en mouvement. */
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   margin-bottom: 8px;
 }
@@ -332,16 +339,11 @@ body.mode-carousel .site-footer { display: none; }
   opacity: 0.96;
 }
 
-/* Pendant le mouvement des cartes (ressort ou drag — classe posée par js/cards.js),
-   on NEUTRALISE le backdrop-filter de la pastille chapitre (seule à garder son
-   « verre dépoli », car statique au repos). Ré-échantillonner un flou
-   d'arrière-plan à chaque frame, pour 14 cartes qui se déplacent, est l'effet le
-   plus coûteux du carrousel (surtout mobile). Au repos (classe retirée en fin de
-   ressort), le flou revient à l'identique. */
-body.cards-animating .card-chapter {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
+/* NB : aucun `backdrop-filter` n'est neutralisé pendant le mouvement des cartes.
+   La pastille chapitre a longtemps perdu son flou tant que `body.cards-animating`
+   était posée (économie GPU), mais l'apparition du « verre dépoli » à l'arrêt du
+   ressort se voyait à chaque balayage : le fond de la pastille changeait sous les
+   yeux du visiteur. Un rendu stable prime ici sur l'économie — cf. .card-chapter. */
 
 /* `will-change` TRANSITOIRE : posé seulement pendant le mouvement (classe posée dès
    le pointerdown, avant le 1er déplacement → la promotion des calques a le temps de

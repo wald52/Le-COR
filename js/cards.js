@@ -667,11 +667,15 @@
   }
 
   /* ----------------------------------------------------------------------
-   * Indicateur « les cartes bougent » (ressort ou drag en cours). Pendant le
-   * mouvement, le CSS neutralise les `backdrop-filter` des cartes (pastilles
-   * chapitre / « Voir le détail ») : ces flous, ré-échantillonnés à chaque frame
-   * pour 14 cartes, sont l'effet le plus coûteux en mouvement. Au repos, l'effet
-   * « verre dépoli » revient à l'identique. Idempotent (toggle sur classe).
+   * Indicateur « les cartes bougent » (ressort ou drag en cours) : pose
+   * `cards-animating` (état lisible depuis le CSS/les tests), maintient
+   * `cards-warm` (calques GPU, cf. css/cards.css) et met les files en temps
+   * mort en pause. Idempotent (toggle sur classe).
+   *
+   * ATTENTION : ne PLUS s'en servir pour couper un `backdrop-filter`. La pastille
+   * chapitre le faisait ; le flou apparaissait alors à la fin de chaque ressort,
+   * et ce fond qui change tout seul se voyait bien plus que le gain de frames.
+   * Les flous du carrousel doivent rester identiques en mouvement et au repos.
    * -------------------------------------------------------------------- */
   // Temporisation du retrait de `cards-warm` (calques GPU maintenus entre deux
   // gestes rapprochés — cf. css/cards.css).
@@ -784,7 +788,7 @@
     viewport.addEventListener("pointerdown", e => {
       if (detailOpen) return;
       dragging = true; axis = null;
-      setAnimating(true);   // le doigt va (peut-être) déplacer les cartes : coupe les flous coûteux
+      setAnimating(true);   // le doigt va (peut-être) déplacer les cartes : calques GPU prêts, files en pause
       // On mémorise la carte sous le doigt MAINTENANT : après setPointerCapture,
       // e.target des événements suivants devient le viewport, plus la carte.
       downCard = e.target.closest && e.target.closest(".card");

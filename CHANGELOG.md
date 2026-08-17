@@ -184,6 +184,17 @@ Toutes les évolutions notables du site. Format inspiré de
   passes) : 325 ms de tâches longues → **0 ms**, pire frame 118 ms → **38 ms**,
   22 frames perdues → **2**.
 
+- **Le fond de la pastille de chapitre changeait à l'arrêt du balayage.**
+  Signalé sur capture (téléphone) : la pastille « ALLER PLUS LOIN · 12 » — et
+  celle de toutes les autres cartes — se dépolissait une fois le carrousel
+  immobile, puis redevenait nette au balayage suivant. C'était voulu : son flou
+  d'arrière-plan était neutralisé tant que les cartes bougeaient, pour épargner
+  au GPU quatorze flous ré-échantillonnés à chaque frame. Le calcul était
+  mauvais : un fond qui change tout seul se remarque, l'économie non. Le flou est
+  désormais permanent, identique en mouvement et au repos. La classe
+  `cards-animating` demeure — elle sert toujours à maintenir les calques GPU et à
+  mettre les files de travaux en pause — mais elle ne pilote plus aucun flou.
+
 - **Un trait de la couleur du thème bordait les cartes, dans certaines
   configurations.** Signalé sur capture (téléphone, fenêtre courte) : un liseré
   fin — sarcelle sur la carte « niveau de vie » — traçait le haut et le côté
